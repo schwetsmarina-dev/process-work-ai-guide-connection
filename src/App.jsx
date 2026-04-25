@@ -14,6 +14,7 @@ import History from './pages/History';
 import Insights from './pages/Insights';
 import Settings from './pages/Settings';
 import AppLayout from './components/layout/AppLayout';
+import AdminImport from './pages/AdminImport';
 import RequireAuth from './components/layout/RequireAuth';
 
 const AuthenticatedApp = () => {
@@ -53,6 +54,9 @@ const AuthenticatedApp = () => {
         {/* Session pages (full screen, no sidebar) */}
         <Route path="/session/:id" element={<SessionChat />} />
         <Route path="/session/:id/summary" element={<SessionSummary />} />
+
+        {/* Admin */}
+        <Route path="/admin/import" element={<AdminImport />} />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />

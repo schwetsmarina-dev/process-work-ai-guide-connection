@@ -10,6 +10,7 @@ import {
   X,
   LogOut,
   Sparkles,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -19,6 +20,7 @@ const navItems = [
   { path: "/history", label: "История", icon: History },
   { path: "/insights", label: "Инсайты", icon: BarChart3 },
   { path: "/settings", label: "Настройки", icon: Settings },
+  { path: "/admin/import", label: "Импорт данных", icon: Upload },
 ];
 
 function NavContent({ currentPath, onNavigate }) {

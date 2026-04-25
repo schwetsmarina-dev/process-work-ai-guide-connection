@@ -4,7 +4,19 @@
   "properties": {
     "session_id": {
       "type": "string",
-      "description": "Reference to session"
+      "description": "Reference to Session"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Reference to AppUser"
+    },
+    "mode_id": {
+      "type": "string",
+      "description": "Mode at time of message"
+    },
+    "step_number": {
+      "type": "number",
+      "description": "Step number at time of message"
     },
     "role": {
       "type": "string",
@@ -16,6 +28,14 @@
     },
     "content": {
       "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "safety_flag": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [

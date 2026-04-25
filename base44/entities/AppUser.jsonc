@@ -1,0 +1,44 @@
+{
+  "name": "AppUser",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string",
+      "default": "ru"
+    },
+    "current_mode": {
+      "type": "string"
+    },
+    "current_step": {
+      "type": "number",
+      "default": 0
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_seen_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "onboarding_completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "consent_given": {
+      "type": "boolean",
+      "default": false
+    },
+    "plan": {
+      "type": "string",
+      "default": "free"
+    }
+  },
+  "required": []
+}

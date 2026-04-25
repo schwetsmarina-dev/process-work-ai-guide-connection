@@ -2,6 +2,14 @@
   "name": "Session",
   "type": "object",
   "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Reference to AppUser"
+    },
+    "mode_id": {
+      "type": "string",
+      "description": "Mode identifier"
+    },
     "mode": {
       "type": "string",
       "enum": [
@@ -12,6 +20,18 @@
       ],
       "description": "Session mode type"
     },
+    "current_step": {
+      "type": "number",
+      "default": 0
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -20,10 +40,6 @@
         "abandoned"
       ],
       "default": "active"
-    },
-    "current_step": {
-      "type": "number",
-      "default": 0
     },
     "summary": {
       "type": "string",
@@ -47,10 +63,6 @@
     "risk_flag": {
       "type": "boolean",
       "default": false
-    },
-    "ended_at": {
-      "type": "string",
-      "format": "date-time"
     }
   },
   "required": [

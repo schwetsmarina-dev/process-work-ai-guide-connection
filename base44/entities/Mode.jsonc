@@ -1,0 +1,37 @@
+{
+  "name": "Mode",
+  "type": "object",
+  "properties": {
+    "mode_id": {
+      "type": "string",
+      "description": "Unique mode identifier"
+    },
+    "mode_name_ru": {
+      "type": "string",
+      "description": "Mode name in Russian"
+    },
+    "mode_name_en": {
+      "type": "string",
+      "description": "Mode name in English"
+    },
+    "description": {
+      "type": "string",
+      "description": "Mode description"
+    },
+    "start_message": {
+      "type": "string",
+      "description": "Opening message when mode starts"
+    },
+    "sort_order": {
+      "type": "number",
+      "description": "Display order"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "mode_id"
+  ]
+}

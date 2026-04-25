@@ -2,13 +2,33 @@
   "name": "UserMemory",
   "type": "object",
   "properties": {
-    "key": {
+    "user_id": {
+      "type": "string",
+      "description": "Reference to AppUser"
+    },
+    "memory_type": {
+      "type": "string",
+      "description": "Type of memory"
+    },
+    "memory_key": {
       "type": "string",
       "description": "Memory key/topic"
     },
-    "value": {
+    "memory_value": {
       "type": "string",
       "description": "Memory content"
+    },
+    "source_mode_id": {
+      "type": "string",
+      "description": "Mode where memory was created"
+    },
+    "source_session_id": {
+      "type": "string",
+      "description": "Session where memory was created"
+    },
+    "confidence": {
+      "type": "number",
+      "description": "Confidence score 0-1"
     },
     "importance": {
       "type": "string",
@@ -19,20 +39,22 @@
       ],
       "default": "medium"
     },
-    "category": {
+    "created_at": {
       "type": "string",
-      "enum": [
-        "emotion",
-        "body",
-        "dream",
-        "conflict",
-        "pattern",
-        "insight"
-      ]
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
     }
   },
   "required": [
-    "key",
-    "value"
+    "user_id",
+    "memory_key",
+    "memory_value"
   ]
 }

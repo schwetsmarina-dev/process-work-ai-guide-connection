@@ -1,0 +1,65 @@
+{
+  "name": "Term",
+  "type": "object",
+  "properties": {
+    "term_id": {
+      "type": "string",
+      "description": "Unique term identifier"
+    },
+    "term": {
+      "type": "string",
+      "description": "Term name"
+    },
+    "category": {
+      "type": "string",
+      "description": "Term category"
+    },
+    "is_cross_cutting": {
+      "type": "boolean",
+      "default": false
+    },
+    "primary_mode_id": {
+      "type": "string",
+      "description": "Primary mode this term belongs to"
+    },
+    "mode_ids": {
+      "type": "string",
+      "description": "All applicable mode IDs (comma-separated or JSON)"
+    },
+    "short_definition": {
+      "type": "string",
+      "description": "Short definition of the term"
+    },
+    "practical_application": {
+      "type": "string",
+      "description": "How to apply this term in practice"
+    },
+    "related_terms": {
+      "type": "string",
+      "description": "Related term IDs or names"
+    },
+    "search_tags": {
+      "type": "string",
+      "description": "Tags for search"
+    },
+    "source": {
+      "type": "string",
+      "description": "Source reference"
+    },
+    "source_sheet": {
+      "type": "string",
+      "description": "Source spreadsheet or document"
+    },
+    "aliases": {
+      "type": "string",
+      "description": "Alternative names for this term"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "term"
+  ]
+}

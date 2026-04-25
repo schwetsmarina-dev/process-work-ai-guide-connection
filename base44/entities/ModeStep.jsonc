@@ -1,0 +1,66 @@
+{
+  "name": "ModeStep",
+  "type": "object",
+  "properties": {
+    "mode_id": {
+      "type": "string",
+      "description": "Mode identifier"
+    },
+    "step_number": {
+      "type": "number",
+      "description": "Step order number"
+    },
+    "step_key": {
+      "type": "string",
+      "description": "Unique step key"
+    },
+    "goal": {
+      "type": "string",
+      "description": "Step goal"
+    },
+    "question": {
+      "type": "string",
+      "description": "Step question (long text)"
+    },
+    "response_type": {
+      "type": "string",
+      "description": "Expected response type"
+    },
+    "save_to_memory_key": {
+      "type": "string",
+      "description": "Memory key to save response"
+    },
+    "is_required": {
+      "type": "boolean",
+      "default": true
+    },
+    "next_step_on_answer": {
+      "type": "number",
+      "description": "Next step index when answered"
+    },
+    "next_step_on_skip": {
+      "type": "number",
+      "description": "Next step index when skipped"
+    },
+    "related_term_ids": {
+      "type": "string",
+      "description": "Comma-separated related term IDs"
+    },
+    "facilitator_hint": {
+      "type": "string",
+      "description": "Hint for the AI facilitator"
+    },
+    "possible_mode_shift": {
+      "type": "string",
+      "description": "Conditions for mode shift"
+    },
+    "pending_mode": {
+      "type": "string",
+      "description": "Mode to shift to if triggered"
+    }
+  },
+  "required": [
+    "mode_id",
+    "step_number"
+  ]
+}

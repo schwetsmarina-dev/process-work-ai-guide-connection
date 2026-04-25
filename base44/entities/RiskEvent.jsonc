@@ -2,10 +2,19 @@
   "name": "RiskEvent",
   "type": "object",
   "properties": {
-    "session_id": {
-      "type": "string"
+    "user_id": {
+      "type": "string",
+      "description": "Reference to AppUser"
     },
-    "type": {
+    "session_id": {
+      "type": "string",
+      "description": "Reference to Session"
+    },
+    "detected_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "risk_type": {
       "type": "string",
       "enum": [
         "suicide_mention",
@@ -26,12 +35,30 @@
       ]
     },
     "trigger_text": {
-      "type": "string"
+      "type": "string",
+      "description": "Text that triggered the risk flag"
+    },
+    "action_taken": {
+      "type": "string",
+      "description": "What action was taken"
+    },
+    "needs_human_review": {
+      "type": "boolean",
+      "default": false
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "reviewed",
+        "resolved"
+      ],
+      "default": "open"
     }
   },
   "required": [
     "session_id",
-    "type",
+    "risk_type",
     "severity"
   ]
 }
