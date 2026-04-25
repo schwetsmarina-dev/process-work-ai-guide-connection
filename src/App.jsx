@@ -5,10 +5,19 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-// Add page imports here
+
+import Landing from './pages/Landing';
+import Dashboard from './pages/Dashboard';
+import SessionChat from './pages/SessionChat';
+import SessionSummary from './pages/SessionSummary';
+import History from './pages/History';
+import Insights from './pages/Insights';
+import Settings from './pages/Settings';
+import AppLayout from './components/layout/AppLayout';
+import RequireAuth from './components/layout/RequireAuth';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -23,17 +32,29 @@ const AuthenticatedApp = () => {
   if (authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
     }
   }
 
   // Render the main app
   return (
     <Routes>
-      {/* Add your page Route elements here */}
+      {/* Public landing page */}
+      <Route path="/" element={<Landing />} />
+
+      {/* Authenticated routes */}
+      <Route element={<RequireAuth />}>
+        <Route element={<AppLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/insights" element={<Insights />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
+
+        {/* Session pages (full screen, no sidebar) */}
+        <Route path="/session/:id" element={<SessionChat />} />
+        <Route path="/session/:id/summary" element={<SessionSummary />} />
+      </Route>
+
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

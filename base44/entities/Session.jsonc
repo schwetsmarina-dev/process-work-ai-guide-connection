@@ -1,0 +1,59 @@
+{
+  "name": "Session",
+  "type": "object",
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": [
+        "body",
+        "dream",
+        "conflict",
+        "journaling"
+      ],
+      "description": "Session mode type"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed",
+        "abandoned"
+      ],
+      "default": "active"
+    },
+    "current_step": {
+      "type": "number",
+      "default": 0
+    },
+    "summary": {
+      "type": "string",
+      "description": "AI-generated session summary"
+    },
+    "themes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "signals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "next_step_suggestion": {
+      "type": "string"
+    },
+    "risk_flag": {
+      "type": "boolean",
+      "default": false
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "mode"
+  ]
+}

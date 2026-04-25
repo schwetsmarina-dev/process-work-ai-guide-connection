@@ -1,0 +1,37 @@
+{
+  "name": "RiskEvent",
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "suicide_mention",
+        "self_harm",
+        "violence",
+        "psychotic",
+        "medical_emergency",
+        "other"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "trigger_text": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "type",
+    "severity"
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "name": "UserMemory",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Memory key/topic"
+    },
+    "value": {
+      "type": "string",
+      "description": "Memory content"
+    },
+    "importance": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "emotion",
+        "body",
+        "dream",
+        "conflict",
+        "pattern",
+        "insight"
+      ]
+    }
+  },
+  "required": [
+    "key",
+    "value"
+  ]
+}
