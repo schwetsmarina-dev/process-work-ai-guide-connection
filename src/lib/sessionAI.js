@@ -1,55 +1,115 @@
 import { base44 } from "@/api/base44Client";
-import { MODE_STEPS, SYSTEM_PROMPT, CRISIS_KEYWORDS, CRISIS_MESSAGE } from "./modeSteps";
+
+// ─── Crisis detection ────────────────────────────────────────────────────────
+const CRISIS_KEYWORDS = [
+  "суицид", "убить себя", "покончить", "самоубийство",
+  "самоповреждение", "порезать себя", "резать вены",
+  "не хочу жить", "нет смысла жить", "лучше бы меня не было",
+  "хочу умереть", "убить", "насилие",
+];
+
+export const CRISIS_MESSAGE = `⚠️ Я заметил(а), что вы упомянули что-то важное.
+
+Этот инструмент — для самоисследования, и он не заменяет профессиональную помощь.
+
+Если вам сейчас тяжело, пожалуйста, обратитесь:
+
+📞 Телефон доверия: 8-800-2000-122 (бесплатно, 24/7)
+📞 Центр экстренной психологической помощи МЧС: 8-499-216-50-50
+📱 Линия психологической помощи: 051 (с мобильного)
+
+Вы не одиноки. Помощь доступна.`;
 
 export function checkCrisis(text) {
   const lower = text.toLowerCase();
   return CRISIS_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
-export async function getAIResponse(session, messages, userMessage) {
-  const steps = MODE_STEPS[session.mode] || [];
-  const currentStep = session.current_step || 0;
-  const step = steps[currentStep];
+// ─── Fetch step from DB ──────────────────────────────────────────────────────
+export async function fetchStep(modeId, stepNumber) {
+  const stepKey = `${modeId}_${stepNumber}`;
+  const rows = await base44.entities.ModeStep.filter({ step_key: stepKey });
+  return rows[0] || null;
+}
 
-  const conversationHistory = messages
+// ─── Fetch related terms from DB ─────────────────────────────────────────────
+async function fetchRelatedTerms(relatedTermIds) {
+  if (!relatedTermIds) return [];
+  const ids = relatedTermIds.split(";").map((s) => s.trim()).filter(Boolean);
+  if (!ids.length) return [];
+  // Fetch each term individually and collect
+  const results = await Promise.all(
+    ids.map((tid) => base44.entities.Term.filter({ term_id: tid }))
+  );
+  return results.flat();
+}
+
+// ─── Main AI response ────────────────────────────────────────────────────────
+const SYSTEM_PROMPT = `Ты — психологически безопасный проводник по самоисследованию, вдохновлённый Процесс-ориентированной психологией (Арнольд Минделл / Process Work).
+
+ВАЖНЫЕ ПРАВИЛА:
+- Ты НЕ ставишь диагнозы
+- Ты НЕ заменяешь терапию
+- Ты НЕ назначаешь лекарства
+- Ты НЕ даёшь жёстких интерпретаций
+- Ты задаёшь один осмысленный вопрос за раз
+- Ты тёплый, ясный, лаконичный, глубокий, заземлённый
+
+Ты помогаешь пользователям замечать:
+- сигналы
+- края (edges)
+- полярности
+- телесный опыт
+- символический материал
+- микро-действия
+
+Всегда будь бережным.
+Отвечай на русском языке.
+Будь кратким — 2-4 предложения максимум.`;
+
+export async function getAIResponse(session, step, messages, userMessage) {
+  // Last 8 messages for context
+  const recent = messages.slice(-8);
+  const history = recent
     .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
     .join("\n");
 
-  let stepContext = "";
-  if (step) {
-    stepContext = `\n\nТекущий этап работы (${currentStep + 1}/${steps.length}):
-Цель: ${step.goal}
-Направляющий вопрос для этого этапа: "${step.question}"
+  // Related terms
+  const terms = await fetchRelatedTerms(step?.related_term_ids);
+  const termsContext = terms.length
+    ? "\n\nРелевантные концепции Process Work:\n" +
+      terms
+        .map((t) => `• ${t.term}: ${t.short_definition || ""}${t.practical_application ? " | Применение: " + t.practical_application : ""}`)
+        .join("\n")
+    : "";
 
-Используй этот вопрос как ориентир, но адаптируй его к контексту разговора. Не задавай вопрос буквально если он не подходит — будь гибким.`;
-  } else {
-    stepContext = `\n\nВсе структурированные этапы пройдены. Мягко завершай сессию, предложив интеграцию опыта.`;
-  }
+  const stepContext = step
+    ? `\n\nТекущий шаг: ${step.step_number}
+Цель шага: ${step.goal || "—"}
+Направляющий вопрос: "${step.question || "—"}"
+Подсказка фасилитатору: ${step.facilitator_hint || "—"}`
+    : "\n\nВсе шаги пройдены. Мягко завершай сессию.";
 
-  const modeShiftHint = `\n\nЕсли замечаешь, что пользователь:
-- в режиме ТЕЛА начинает описывать яркие образы — мягко предложи перейти к работе со сном
-- в ДНЕВНИКЕ раскрывает полярность — мягко предложи работу с конфликтом
-- в любом режиме говорит о сильном телесном ощущении — предложи перейти к телу
-Делай это деликатно, как предложение.`;
+  const modeShiftHint = step?.possible_mode_shift
+    ? `\n\nВозможный переход: ${step.possible_mode_shift}. Если это уместно — предложи пользователю: включи в конец ответа фразу «[SHIFT_SUGGEST:${step.pending_mode || ""}]» чтобы система показала кнопки выбора. Делай это только если смена режима явно уместна.`
+    : "";
 
-  const prompt = `${SYSTEM_PROMPT}${stepContext}${modeShiftHint}
+  const prompt = `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}
 
-Режим: ${session.mode}
+Режим: ${session.mode_id || session.mode}
 
-История разговора:
-${conversationHistory}
+История разговора (последние сообщения):
+${history}
 
 Пользователь: ${userMessage}
 
-Ответь как заботливый проводник. Один осмысленный вопрос или отражение. Кратко.`;
+Ответь как заботливый проводник. Отрази последнее сообщение в 1 предложении, затем задай только следующий вопрос. Кратко.`;
 
-  const response = await base44.integrations.Core.InvokeLLM({
-    prompt,
-  });
-
+  const response = await base44.integrations.Core.InvokeLLM({ prompt });
   return response;
 }
 
+// ─── Session summary ─────────────────────────────────────────────────────────
 export async function generateSessionSummary(session, messages) {
   const conversation = messages
     .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
@@ -58,7 +118,7 @@ export async function generateSessionSummary(session, messages) {
   const result = await base44.integrations.Core.InvokeLLM({
     prompt: `Проанализируй эту сессию самоисследования в стиле Process Work и создай краткое резюме.
 
-Режим: ${session.mode}
+Режим: ${session.mode_id || session.mode}
 
 Разговор:
 ${conversation}
@@ -68,20 +128,9 @@ ${conversation}
       type: "object",
       properties: {
         summary: { type: "string", description: "Краткое резюме сессии, 3-5 предложений" },
-        themes: {
-          type: "array",
-          items: { type: "string" },
-          description: "Основные темы (2-4 слова каждая)",
-        },
-        signals: {
-          type: "array",
-          items: { type: "string" },
-          description: "Замеченные сигналы",
-        },
-        next_step_suggestion: {
-          type: "string",
-          description: "Предложение для бережного следующего шага",
-        },
+        themes: { type: "array", items: { type: "string" }, description: "Основные темы (2-4 слова каждая)" },
+        signals: { type: "array", items: { type: "string" }, description: "Замеченные сигналы" },
+        next_step_suggestion: { type: "string", description: "Предложение для бережного следующего шага" },
         memories: {
           type: "array",
           items: {
@@ -93,7 +142,6 @@ ${conversation}
               importance: { type: "string", enum: ["low", "medium", "high"] },
             },
           },
-          description: "Ключевые воспоминания для сохранения",
         },
       },
     },

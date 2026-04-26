@@ -15,6 +15,7 @@ import Insights from './pages/Insights';
 import Settings from './pages/Settings';
 import AppLayout from './components/layout/AppLayout';
 import AdminImport from './pages/AdminImport';
+import AdminDataStatus from './pages/AdminDataStatus';
 import RequireAuth from './components/layout/RequireAuth';
 
 const AuthenticatedApp = () => {
@@ -57,6 +58,7 @@ const AuthenticatedApp = () => {
 
         {/* Admin */}
         <Route path="/admin/import" element={<AdminImport />} />
+        <Route path="/admin/status" element={<AdminDataStatus />} />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />

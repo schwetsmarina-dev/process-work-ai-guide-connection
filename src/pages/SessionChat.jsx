@@ -2,124 +2,211 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
-import { MODE_STEPS, CRISIS_MESSAGE } from "@/lib/modeSteps";
-import { getAIResponse, generateSessionSummary, checkCrisis } from "@/lib/sessionAI";
+import { Loader2, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  checkCrisis,
+  CRISIS_MESSAGE,
+  fetchStep,
+  getAIResponse,
+  generateSessionSummary,
+} from "@/lib/sessionAI";
 import SessionHeader from "@/components/session/SessionHeader";
 import ChatMessage from "@/components/session/ChatMessage";
 import ChatInput from "@/components/session/ChatInput";
 
+// Parse [SHIFT_SUGGEST:mode] tag from AI response
+function parseShiftSuggestion(text) {
+  const match = text.match(/\[SHIFT_SUGGEST:([^\]]*)\]/);
+  if (match) {
+    return {
+      cleanText: text.replace(match[0], "").trim(),
+      suggestedMode: match[1] || null,
+    };
+  }
+  return { cleanText: text, suggestedMode: null };
+}
+
 export default function SessionChat() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const urlParams = new URLSearchParams(window.location.search);
   const pathParts = window.location.pathname.split("/");
-  const sessionId = pathParts[pathParts.length - 1];
+  const sessionId = pathParts[2]; // /session/:id
 
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
+  const [stepError, setStepError] = useState(false);
+  const [shiftSuggestion, setShiftSuggestion] = useState(null); // { suggestedMode }
+  const [totalSteps, setTotalSteps] = useState(0);
   const messagesEndRef = useRef(null);
+  const initDone = useRef(false);
 
+  // ── Session ──────────────────────────────────────────────────────────────
   const { data: session, isLoading: sessionLoading } = useQuery({
     queryKey: ["session", sessionId],
     queryFn: async () => {
-      const sessions = await base44.entities.Session.filter({ id: sessionId });
-      return sessions[0];
+      const rows = await base44.entities.Session.filter({ id: sessionId });
+      return rows[0];
     },
     enabled: !!sessionId,
   });
 
+  // ── Messages ─────────────────────────────────────────────────────────────
   const { data: messages = [], isLoading: msgsLoading } = useQuery({
     queryKey: ["messages", sessionId],
     queryFn: () => base44.entities.Message.filter({ session_id: sessionId }, "created_date"),
     enabled: !!sessionId,
   });
 
-  // Send initial greeting
+  // ── Total steps for progress bar ─────────────────────────────────────────
   useEffect(() => {
-    if (!session || msgsLoading || messages.length > 0) return;
+    if (!session?.mode_id) return;
+    base44.entities.ModeStep.filter({ mode_id: session.mode_id }).then((rows) => {
+      setTotalSteps(rows.length);
+    });
+  }, [session?.mode_id]);
 
-    const steps = MODE_STEPS[session.mode] || [];
-    const firstStep = steps[0];
-    if (firstStep) {
-      const greeting = `Давайте начнём.\n\n${firstStep.question}`;
-      base44.entities.Message.create({
+  // ── Send initial greeting from step 1 ────────────────────────────────────
+  useEffect(() => {
+    if (!session || msgsLoading || messages.length > 0 || initDone.current) return;
+    initDone.current = true;
+
+    const modeId = session.mode_id;
+    const stepNum = session.current_step || 1;
+
+    fetchStep(modeId, stepNum).then(async (step) => {
+      if (!step) {
+        setStepError(true);
+        return;
+      }
+      const greeting = `Давайте начнём.\n\n${step.question}`;
+      await base44.entities.Message.create({
         session_id: sessionId,
+        mode_id: modeId,
+        step_number: stepNum,
         role: "assistant",
         content: greeting,
-      }).then(() => {
-        queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
+        created_at: new Date().toISOString(),
       });
-    }
+      queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
+    });
   }, [session, msgsLoading, messages.length, sessionId, queryClient]);
 
+  // ── Auto-scroll ───────────────────────────────────────────────────────────
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // ── Send user message ─────────────────────────────────────────────────────
   const handleSend = async (text) => {
+    if (!session) return;
+    const modeId = session.mode_id;
+    const currentStep = session.current_step || 1;
+
     // Save user message
     await base44.entities.Message.create({
       session_id: sessionId,
+      mode_id: modeId,
+      step_number: currentStep,
       role: "user",
       content: text,
+      created_at: new Date().toISOString(),
     });
     queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
 
-    // Check for crisis
+    // Crisis check
     if (checkCrisis(text)) {
       await base44.entities.Message.create({
         session_id: sessionId,
         role: "system",
         content: CRISIS_MESSAGE,
+        created_at: new Date().toISOString(),
       });
       await base44.entities.RiskEvent.create({
         session_id: sessionId,
-        type: "suicide_mention",
+        risk_type: "suicide_mention",
         severity: "high",
-        trigger_text: text.substring(0, 200),
+        trigger_text: text.substring(0, 500),
+        detected_at: new Date().toISOString(),
+        status: "open",
       });
       await base44.entities.Session.update(sessionId, { risk_flag: true });
       queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
       return;
     }
 
-    // Get AI response
+    // Fetch current step from DB
+    const step = await fetchStep(modeId, currentStep);
+    if (!step) {
+      setStepError(true);
+      return;
+    }
+
     setIsAiLoading(true);
+    setShiftSuggestion(null);
+
+    // Refresh messages for context
     const updatedMessages = await base44.entities.Message.filter(
       { session_id: sessionId },
       "created_date"
     );
 
-    const aiResponse = await getAIResponse(session, updatedMessages, text);
+    // Get AI response
+    const rawResponse = await getAIResponse(session, step, updatedMessages, text);
+    const { cleanText, suggestedMode } = parseShiftSuggestion(rawResponse);
 
+    // Save assistant message
     await base44.entities.Message.create({
       session_id: sessionId,
+      mode_id: modeId,
+      step_number: currentStep,
       role: "assistant",
-      content: aiResponse,
+      content: cleanText,
+      created_at: new Date().toISOString(),
     });
 
-    // Advance step
-    const steps = MODE_STEPS[session.mode] || [];
-    const nextStep = (session.current_step || 0) + 1;
-    if (nextStep <= steps.length) {
+    // Advance step using next_step_on_answer
+    const nextStep = step.next_step_on_answer
+      ? Number(step.next_step_on_answer)
+      : null;
+
+    if (nextStep) {
       await base44.entities.Session.update(sessionId, { current_step: nextStep });
-      queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
+    } else {
+      // No next step — complete session
+      await handleEndSessionSilent(updatedMessages);
+      return;
     }
 
+    queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
     queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
     setIsAiLoading(false);
+
+    // Show mode shift suggestion if AI suggested one
+    if (suggestedMode) {
+      setShiftSuggestion({ suggestedMode });
+    }
   };
 
+  // ── End session (manual) ──────────────────────────────────────────────────
   const handleEndSession = async () => {
     setIsEnding(true);
     const allMessages = await base44.entities.Message.filter(
       { session_id: sessionId },
       "created_date"
     );
+    await finalizeSession(allMessages);
+  };
 
+  // ── End session (auto, no UI change needed) ───────────────────────────────
+  const handleEndSessionSilent = async (msgs) => {
+    setIsAiLoading(false);
+    setIsEnding(true);
+    await finalizeSession(msgs);
+  };
+
+  const finalizeSession = async (allMessages) => {
     const summaryData = await generateSessionSummary(session, allMessages);
-
     await base44.entities.Session.update(sessionId, {
       status: "completed",
       ended_at: new Date().toISOString(),
@@ -128,23 +215,40 @@ export default function SessionChat() {
       signals: summaryData.signals,
       next_step_suggestion: summaryData.next_step_suggestion,
     });
-
-    // Save memories
     if (summaryData.memories?.length > 0) {
       await base44.entities.UserMemory.bulkCreate(
         summaryData.memories.map((m) => ({
-          key: m.key,
-          value: m.value,
-          category: m.category,
+          memory_key: m.key,
+          memory_value: m.value,
+          memory_type: m.category,
           importance: m.importance,
+          source_session_id: sessionId,
+          source_mode_id: session.mode_id,
+          is_active: true,
+          created_at: new Date().toISOString(),
         }))
       );
     }
-
     queryClient.invalidateQueries({ queryKey: ["sessions"] });
     navigate(`/session/${sessionId}/summary`);
   };
 
+  // ── Mode shift ────────────────────────────────────────────────────────────
+  const handleContinueMode = () => setShiftSuggestion(null);
+
+  const handleSwitchMode = async () => {
+    if (!shiftSuggestion?.suggestedMode) return;
+    await base44.entities.Session.update(sessionId, {
+      mode_id: shiftSuggestion.suggestedMode,
+      current_step: 1,
+    });
+    setShiftSuggestion(null);
+    initDone.current = false; // allow re-init for new mode start message
+    queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
+    queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
+  };
+
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (sessionLoading || msgsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -163,7 +267,11 @@ export default function SessionChat() {
 
   return (
     <div className="flex flex-col h-screen">
-      <SessionHeader session={session} onEndSession={handleEndSession} />
+      <SessionHeader
+        session={session}
+        totalSteps={totalSteps}
+        onEndSession={handleEndSession}
+      />
 
       {isEnding && (
         <div className="flex-1 flex items-center justify-center">
@@ -181,6 +289,8 @@ export default function SessionChat() {
               {messages.map((msg) => (
                 <ChatMessage key={msg.id} message={msg} />
               ))}
+
+              {/* AI loading indicator */}
               {isAiLoading && (
                 <div className="flex gap-3">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -195,13 +305,59 @@ export default function SessionChat() {
                   </div>
                 </div>
               )}
+
+              {/* Step not found error */}
+              {stepError && (
+                <div className="flex items-start gap-3 p-4 rounded-xl border border-destructive/30 bg-destructive/5">
+                  <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-destructive">Шаг не найден</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Потерян текущий шаг сессии. Пожалуйста, начните новую сессию.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-3"
+                      onClick={() => navigate("/dashboard")}
+                    >
+                      На главную
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Mode shift suggestion */}
+              {shiftSuggestion && (
+                <div className="flex flex-col gap-3 p-4 rounded-xl border border-primary/20 bg-primary/5">
+                  <p className="text-sm font-medium">
+                    Похоже, разговор движется в другом направлении. Хотите переключиться?
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Предложенный режим: <span className="font-semibold">{shiftSuggestion.suggestedMode}</span>
+                  </p>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button size="sm" variant="outline" onClick={handleContinueMode}>
+                      Продолжить текущий режим
+                    </Button>
+                    <Button size="sm" onClick={handleSwitchMode}>
+                      Переключиться
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
           </div>
 
           <div className="border-t border-border bg-card/80 backdrop-blur-lg px-4 py-3">
             <div className="max-w-3xl mx-auto">
-              <ChatInput onSend={handleSend} isLoading={isAiLoading} />
+              <ChatInput
+                onSend={handleSend}
+                isLoading={isAiLoading}
+                disabled={!!stepError || !!shiftSuggestion}
+              />
             </div>
           </div>
         </>

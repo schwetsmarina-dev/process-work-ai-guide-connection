@@ -3,12 +3,12 @@ import { SendHorizontal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-export default function ChatInput({ onSend, isLoading }) {
+export default function ChatInput({ onSend, isLoading, disabled }) {
   const [text, setText] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!text.trim() || isLoading) return;
+    if (!text.trim() || isLoading || disabled) return;
     onSend(text.trim());
     setText("");
   };
@@ -26,14 +26,15 @@ export default function ChatInput({ onSend, isLoading }) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Напишите здесь..."
+        placeholder={disabled ? "Ответьте на предложение выше..." : "Напишите здесь..."}
         className="min-h-[44px] max-h-32 resize-none rounded-xl border-border bg-card text-sm"
         rows={1}
+        disabled={disabled}
       />
       <Button
         type="submit"
         size="icon"
-        disabled={!text.trim() || isLoading}
+        disabled={!text.trim() || isLoading || disabled}
         className="rounded-xl h-11 w-11 shrink-0"
       >
         {isLoading ? (
