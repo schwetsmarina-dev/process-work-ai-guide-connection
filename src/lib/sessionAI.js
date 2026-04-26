@@ -111,27 +111,39 @@ ${history}
 }
 
 // ─── Session summary ─────────────────────────────────────────────────────────
+const FALLBACK_SUMMARY = {
+  summary: "Сессия завершена. Резюме недоступно.",
+  themes: [],
+  signals: [],
+  next_step_suggestion: "",
+  memories: [],
+};
+
 export async function generateSessionSummary(session, messages) {
-  const conversation = messages
-    .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
+  // Only use last 12 messages to keep prompt short and fast
+  const recent = messages.slice(-12);
+  const conversation = recent
+    .filter((m) => m.role !== "system")
+    .map((m) => `${m.role === "user" ? "П" : "А"}: ${m.content}`)
     .join("\n");
 
-  const result = await base44.integrations.Core.InvokeLLM({
-    prompt: `Проанализируй эту сессию самоисследования в стиле Process Work и создай краткое резюме.
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("timeout")), 15000)
+  );
 
-Режим: ${session.mode_id || session.mode}
+  const llmPromise = base44.integrations.Core.InvokeLLM({
+    prompt: `Кратко проанализируй сессию Process Work. Режим: ${session.mode_id || session.mode}.
 
-Разговор:
 ${conversation}
 
-Создай резюме на русском языке.`,
+Ответь на русском.`,
     response_json_schema: {
       type: "object",
       properties: {
-        summary: { type: "string", description: "Краткое резюме сессии, 3-5 предложений" },
-        themes: { type: "array", items: { type: "string" }, description: "Основные темы (2-4 слова каждая)" },
-        signals: { type: "array", items: { type: "string" }, description: "Замеченные сигналы" },
-        next_step_suggestion: { type: "string", description: "Предложение для бережного следующего шага" },
+        summary: { type: "string" },
+        themes: { type: "array", items: { type: "string" } },
+        signals: { type: "array", items: { type: "string" } },
+        next_step_suggestion: { type: "string" },
         memories: {
           type: "array",
           items: {
@@ -148,5 +160,11 @@ ${conversation}
     },
   });
 
-  return result;
+  try {
+    const result = await Promise.race([llmPromise, timeoutPromise]);
+    return result || FALLBACK_SUMMARY;
+  } catch (e) {
+    console.error("Summary generation failed:", e.message);
+    return FALLBACK_SUMMARY;
+  }
 }

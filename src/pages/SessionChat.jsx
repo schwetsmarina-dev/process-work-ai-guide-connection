@@ -206,31 +206,48 @@ export default function SessionChat() {
   };
 
   const finalizeSession = async (allMessages) => {
-    const summaryData = await generateSessionSummary(session, allMessages);
-    await base44.entities.Session.update(sessionId, {
-      status: "completed",
-      ended_at: new Date().toISOString(),
-      summary: summaryData.summary,
-      themes: summaryData.themes,
-      signals: summaryData.signals,
-      next_step_suggestion: summaryData.next_step_suggestion,
-    });
-    if (summaryData.memories?.length > 0) {
-      await base44.entities.UserMemory.bulkCreate(
-        summaryData.memories.map((m) => ({
-          memory_key: m.key,
-          memory_value: m.value,
-          memory_type: m.category,
-          importance: m.importance,
-          source_session_id: sessionId,
-          source_mode_id: session.mode_id,
-          is_active: true,
-          created_at: new Date().toISOString(),
-        }))
-      );
+    // Hard redirect after 15s no matter what
+    const redirectTimer = setTimeout(() => {
+      navigate(`/session/${sessionId}/summary`);
+    }, 15000);
+
+    try {
+      const summaryData = await generateSessionSummary(session, allMessages);
+      await base44.entities.Session.update(sessionId, {
+        status: "completed",
+        ended_at: new Date().toISOString(),
+        summary: summaryData.summary,
+        themes: summaryData.themes,
+        signals: summaryData.signals,
+        next_step_suggestion: summaryData.next_step_suggestion,
+      });
+      if (summaryData.memories?.length > 0) {
+        await base44.entities.UserMemory.bulkCreate(
+          summaryData.memories.map((m) => ({
+            memory_key: m.key,
+            memory_value: m.value,
+            memory_type: m.category,
+            importance: m.importance,
+            source_session_id: sessionId,
+            source_mode_id: session.mode_id,
+            is_active: true,
+            created_at: new Date().toISOString(),
+          }))
+        );
+      }
+    } catch (e) {
+      console.error("Session finalization error:", e.message);
+      // Still mark session completed so user isn't stuck
+      await base44.entities.Session.update(sessionId, {
+        status: "completed",
+        ended_at: new Date().toISOString(),
+        summary: "Сессия завершена. Резюме недоступно.",
+      }).catch(() => {});
+    } finally {
+      clearTimeout(redirectTimer);
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      navigate(`/session/${sessionId}/summary`);
     }
-    queryClient.invalidateQueries({ queryKey: ["sessions"] });
-    navigate(`/session/${sessionId}/summary`);
   };
 
   // ── Mode shift ────────────────────────────────────────────────────────────
