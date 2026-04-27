@@ -1,9 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
-import { Loader2, CheckCircle2, AlertTriangle, Database } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, CheckCircle2, AlertTriangle, Database, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 function StatCard({ label, count, isLoading }) {
   return (
@@ -37,6 +49,10 @@ function Ok({ text }) {
 }
 
 export default function AdminDataStatus() {
+  const queryClient = useQueryClient();
+  const [clearing, setClearing] = useState(false);
+  const [cleared, setCleared] = useState(false);
+
   const { data: modes = [], isLoading: modesLoading } = useQuery({
     queryKey: ["admin-modes"],
     queryFn: () => base44.entities.Mode.list(),
@@ -54,6 +70,30 @@ export default function AdminDataStatus() {
 
   const isLoading = modesLoading || stepsLoading || termsLoading;
 
+  const handleClearReferenceData = async () => {
+    setClearing(true);
+    setCleared(false);
+
+    // Delete all records from reference tables
+    const allModes = await base44.entities.Mode.list("-created_date", 500);
+    const allSteps = await base44.entities.ModeStep.list("-created_date", 500);
+    const allTerms = await base44.entities.Term.list("-created_date", 500);
+
+    await Promise.all([
+      ...allModes.map((r) => base44.entities.Mode.delete(r.id)),
+      ...allSteps.map((r) => base44.entities.ModeStep.delete(r.id)),
+      ...allTerms.map((r) => base44.entities.Term.delete(r.id)),
+    ]);
+
+    await queryClient.invalidateQueries({ queryKey: ["admin-modes"] });
+    await queryClient.invalidateQueries({ queryKey: ["admin-steps"] });
+    await queryClient.invalidateQueries({ queryKey: ["admin-terms"] });
+    await queryClient.invalidateQueries({ queryKey: ["modes-active"] });
+
+    setClearing(false);
+    setCleared(true);
+  };
+
   // Find rows with missing required fields
   const invalidSteps = steps.filter(
     (s) => !s.step_key || !s.mode_id || !s.step_number || !s.question
@@ -61,13 +101,56 @@ export default function AdminDataStatus() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
-      <div className="flex items-center gap-3 mb-2">
-        <Database className="w-6 h-6 text-primary" />
-        <h1 className="font-serif text-3xl font-semibold">Статус данных</h1>
+      <div className="flex items-start justify-between mb-2 gap-4">
+        <div className="flex items-center gap-3">
+          <Database className="w-6 h-6 text-primary" />
+          <h1 className="font-serif text-3xl font-semibold">Статус данных</h1>
+        </div>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm" disabled={clearing}>
+              {clearing ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4 mr-2" />
+              )}
+              Очистить справочники
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Очистить справочные таблицы?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Будут удалены все записи из <strong>MODES</strong>, <strong>MODE_STEPS</strong> и <strong>TERMS</strong>.<br /><br />
+                Сессии, сообщения, пользователи и память — не затрагиваются.<br /><br />
+                После очистки загрузите файлы заново через страницу «Импорт данных».
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Отмена</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleClearReferenceData}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                Да, удалить
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
       <p className="text-muted-foreground mb-8 text-sm">
         Состояние базы данных, необходимой для работы чат-бота
       </p>
+
+      {cleared && (
+        <div className="flex items-start gap-3 p-4 rounded-xl border border-green-200 bg-green-50 mb-6">
+          <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-green-800">
+            Справочные таблицы очищены. Загрузите файлы заново через страницу «Импорт данных»: <strong>modes.csv</strong>, <strong>mode_steps.csv</strong> и <strong>terms.csv</strong>.
+          </p>
+        </div>
+      )}
 
       {/* Counts */}
       <div className="grid grid-cols-3 gap-4 mb-8">
