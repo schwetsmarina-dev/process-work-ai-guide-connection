@@ -132,24 +132,68 @@ const SYSTEM_PROMPT = `Ты — процесс-ориентированный ф
 Тихая уверенность. Тепло без слащавости. Профессионализм без дистанции.
 Как мудрый, чуткий человек, который видит тебя — и ведёт вперёд, не кружит на месте.`;
 
-// ─── Layer detection ─────────────────────────────────────────────────────────
-// Maps layer names to keyword signals found in user messages
+// ─── Layer detection & forced progression ────────────────────────────────────
+
+// Keyword signals per layer (checked against all user messages)
 const LAYER_SIGNALS = {
-  // BODY / universal
-  localization:  ["в груди", "в животе", "в голове", "в плечах", "в спине", "в горле", "в ногах", "в руках", "в шее", "где-то в", "чувствую в"],
-  emotion:       ["радость", "грусть", "тревог", "страх", "злость", "раздражение", "спокойствие", "апатия", "интерес", "усталость", "тепло", "холод", "пустот", "радост"],
-  quality:       ["тяжест", "сжати", "давлени", "пульсац", "вибрац", "тепло", "холод", "твёрд", "мягк", "острое", "тупое", "ноющее"],
-  movement:      ["хочет двигаться", "хочет выйти", "тянет", "толкает", "сжимается", "расширяется", "поднимается", "опускается", "вырваться", "убежать", "остаться", "двигаться"],
-  image:         ["образ", "похоже на", "как будто", "напоминает", "представляю", "вижу", "картина", "существо", "животное", "цвет", "форма", "камень", "вода", "огонь", "свет"],
-  message:       ["говорит", "хочет сказать", "послание", "сообщение", "слышу", "слова", "голос", "шепчет", "кричит"],
-  life_connection: ["в жизни", "в работе", "в отношениях", "сейчас происходит", "похожая ситуация", "это про", "напоминает ситуацию"],
+  // Universal / BODY
+  localization:     ["в груди", "в животе", "в голове", "в плечах", "в спине", "в горле", "в ногах", "в руках", "в шее", "где-то в", "чувствую в"],
+  emotion:          ["радость", "грусть", "тревог", "страх", "злость", "раздражение", "спокойствие", "апатия", "интерес", "усталость", "пустот", "радост", "приятно", "неприятно"],
+  quality:          ["тяжест", "сжати", "давлени", "пульсац", "вибрац", "твёрд", "мягк", "острое", "тупое", "ноющее", "лёгкость"],
+  movement:         ["хочет двигаться", "хочет выйти", "тянет", "толкает", "сжимается", "расширяется", "поднимается", "опускается", "вырваться", "убежать", "остаться", "двигаться", "движение"],
+  image:            ["образ", "похоже на", "как будто", "напоминает", "представляю", "вижу", "картина", "существо", "животное", "цвет", "форма", "камень", "вода", "огонь", "свет"],
+  message:          ["говорит", "хочет сказать", "послание", "сообщение", "слышу слова", "голос", "шепчет", "кричит", "сказало мне"],
+  life_connection:  ["в жизни", "в работе", "в отношениях", "сейчас происходит", "похожая ситуация", "это про", "напоминает ситуацию", "узнаю себя"],
   // DREAM specific
-  atmosphere:    ["атмосфера", "настроение сна", "ощущение сна", "сон был", "снилось"],
-  dream_image:   ["видел во сне", "снился", "образ в сне", "персонаж", "место в сне"],
-  interaction:   ["подошёл", "дотронулся", "поговорил", "взаимодействовал", "приблизился"],
+  atmosphere:       ["атмосфера", "настроение сна", "ощущение сна", "сон был", "снилось", "тёмный сон", "яркий сон"],
+  dream_image:      ["видел во сне", "снился", "образ в сне", "персонаж", "место в сне", "фрукт", "фрукты", "дерево", "человек во сне"],
+  interaction:      ["подошёл", "дотронулся", "поговорил", "взаимодействовал", "приблизился", "попробовал", "пробую", "исследую", "беру", "взял", "трогаю", "касаюсь", "ем", "съел", "нюхаю"],
+  transformation:   ["изменилось", "изменился", "стало", "превратилось", "вкус", "неожиданно", "странно", "удивительно", "другим", "иначе", "трансформация", "внезапно"],
   // CONFLICT specific
-  part_a:        ["одна часть", "часть меня", "с одной стороны", "первая сторона"],
-  part_b:        ["другая часть", "другая сторона", "с другой стороны", "вторая часть"],
+  part_a:           ["одна часть", "часть меня", "с одной стороны", "первая сторона"],
+  part_b:           ["другая часть", "другая сторона", "с другой стороны", "вторая часть"],
+};
+
+// Strict forward chains per mode: layer → mandatory next layer
+const FORWARD_CHAIN = {
+  dream: {
+    atmosphere:      "dream_image",
+    dream_image:     "interaction",
+    interaction:     "transformation",
+    transformation:  "message",
+    message:         "life_connection",
+  },
+  body: {
+    localization:    "quality",
+    emotion:         "movement",
+    quality:         "movement",
+    movement:        "image",
+    image:           "message",
+    message:         "life_connection",
+  },
+  conflict: {
+    part_a:          "part_b",
+    part_b:          "message",
+    message:         "life_connection",
+  },
+  journaling: {
+    emotion:         "image",
+    image:           "message",
+    message:         "life_connection",
+  },
+};
+
+// Human-readable next-layer instructions injected into the prompt
+const NEXT_LAYER_INSTRUCTIONS = {
+  transformation:   "Следующий слой — ТРАНСФОРМАЦИЯ. Спроси: что происходит в момент взаимодействия? Есть ли изменение, неожиданность, или что-то меняется в образе?",
+  message:          "Следующий слой — ПОСЛАНИЕ. Спроси: если этот образ мог бы что-то сказать — что бы это было? Что он хочет тебе показать?",
+  life_connection:  "Следующий слой — СВЯЗЬ С ЖИЗНЬЮ. Спроси: где в твоей реальной жизни сейчас есть что-то похожее на этот процесс?",
+  dream_image:      "Следующий слой — КЛЮЧЕВОЙ ОБРАЗ. Спроси: какой образ из этого сна самый яркий или запоминающийся?",
+  interaction:      "Следующий слой — ВЗАИМОДЕЙСТВИЕ. Спроси: что происходит, когда ты приближаешься к этому образу или вступаешь в контакт с ним?",
+  movement:         "Следующий слой — ДВИЖЕНИЕ / ИМПУЛЬС. Спроси: что это ощущение хочет сделать? Куда оно движется?",
+  image:            "Следующий слой — ОБРАЗ. Спроси: если бы это стало образом или существом — на что бы это было похоже?",
+  quality:          "Следующий слой — КАЧЕСТВО. Спроси: каково это ощущение на ощупь — его текстура, температура, плотность?",
+  part_b:           "Следующий слой — ВТОРАЯ ЧАСТЬ конфликта. Спроси: а что говорит другая сторона — та, которая противостоит первой?",
 };
 
 function detectCoveredLayers(messages) {
@@ -157,16 +201,36 @@ function detectCoveredLayers(messages) {
     .filter((m) => m.role === "user")
     .map((m) => m.content.toLowerCase());
 
-  const covered = [];
+  const covered = new Set();
   for (const [layer, keywords] of Object.entries(LAYER_SIGNALS)) {
-    const found = userMessages.some((msg) => keywords.some((kw) => msg.includes(kw)));
-    if (found) covered.push(layer);
+    if (userMessages.some((msg) => keywords.some((kw) => msg.includes(kw)))) {
+      covered.add(layer);
+    }
   }
   return covered;
 }
 
+// Returns the forced next layer based on the highest covered layer in the chain
+function getForcedNextLayer(modeId, coveredLayers) {
+  const modeKey = modeId?.toLowerCase().replace(/[^a-z]/g, "") || "";
+  // Try to match: dream, body, conflict, journaling
+  const chainKey = Object.keys(FORWARD_CHAIN).find((k) => modeKey.includes(k)) || null;
+  if (!chainKey) return null;
+
+  const chain = FORWARD_CHAIN[chainKey];
+  // Walk the chain: find the deepest covered layer that has a next step
+  let forcedNext = null;
+  for (const [layer, next] of Object.entries(chain)) {
+    if (coveredLayers.has(layer)) {
+      forcedNext = next; // keep updating — last (deepest) covered layer wins
+    }
+  }
+  // Don't force a layer that's already covered
+  if (forcedNext && coveredLayers.has(forcedNext)) return null;
+  return forcedNext;
+}
+
 function detectLoopInLastExchanges(messages) {
-  // Check last 4 assistant questions for semantic similarity (simple keyword overlap)
   const assistantMsgs = messages
     .filter((m) => m.role === "assistant")
     .slice(-4)
@@ -174,7 +238,6 @@ function detectLoopInLastExchanges(messages) {
 
   if (assistantMsgs.length < 3) return false;
 
-  // Count how many of the last msgs share >3 words
   const wordSets = assistantMsgs.map((m) => new Set(m.split(/\s+/).filter((w) => w.length > 4)));
   let overlapCount = 0;
   for (let i = 1; i < wordSets.length; i++) {
@@ -191,16 +254,21 @@ export async function getAIResponse(session, step, messages, userMessage) {
     .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
     .join("\n");
 
-  // Detect covered layers and loop state
+  // Detect covered layers, forced next step, and loop state
   const coveredLayers = detectCoveredLayers(messages);
+  const forcedNext = getForcedNextLayer(session.mode_id || session.mode, coveredLayers);
   const isLooping = detectLoopInLastExchanges(messages);
 
-  const layerStatus = coveredLayers.length > 0
-    ? `\n\n━━━ УЖЕ ПРОЙДЕННЫЕ СЛОИ (НЕ возвращайся к ним) ━━━\n${coveredLayers.map((l) => `✓ ${l}`).join("\n")}\n→ Следующий вопрос должен касаться ДРУГОГО слоя.`
+  const layerStatus = coveredLayers.size > 0
+    ? `\n\n━━━ УЖЕ ПРОЙДЕННЫЕ СЛОИ (НЕ возвращайся к ним) ━━━\n${[...coveredLayers].map((l) => `✓ ${l}`).join("\n")}`
+    : "";
+
+  const forcedInstruction = forcedNext && NEXT_LAYER_INSTRUCTIONS[forcedNext]
+    ? `\n\n🔴 ОБЯЗАТЕЛЬНЫЙ СЛЕДУЮЩИЙ ШАГ: ${NEXT_LAYER_INSTRUCTIONS[forcedNext]}\nНЕ задавай вопросы об уже пройденных слоях. Только этот шаг.`
     : "";
 
   const loopWarning = isLooping
-    ? `\n\n⚠️ ОБНАРУЖЕНА ПЕТЛЯ: последние несколько ответов слишком похожи. НЕМЕДЛЕННО переходи к следующему слою. Используй: «Похоже, мы хорошо изучили этот уровень. Давай двинемся глубже.»`
+    ? `\n\n⚠️ ПЕТЛЯ ОБНАРУЖЕНА: немедленно переходи к следующему слою. Скажи: «Похоже, мы хорошо изучили этот уровень. Давай двинемся глубже.»`
     : "";
 
   // Related terms
@@ -223,7 +291,7 @@ ${step.facilitator_hint ? `Подсказка: ${step.facilitator_hint}` : ""}`
     ? `\n\nВозможный переход: ${step.possible_mode_shift}. Если это уместно — предложи пользователю: включи в конец ответа фразу «[SHIFT_SUGGEST:${step.pending_mode || ""}]» чтобы система показала кнопки выбора. Делай это только если смена режима явно уместна.`
     : "";
 
-  const prompt = `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${loopWarning}
+  const prompt = `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${forcedInstruction}${loopWarning}
 
 Режим: ${session.mode_id || session.mode}
 
