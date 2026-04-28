@@ -54,29 +54,32 @@ export const AuthProvider = ({ children }) => {
         if (appError.status === 403 && appError.data?.extra_data?.reason) {
           const reason = appError.data.extra_data.reason;
           if (reason === 'auth_required') {
-            setAuthError({
-              type: 'auth_required',
-              message: 'Authentication required'
-            });
+            // Not logged in — let route guards handle redirect to login
+            setIsLoadingPublicSettings(false);
+            setIsLoadingAuth(false);
+            setAuthChecked(true);
           } else if (reason === 'user_not_registered') {
-            setAuthError({
-              type: 'user_not_registered',
-              message: 'User not registered for this app'
-            });
+            // Logged in but no app record yet — try to get user and let RequireAuth create AppUser
+            if (appParams.token) {
+              await checkUserAuth();
+            } else {
+              setIsLoadingPublicSettings(false);
+              setIsLoadingAuth(false);
+              setAuthChecked(true);
+            }
           } else {
-            setAuthError({
-              type: reason,
-              message: appError.message
-            });
+            setAuthError({ type: reason, message: appError.message });
+            setIsLoadingPublicSettings(false);
+            setIsLoadingAuth(false);
           }
         } else {
           setAuthError({
             type: 'unknown',
             message: appError.message || 'Failed to load app'
           });
+          setIsLoadingPublicSettings(false);
+          setIsLoadingAuth(false);
         }
-        setIsLoadingPublicSettings(false);
-        setIsLoadingAuth(false);
       }
     } catch (error) {
       console.error('Unexpected error:', error);
