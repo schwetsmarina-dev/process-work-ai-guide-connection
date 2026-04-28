@@ -132,12 +132,76 @@ const SYSTEM_PROMPT = `Ты — процесс-ориентированный ф
 Тихая уверенность. Тепло без слащавости. Профессионализм без дистанции.
 Как мудрый, чуткий человек, который видит тебя — и ведёт вперёд, не кружит на месте.`;
 
+// ─── Layer detection ─────────────────────────────────────────────────────────
+// Maps layer names to keyword signals found in user messages
+const LAYER_SIGNALS = {
+  // BODY / universal
+  localization:  ["в груди", "в животе", "в голове", "в плечах", "в спине", "в горле", "в ногах", "в руках", "в шее", "где-то в", "чувствую в"],
+  emotion:       ["радость", "грусть", "тревог", "страх", "злость", "раздражение", "спокойствие", "апатия", "интерес", "усталость", "тепло", "холод", "пустот", "радост"],
+  quality:       ["тяжест", "сжати", "давлени", "пульсац", "вибрац", "тепло", "холод", "твёрд", "мягк", "острое", "тупое", "ноющее"],
+  movement:      ["хочет двигаться", "хочет выйти", "тянет", "толкает", "сжимается", "расширяется", "поднимается", "опускается", "вырваться", "убежать", "остаться", "двигаться"],
+  image:         ["образ", "похоже на", "как будто", "напоминает", "представляю", "вижу", "картина", "существо", "животное", "цвет", "форма", "камень", "вода", "огонь", "свет"],
+  message:       ["говорит", "хочет сказать", "послание", "сообщение", "слышу", "слова", "голос", "шепчет", "кричит"],
+  life_connection: ["в жизни", "в работе", "в отношениях", "сейчас происходит", "похожая ситуация", "это про", "напоминает ситуацию"],
+  // DREAM specific
+  atmosphere:    ["атмосфера", "настроение сна", "ощущение сна", "сон был", "снилось"],
+  dream_image:   ["видел во сне", "снился", "образ в сне", "персонаж", "место в сне"],
+  interaction:   ["подошёл", "дотронулся", "поговорил", "взаимодействовал", "приблизился"],
+  // CONFLICT specific
+  part_a:        ["одна часть", "часть меня", "с одной стороны", "первая сторона"],
+  part_b:        ["другая часть", "другая сторона", "с другой стороны", "вторая часть"],
+};
+
+function detectCoveredLayers(messages) {
+  const userMessages = messages
+    .filter((m) => m.role === "user")
+    .map((m) => m.content.toLowerCase());
+
+  const covered = [];
+  for (const [layer, keywords] of Object.entries(LAYER_SIGNALS)) {
+    const found = userMessages.some((msg) => keywords.some((kw) => msg.includes(kw)));
+    if (found) covered.push(layer);
+  }
+  return covered;
+}
+
+function detectLoopInLastExchanges(messages) {
+  // Check last 4 assistant questions for semantic similarity (simple keyword overlap)
+  const assistantMsgs = messages
+    .filter((m) => m.role === "assistant")
+    .slice(-4)
+    .map((m) => m.content.toLowerCase());
+
+  if (assistantMsgs.length < 3) return false;
+
+  // Count how many of the last msgs share >3 words
+  const wordSets = assistantMsgs.map((m) => new Set(m.split(/\s+/).filter((w) => w.length > 4)));
+  let overlapCount = 0;
+  for (let i = 1; i < wordSets.length; i++) {
+    const intersection = [...wordSets[i]].filter((w) => wordSets[i - 1].has(w));
+    if (intersection.length >= 3) overlapCount++;
+  }
+  return overlapCount >= 2;
+}
+
 export async function getAIResponse(session, step, messages, userMessage) {
   // Last 8 messages for context
   const recent = messages.slice(-8);
   const history = recent
     .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
     .join("\n");
+
+  // Detect covered layers and loop state
+  const coveredLayers = detectCoveredLayers(messages);
+  const isLooping = detectLoopInLastExchanges(messages);
+
+  const layerStatus = coveredLayers.length > 0
+    ? `\n\n━━━ УЖЕ ПРОЙДЕННЫЕ СЛОИ (НЕ возвращайся к ним) ━━━\n${coveredLayers.map((l) => `✓ ${l}`).join("\n")}\n→ Следующий вопрос должен касаться ДРУГОГО слоя.`
+    : "";
+
+  const loopWarning = isLooping
+    ? `\n\n⚠️ ОБНАРУЖЕНА ПЕТЛЯ: последние несколько ответов слишком похожи. НЕМЕДЛЕННО переходи к следующему слою. Используй: «Похоже, мы хорошо изучили этот уровень. Давай двинемся глубже.»`
+    : "";
 
   // Related terms
   const terms = await fetchRelatedTerms(step?.related_term_ids);
@@ -159,7 +223,7 @@ ${step.facilitator_hint ? `Подсказка: ${step.facilitator_hint}` : ""}`
     ? `\n\nВозможный переход: ${step.possible_mode_shift}. Если это уместно — предложи пользователю: включи в конец ответа фразу «[SHIFT_SUGGEST:${step.pending_mode || ""}]» чтобы система показала кнопки выбора. Делай это только если смена режима явно уместна.`
     : "";
 
-  const prompt = `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}
+  const prompt = `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${loopWarning}
 
 Режим: ${session.mode_id || session.mode}
 
@@ -170,10 +234,10 @@ ${history}
 ${userMessage}
 
 ━━━ ТВОЯ ЗАДАЧА ━━━
-1. Определи, какие слои уже закрыты в истории выше.
-2. Найди следующий слой.
-3. Ответь: 1 предложение-отражение + 1 вопрос к следующему слою.
-Строго 2–3 предложения. Никаких повторов. Никаких шаблонных вступлений. Движение вперёд.`;
+1. Сверься со списком УЖЕ ПРОЙДЕННЫХ СЛОЁВ выше.
+2. Найди первый слой, которого нет в списке.
+3. Ответь: 1 предложение-отражение + 1 вопрос к этому новому слою.
+Строго 2–3 предложения. Никаких повторов. Движение вперёд.`;
 
   const response = await base44.integrations.Core.InvokeLLM({ prompt });
   return response;
