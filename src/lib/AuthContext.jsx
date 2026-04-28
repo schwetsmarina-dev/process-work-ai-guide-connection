@@ -59,11 +59,12 @@ export const AuthProvider = ({ children }) => {
             setIsLoadingAuth(false);
             setAuthChecked(true);
           } else if (reason === 'user_not_registered') {
-            // Logged in but no app record yet — try to get user and let RequireAuth create AppUser
+            // Logged in but no AppUser record yet — proceed as authenticated
+            // RequireAuth will auto-create the AppUser
+            setIsLoadingPublicSettings(false);
             if (appParams.token) {
               await checkUserAuth();
             } else {
-              setIsLoadingPublicSettings(false);
               setIsLoadingAuth(false);
               setAuthChecked(true);
             }
@@ -94,7 +95,6 @@ export const AuthProvider = ({ children }) => {
 
   const checkUserAuth = async () => {
     try {
-      // Now check if the user is authenticated
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
       setUser(currentUser);
@@ -103,16 +103,22 @@ export const AuthProvider = ({ children }) => {
       setAuthChecked(true);
     } catch (error) {
       console.error('User auth check failed:', error);
-      setIsLoadingAuth(false);
-      setIsAuthenticated(false);
-      setAuthChecked(true);
-      
-      // If user auth fails, it might be an expired token
-      if (error.status === 401 || error.status === 403) {
-        setAuthError({
-          type: 'auth_required',
-          message: 'Authentication required'
-        });
+      // 403 user_not_registered means they ARE logged in but not yet in AppUser table.
+      // Treat as authenticated — RequireAuth will create the AppUser record.
+      if (error.status === 403) {
+        // Try to extract user info from error payload if available
+        const userData = error.data?.user || null;
+        setUser(userData);
+        setIsAuthenticated(true);
+        setIsLoadingAuth(false);
+        setAuthChecked(true);
+      } else {
+        setIsLoadingAuth(false);
+        setIsAuthenticated(false);
+        setAuthChecked(true);
+        if (error.status === 401) {
+          setAuthError({ type: 'auth_required', message: 'Authentication required' });
+        }
       }
     }
   };

@@ -31,10 +31,10 @@ const AuthenticatedApp = () => {
   }
 
   // Handle authentication errors
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    }
+  // user_not_registered is handled gracefully by RequireAuth (auto-creates AppUser)
+  // Only show hard errors for truly unrecoverable situations
+  if (authError && authError.type !== 'user_not_registered' && authError.type !== 'auth_required') {
+    return <UserNotRegisteredError />;
   }
 
   // Render the main app
