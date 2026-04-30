@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { MODE_LABELS, MODE_ICONS } from "@/lib/modeSteps";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import SessionInsightSuggestions from "@/components/session/SessionInsightSuggestions";
+import { extractInsightsFromSession } from "@/lib/insightAI";
 
 const iconMap = { Heart, Moon, GitBranch, PenLine };
 
@@ -16,6 +18,7 @@ export default function SessionSummary() {
   const navigate = useNavigate();
   const pathParts = window.location.pathname.split("/");
   const sessionId = pathParts[2];
+  const [insightSuggestions, setInsightSuggestions] = useState([]);
 
   const { data: session, isLoading } = useQuery({
     queryKey: ["session", sessionId],
@@ -25,6 +28,20 @@ export default function SessionSummary() {
     },
     enabled: !!sessionId,
   });
+
+  const { data: messages = [] } = useQuery({
+    queryKey: ["messages", sessionId],
+    queryFn: () => base44.entities.Message.filter({ session_id: sessionId }, "created_date"),
+    enabled: !!sessionId,
+  });
+
+  useEffect(() => {
+    if (session && messages.length > 0 && insightSuggestions.length === 0) {
+      extractInsightsFromSession(session, messages)
+        .then(setInsightSuggestions)
+        .catch(() => {});
+    }
+  }, [session, messages]);
 
   if (isLoading) {
     return (
@@ -159,7 +176,22 @@ export default function SessionSummary() {
         )}
       </div>
 
-      <div className="mt-10 flex justify-center">
+      {/* Insight suggestions */}
+      {insightSuggestions.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="mt-6"
+        >
+          <SessionInsightSuggestions suggestions={insightSuggestions} session={session} />
+        </motion.div>
+      )}
+
+      <div className="mt-10 flex flex-col sm:flex-row justify-center gap-3">
+        <Button variant="outline" onClick={() => navigate("/insights-library")} className="rounded-xl">
+          Библиотека инсайтов
+        </Button>
         <Button onClick={() => navigate("/dashboard")} size="lg" className="rounded-xl">
           Новая сессия
         </Button>

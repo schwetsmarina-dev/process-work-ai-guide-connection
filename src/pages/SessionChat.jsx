@@ -304,7 +304,12 @@ export default function SessionChat() {
           <div className="flex-1 overflow-y-auto px-4 py-6">
             <div className="max-w-3xl mx-auto space-y-4">
               {messages.map((msg) => (
-                <ChatMessage key={msg.id} message={msg} />
+                <ChatMessage
+                  key={msg.id}
+                  message={msg}
+                  sessionId={sessionId}
+                  sourceMode={session?.mode_id || session?.mode}
+                />
               ))}
 
               {/* AI loading indicator */}

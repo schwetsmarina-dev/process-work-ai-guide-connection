@@ -1,0 +1,62 @@
+{
+  "name": "Insight",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Reference to AppUser"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Reference to Session, optional"
+    },
+    "source_mode": {
+      "type": "string"
+    },
+    "source_step": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "insight_text": {
+      "type": "string"
+    },
+    "state_keywords": {
+      "type": "string"
+    },
+    "process_layer": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "string"
+    },
+    "importance": {
+      "type": "number",
+      "default": 2
+    },
+    "personal_note": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "is_favorite": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_archived": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "title",
+    "insight_text"
+  ]
+}

@@ -12,6 +12,7 @@ import {
   Sparkles,
   Upload,
   ShieldAlert,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -19,7 +20,8 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 const navItems = [
   { path: "/dashboard", label: "Главная", icon: LayoutDashboard },
   { path: "/history", label: "История", icon: History },
-  { path: "/insights", label: "Инсайты", icon: BarChart3 },
+  { path: "/insights-library", label: "Библиотека инсайтов", icon: BookOpen },
+  { path: "/insights", label: "Аналитика", icon: BarChart3 },
   { path: "/settings", label: "Настройки", icon: Settings },
   { path: "/admin/import", label: "Импорт данных", icon: Upload },
   { path: "/admin/status", label: "Статус данных", icon: ShieldAlert },
