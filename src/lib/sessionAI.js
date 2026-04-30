@@ -252,6 +252,8 @@ const LAYER_SIGNALS = {
   // CONFLICT specific
   part_a:           ["одна часть", "часть меня", "с одной стороны", "первая сторона"],
   part_b:           ["другая часть", "другая сторона", "с другой стороны", "вторая часть"],
+  // INTEGRATION signals — user expressing inner shift/new state
+  integration:      ["я меняюсь", "меняется", "чувствую себя целостн", "чувствую целостн", "я вижу иначе", "стала иначе", "что-то изменилось во мне", "внутри что-то изменилось", "я чувствую зрелость", "чувствую безопасность", "я стала", "я становлюсь", "ощущение целостност", "состояние целостност", "состояние зрелост", "состояние безопасност", "я уже другая", "что-то открылось", "как будто открывается", "появилась ясность", "стало яснее", "я вижу по-другому"],
 };
 
 // Strict forward chains per mode: layer → mandatory next layer
@@ -319,6 +321,15 @@ const NEXT_LAYER_INSTRUCTIONS = {
     "Следующий слой — ВТОРАЯ ЧАСТЬ конфликта. Спроси: а что говорит другая сторона — та, которая противостоит первой?",
 };
 
+// Detects if the user has entered the integration stage (inner shift expressed)
+function detectIntegrationStage(messages) {
+  const userMessages = messages
+    .filter((m) => m.role === "user")
+    .map((m) => m.content.toLowerCase());
+  const signals = LAYER_SIGNALS.integration;
+  return userMessages.some((msg) => signals.some((kw) => msg.includes(kw)));
+}
+
 function detectCoveredLayers(messages) {
   const userMessages = messages
     .filter((m) => m.role === "user")
@@ -377,16 +388,31 @@ export async function getAIResponse(session, step, messages, userMessage) {
     .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
     .join("\n");
 
-  // Detect covered layers, forced next step, and loop state
+  // Detect covered layers, forced next step, loop state, and integration stage
   const coveredLayers = detectCoveredLayers(messages);
-  const forcedNext = getForcedNextLayer(session.mode_id || session.mode, coveredLayers);
+  const isIntegrationStage = detectIntegrationStage(messages);
+  const forcedNext = isIntegrationStage ? null : getForcedNextLayer(session.mode_id || session.mode, coveredLayers);
   const isLooping = detectLoopInLastExchanges(messages);
 
   const layerStatus = coveredLayers.size > 0
     ? `\n\n━━━ УЖЕ ПРОЙДЕННЫЕ СЛОИ (НЕ возвращайся к ним) ━━━\n${[...coveredLayers].map((l) => `✓ ${l}`).join("\n")}`
     : "";
 
-  const forcedInstruction = forcedNext && NEXT_LAYER_INSTRUCTIONS[forcedNext]
+  // INTEGRATION LOCK: hard override when user has expressed inner shift
+  const integrationLock = isIntegrationStage
+    ? `\n\n🔒 БЛОКИРОВКА — СТАДИЯ ИНТЕГРАЦИИ АКТИВНА\n` +
+      `Пользователь уже выразил внутреннее изменение или сдвиг состояния.\n` +
+      `ЗАПРЕЩЕНО: возвращаться к образу, метафоре, телу, взаимодействию, сну.\n` +
+      `ЗАПРЕЩЕНО: спрашивать «каким бы это стало образом», «что происходит в теле», «что ты видишь».\n` +
+      `ОБЯЗАТЕЛЬНО: оставайся на уровне интеграции. Допустимы только:\n` +
+      `1. Признание сдвига: «Похоже, здесь уже происходит внутреннее изменение.»\n` +
+      `2. Вопрос о реальной жизни: «Насколько это состояние уже есть в твоей жизни, а где его пока не хватает?»\n` +
+      `3. Вопрос о будущем: «Как могла бы измениться твоя жизнь, если бы ты жила из этого состояния?»\n` +
+      `4. Завершение: отражение + инсайт + «Ты хочешь зафиксировать этот инсайт?»\n` +
+      `Используй конкретные слова пользователя (целостность, зрелость, безопасность и т.д.).`
+    : "";
+
+  const forcedInstruction = !isIntegrationStage && forcedNext && NEXT_LAYER_INSTRUCTIONS[forcedNext]
     ? `\n\n🔴 ОБЯЗАТЕЛЬНЫЙ СЛЕДУЮЩИЙ ШАГ: ${NEXT_LAYER_INSTRUCTIONS[forcedNext]}\n` +
       `НЕ задавай вопросы об уже пройденных слоях. Только этот шаг.\n` +
       (forcedNext === "transformation"
@@ -418,7 +444,7 @@ ${step.facilitator_hint ? `Подсказка: ${step.facilitator_hint}` : ""}`
     ? `\n\nВозможный переход: ${step.possible_mode_shift}. Если это уместно — предложи пользователю: включи в конец ответа фразу «[SHIFT_SUGGEST:${step.pending_mode || ""}]» чтобы система показала кнопки выбора. Делай это только если смена режима явно уместна.`
     : "";
 
-  const prompt = `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${forcedInstruction}${loopWarning}
+  const prompt = `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${integrationLock}${forcedInstruction}${loopWarning}
 
 Режим: ${session.mode_id || session.mode}
 
