@@ -381,6 +381,137 @@ function detectLoopInLastExchanges(messages) {
   return overlapCount >= 2;
 }
 
+// ─── Response validation ──────────────────────────────────────────────────────
+
+const FORBIDDEN_PHRASES = [
+  "этот образ", "этот элемент", "данный объект",
+  "это означает", "это указывает на", "это говорит о том", "это связано с",
+  "давайте", "давайте начнём",
+  "как образ", "каким образом это могло бы проявиться", "какой метафорой",
+];
+
+const TRANSFORMATION_VALID_KEYWORDS = [
+  "вкус", "запах", "ощущение", "касани", "прикосновени", "соприкосновени",
+  "что происходит", "что меняется", "что изменяется", "приятн", "неприятн", "нейтральн",
+  "неожиданн", "удивительн", "пробуешь", "попробуешь", "пробова",
+];
+
+const TRANSFORMATION_INVALID_PHRASES = [
+  "что это значит", "что он хочет сказать", "что это показывает",
+  "какое послание", "где это в жизни", "каким образом это связано",
+];
+
+const INTEGRATION_INVALID_PHRASES = [
+  "каким образом это стало бы образом", "если бы это было метафорой",
+  "что этот образ хочет сказать", "какое движение появляется", "где в теле",
+  "каким образом это могло бы проявиться", "какой метафорой", "образом",
+  "метафор", "символ", "телесн", "движени",
+];
+
+const SAFE_FALLBACKS = {
+  transformation: "Давай останемся именно в моменте контакта. Что происходит, когда ты пробуешь это — какой вкус, ощущение или изменение появляется?",
+  integration: "Похоже, здесь уже открылось важное состояние. Насколько оно есть в твоей жизни сейчас, а где его пока не хватает?",
+  body: "Давай останемся рядом с самим ощущением. Что в нём сейчас самое заметное?",
+  conflict: "Давай удержим обе стороны. Что становится яснее, если дать место каждой из них?",
+  journaling: "Давай возьмём то, что уже проявилось, и свяжем это с жизнью. Где это сейчас особенно откликается?",
+};
+
+function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage }) {
+  const lower = responseText.toLowerCase();
+
+  // 1. Global forbidden phrases check
+  for (const phrase of FORBIDDEN_PHRASES) {
+    if (lower.includes(phrase)) {
+      return {
+        isValid: false,
+        reason: `Forbidden phrase detected: "${phrase}"`,
+        correctedInstruction: "Remove interpretation and forbidden phrases. Use the user's concrete words. Do not say 'этот образ', do not interpret, do not use 'Давайте'.",
+      };
+    }
+  }
+
+  // 2. Anti-interpretation
+  const interpretationPhrases = ["это означает", "это указывает на", "это говорит о том", "это связано с"];
+  for (const phrase of interpretationPhrases) {
+    if (lower.includes(phrase)) {
+      return {
+        isValid: false,
+        reason: `Interpretation phrase: "${phrase}"`,
+        correctedInstruction: "Remove interpretation. Use neutral reflection only.",
+      };
+    }
+  }
+
+  // 3. Integration lock validation
+  if (integrationLock) {
+    for (const phrase of INTEGRATION_INVALID_PHRASES) {
+      if (lower.includes(phrase)) {
+        return {
+          isValid: false,
+          reason: `Integration lock violated: returned to earlier layer ("${phrase}")`,
+          correctedInstruction: "Integration lock is active. Do not return to image, body, metaphor, symbol or interaction. Ask only about real-life integration, future shift or closure.",
+        };
+      }
+    }
+  }
+
+  // 4. Dream transformation layer validation
+  const modeKey = (currentMode || "").toLowerCase();
+  if (modeKey.includes("dream") && forcedNextLayer === "transformation") {
+    const hasValidContent = TRANSFORMATION_VALID_KEYWORDS.some((kw) => lower.includes(kw));
+    const hasInvalidContent = TRANSFORMATION_INVALID_PHRASES.some((phrase) => lower.includes(phrase));
+    if (hasInvalidContent || !hasValidContent) {
+      return {
+        isValid: false,
+        reason: `Transformation layer violated: jumped to meaning/message too early`,
+        correctedInstruction: "Stay strictly in transformation layer. Ask only about sensory experience during contact. Do not ask about meaning, message, life connection, image or metaphor.",
+      };
+    }
+  }
+
+  // 5. Anti-loop: compare with last 3 assistant messages
+  const lastAssistant = conversationHistory
+    .filter((m) => m.role === "assistant")
+    .slice(-3)
+    .map((m) => m.content.toLowerCase());
+
+  const responseWords = new Set(lower.split(/\s+/).filter((w) => w.length > 5));
+  for (const prev of lastAssistant) {
+    const prevWords = new Set(prev.split(/\s+/).filter((w) => w.length > 5));
+    const overlap = [...responseWords].filter((w) => prevWords.has(w));
+    if (overlap.length >= 5) {
+      return {
+        isValid: false,
+        reason: "Response too similar to a previous assistant message (loop detected)",
+        correctedInstruction: "The previous question was already asked. Move to the next process layer. Do not repeat.",
+      };
+    }
+  }
+
+  // 6. Concrete noun check: if user used concrete nouns, response should not replace them with "этот образ"
+  const concreteNouns = ["муж", "жена", "фрукт", "фрукты", "дерево", "камень", "вода", "огонь", "ребёнок", "мать", "отец"];
+  const userMentioned = concreteNouns.filter((n) => lastUserMessage.toLowerCase().includes(n));
+  if (userMentioned.length > 0 && lower.includes("этот образ")) {
+    return {
+      isValid: false,
+      reason: `User used concrete noun "${userMentioned[0]}" but response uses generic "этот образ"`,
+      correctedInstruction: `Use the user's concrete words. Do not say 'этот образ'. Use: ${userMentioned.join(", ")}.`,
+    };
+  }
+
+  return { isValid: true, reason: "", correctedInstruction: "" };
+}
+
+function getSafeFallback(currentMode, forcedNextLayer, integrationLock) {
+  if (integrationLock) return SAFE_FALLBACKS.integration;
+  if (forcedNextLayer === "transformation") return SAFE_FALLBACKS.transformation;
+  const modeKey = (currentMode || "").toLowerCase();
+  if (modeKey.includes("body")) return SAFE_FALLBACKS.body;
+  if (modeKey.includes("conflict")) return SAFE_FALLBACKS.conflict;
+  if (modeKey.includes("journal")) return SAFE_FALLBACKS.journaling;
+  return SAFE_FALLBACKS.integration;
+}
+
 export async function getAIResponse(session, step, messages, userMessage) {
   // Last 8 messages for context
   const recent = messages.slice(-8);
@@ -444,9 +575,12 @@ ${step.facilitator_hint ? `Подсказка: ${step.facilitator_hint}` : ""}`
     ? `\n\nВозможный переход: ${step.possible_mode_shift}. Если это уместно — предложи пользователю: включи в конец ответа фразу «[SHIFT_SUGGEST:${step.pending_mode || ""}]» чтобы система показала кнопки выбора. Делай это только если смена режима явно уместна.`
     : "";
 
-  const prompt = `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${integrationLock}${forcedInstruction}${loopWarning}
+  const currentMode = session.mode_id || session.mode;
 
-Режим: ${session.mode_id || session.mode}
+  const buildPrompt = (extraInstruction = "") =>
+    `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${integrationLock}${forcedInstruction}${loopWarning}${extraInstruction}
+
+Режим: ${currentMode}
 
 ━━━ ИСТОРИЯ РАЗГОВОРА (все уже отвеченные слои — НЕ повторяй их) ━━━
 ${history}
@@ -461,8 +595,47 @@ ${userMessage}
 4. Задай 1 точный вопрос к следующему слою, строя его на том, что уже сказано.
 Строго 2–3 предложения. Никаких повторов. Никаких шаблонов. Движение вперёд.`;
 
-  const response = await base44.integrations.Core.InvokeLLM({ prompt });
-  return response;
+  const validationParams = {
+    currentMode,
+    forcedNextLayer: forcedNext,
+    integrationLock: isIntegrationStage,
+    conversationHistory: messages,
+    lastUserMessage: userMessage,
+  };
+
+  // ── Pass 1: initial generation ────────────────────────────────────────────
+  const firstResponse = await base44.integrations.Core.InvokeLLM({ prompt: buildPrompt() });
+  const firstValidation = validateAssistantResponse({ responseText: firstResponse, ...validationParams });
+
+  if (firstValidation.isValid) {
+    return firstResponse;
+  }
+
+  // ── Pass 1 failed: log and regenerate ─────────────────────────────────────
+  console.warn("[QF] Invalid response (pass 1):", {
+    response: firstResponse,
+    reason: firstValidation.reason,
+    correctedInstruction: firstValidation.correctedInstruction,
+  });
+
+  const retryInstruction = `\n\n🚨 ВАЖНО: предыдущий ответ был ОТКЛОНЁН. Причина: ${firstValidation.reason}. ${firstValidation.correctedInstruction}`;
+  const secondResponse = await base44.integrations.Core.InvokeLLM({ prompt: buildPrompt(retryInstruction) });
+  const secondValidation = validateAssistantResponse({ responseText: secondResponse, ...validationParams });
+
+  if (secondValidation.isValid) {
+    console.info("[QF] Regenerated response passed validation.");
+    return secondResponse;
+  }
+
+  // ── Pass 2 failed: use safe fallback ─────────────────────────────────────
+  console.warn("[QF] Invalid response (pass 2):", {
+    response: secondResponse,
+    reason: secondValidation.reason,
+  });
+
+  const fallback = getSafeFallback(currentMode, forcedNext, isIntegrationStage);
+  console.info("[QF] Using safe fallback:", fallback);
+  return fallback;
 }
 
 // ─── Session summary ─────────────────────────────────────────────────────────
