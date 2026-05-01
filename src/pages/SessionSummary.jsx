@@ -19,20 +19,34 @@ export default function SessionSummary() {
   const pathParts = window.location.pathname.split("/");
   const sessionId = pathParts[2];
   const [insightSuggestions, setInsightSuggestions] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [accessDenied, setAccessDenied] = useState(false);
+
+  useEffect(() => {
+    base44.auth.me().then((u) => {
+      console.log("CURRENT USER:", u?.id, u?.email);
+      setCurrentUser(u);
+    });
+  }, []);
 
   const { data: session, isLoading } = useQuery({
-    queryKey: ["session", sessionId],
+    queryKey: ["session", sessionId, currentUser?.email],
     queryFn: async () => {
       const sessions = await base44.entities.Session.filter({ id: sessionId });
-      return sessions[0];
+      const found = sessions[0];
+      if (!found || found.created_by !== currentUser.email) {
+        setAccessDenied(true);
+        return null;
+      }
+      return found;
     },
-    enabled: !!sessionId,
+    enabled: !!sessionId && !!currentUser?.email,
   });
 
   const { data: messages = [] } = useQuery({
-    queryKey: ["messages", sessionId],
-    queryFn: () => base44.entities.Message.filter({ session_id: sessionId }, "created_date"),
-    enabled: !!sessionId,
+    queryKey: ["messages", sessionId, currentUser?.email],
+    queryFn: () => base44.entities.Message.filter({ session_id: sessionId, created_by: currentUser.email }, "created_date"),
+    enabled: !!sessionId && !!currentUser?.email && !accessDenied,
   });
 
   useEffect(() => {
@@ -43,7 +57,7 @@ export default function SessionSummary() {
     }
   }, [session, messages]);
 
-  if (isLoading) {
+  if (!currentUser || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -51,7 +65,7 @@ export default function SessionSummary() {
     );
   }
 
-  if (!session) {
+  if (accessDenied || (!isLoading && currentUser && !session)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-muted-foreground">Сессия не найдена</p>

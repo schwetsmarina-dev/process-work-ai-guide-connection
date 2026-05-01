@@ -38,24 +38,41 @@ export default function SessionChat() {
   const [stepError, setStepError] = useState(false);
   const [shiftSuggestion, setShiftSuggestion] = useState(null); // { suggestedMode }
   const [totalSteps, setTotalSteps] = useState(0);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [accessDenied, setAccessDenied] = useState(false);
   const messagesEndRef = useRef(null);
   const initDone = useRef(false);
 
+  useEffect(() => {
+    base44.auth.me().then((u) => {
+      console.log("CURRENT USER:", u?.id, u?.email);
+      setCurrentUser(u);
+    });
+  }, []);
+
   // ── Session ──────────────────────────────────────────────────────────────
   const { data: session, isLoading: sessionLoading } = useQuery({
-    queryKey: ["session", sessionId],
+    queryKey: ["session", sessionId, currentUser?.email],
     queryFn: async () => {
       const rows = await base44.entities.Session.filter({ id: sessionId });
-      return rows[0];
+      const found = rows[0];
+      if (!found || found.created_by !== currentUser.email) {
+        setAccessDenied(true);
+        return null;
+      }
+      return found;
     },
-    enabled: !!sessionId,
+    enabled: !!sessionId && !!currentUser?.email,
   });
 
   // ── Messages ─────────────────────────────────────────────────────────────
   const { data: messages = [], isLoading: msgsLoading } = useQuery({
-    queryKey: ["messages", sessionId],
-    queryFn: () => base44.entities.Message.filter({ session_id: sessionId }, "created_date"),
-    enabled: !!sessionId,
+    queryKey: ["messages", sessionId, currentUser?.email],
+    queryFn: () => {
+      console.log("Loading messages for session:", sessionId, "user:", currentUser?.email);
+      return base44.entities.Message.filter({ session_id: sessionId, created_by: currentUser.email }, "created_date");
+    },
+    enabled: !!sessionId && !!currentUser?.email && !accessDenied,
   });
 
   // ── Total steps for progress bar ─────────────────────────────────────────
@@ -266,7 +283,7 @@ export default function SessionChat() {
   };
 
   // ── Loading ───────────────────────────────────────────────────────────────
-  if (sessionLoading || msgsLoading) {
+  if (!currentUser || sessionLoading || msgsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -274,7 +291,7 @@ export default function SessionChat() {
     );
   }
 
-  if (!session) {
+  if (accessDenied || (!sessionLoading && currentUser && !session)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-muted-foreground">Сессия не найдена</p>

@@ -53,7 +53,8 @@ ${conversation}`,
   return result?.insights || [];
 }
 
-export async function saveInsight({ sessionId, sourceMode, insight, userId }) {
+export async function saveInsight({ sessionId, sourceMode, insight }) {
+  const user = await base44.auth.me();
   return base44.entities.Insight.create({
     session_id: sessionId || null,
     source_mode: sourceMode || "",
@@ -71,6 +72,8 @@ export async function saveInsight({ sessionId, sourceMode, insight, userId }) {
 }
 
 export async function saveInsightFromMessage({ messageContent, sessionId, sourceMode }) {
+  const user = await base44.auth.me();
+  console.log("Saving insight for user:", user?.email);
   const words = messageContent.trim().split(/\s+/);
   const autoTitle = words.slice(0, 9).join(" ") + (words.length > 9 ? "…" : "");
   return base44.entities.Insight.create({
