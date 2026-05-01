@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -9,6 +9,14 @@ import ModeCardDB from "@/components/dashboard/ModeCardDB";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then((u) => {
+      console.log("CURRENT USER:", u?.id, u?.email);
+      setCurrentUser(u);
+    });
+  }, []);
 
   // Load active modes from DB
   const { data: modes = [], isLoading: modesLoading } = useQuery({
@@ -17,8 +25,9 @@ export default function Dashboard() {
   });
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
-    queryKey: ["sessions"],
-    queryFn: () => base44.entities.Session.list("-created_date", 10),
+    queryKey: ["sessions", currentUser?.email],
+    queryFn: () => base44.entities.Session.filter({ created_by: currentUser.email }, "-created_date", 10),
+    enabled: !!currentUser?.email,
   });
 
   const activeSession = sessions.find((s) => s.status === "active");

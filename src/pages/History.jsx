@@ -1,13 +1,20 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import RecentSessionCard from "@/components/dashboard/RecentSessionCard";
 
 export default function History() {
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser);
+  }, []);
+
   const { data: sessions = [], isLoading } = useQuery({
-    queryKey: ["sessions-all"],
-    queryFn: () => base44.entities.Session.list("-created_date", 50),
+    queryKey: ["sessions-all", currentUser?.email],
+    queryFn: () => base44.entities.Session.filter({ created_by: currentUser.email }, "-created_date", 50),
+    enabled: !!currentUser?.email,
   });
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Search, BookOpen, Star } from "lucide-react";
@@ -18,10 +18,16 @@ export default function InsightLibrary() {
   const [filterMode, setFilterMode] = useState(null);
   const [filterImportance, setFilterImportance] = useState(null);
   const [selectedInsight, setSelectedInsight] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser);
+  }, []);
 
   const { data: insights = [], isLoading } = useQuery({
-    queryKey: ["insights"],
-    queryFn: () => base44.entities.Insight.list("-created_date", 100),
+    queryKey: ["insights", currentUser?.email],
+    queryFn: () => base44.entities.Insight.filter({ created_by: currentUser.email }, "-created_date", 100),
+    enabled: !!currentUser?.email,
   });
 
   const visible = insights.filter((ins) => {

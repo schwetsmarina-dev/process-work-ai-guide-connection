@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { queryClientInstance } from "@/lib/query-client";
 
 const navItems = [
   { path: "/dashboard", label: "Главная", icon: LayoutDashboard },
@@ -62,7 +63,7 @@ function NavContent({ currentPath, onNavigate }) {
 
       <div className="p-4 border-t border-border">
         <button
-          onClick={() => base44.auth.logout()}
+          onClick={() => { queryClientInstance.clear(); base44.auth.logout(); }}
           className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all w-full"
         >
           <LogOut className="w-5 h-5" />

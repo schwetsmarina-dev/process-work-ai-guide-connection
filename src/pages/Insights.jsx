@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, TrendingUp, Brain, Heart, Moon, GitBranch, PenLine } from "lucide-react";
@@ -21,14 +21,22 @@ const MODE_NAMES = {
 };
 
 export default function Insights() {
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser);
+  }, []);
+
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
-    queryKey: ["sessions-all"],
-    queryFn: () => base44.entities.Session.list("-created_date", 100),
+    queryKey: ["sessions-all", currentUser?.email],
+    queryFn: () => base44.entities.Session.filter({ created_by: currentUser.email }, "-created_date", 100),
+    enabled: !!currentUser?.email,
   });
 
   const { data: memories = [], isLoading: memoriesLoading } = useQuery({
-    queryKey: ["memories"],
-    queryFn: () => base44.entities.UserMemory.list("-created_date", 50),
+    queryKey: ["memories", currentUser?.email],
+    queryFn: () => base44.entities.UserMemory.filter({ created_by: currentUser.email }, "-created_date", 50),
+    enabled: !!currentUser?.email,
   });
 
   const isLoading = sessionsLoading || memoriesLoading;
