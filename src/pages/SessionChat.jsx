@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle, RefreshCw, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   checkCrisis,
@@ -36,17 +36,27 @@ export default function SessionChat() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [stepError, setStepError] = useState(false);
-  const [shiftSuggestion, setShiftSuggestion] = useState(null); // { suggestedMode }
+  const [sendError, setSendError] = useState(false);
+  const [shiftSuggestion, setShiftSuggestion] = useState(null);
   const [totalSteps, setTotalSteps] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
+  const [userLoading, setUserLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [isAdminView, setIsAdminView] = useState(false);
+  // Optimistic messages shown while backend confirms
+  const [optimisticMessages, setOptimisticMessages] = useState([]);
   const messagesEndRef = useRef(null);
   const initDone = useRef(false);
 
+  // ── Load current user first ───────────────────────────────────────────────
   useEffect(() => {
     base44.auth.me().then((u) => {
-      console.log("CURRENT USER:", u?.id, u?.email);
+      console.log("[SessionChat] currentUser loaded:", u?.email, "role:", u?.role);
       setCurrentUser(u);
+      setUserLoading(false);
+    }).catch((err) => {
+      console.error("[SessionChat] auth.me() failed:", err);
+      setUserLoading(false);
     });
   }, []);
 
@@ -54,9 +64,22 @@ export default function SessionChat() {
   const { data: session, isLoading: sessionLoading } = useQuery({
     queryKey: ["session", sessionId, currentUser?.email],
     queryFn: async () => {
+      console.log("[SessionChat] loading session:", sessionId, "for user:", currentUser?.email);
       const rows = await base44.entities.Session.filter({ id: sessionId });
       const found = rows[0];
-      if (!found || found.created_by !== currentUser.email) {
+      if (!found) {
+        console.warn("[SessionChat] session not found");
+        setAccessDenied(true);
+        return null;
+      }
+      // Admin can view any session (read-only)
+      if (found.created_by !== currentUser.email) {
+        if (currentUser.role === "admin") {
+          console.log("[SessionChat] admin viewing foreign session (read-only)");
+          setIsAdminView(true);
+          return found;
+        }
+        console.warn("[SessionChat] access denied — session owned by", found.created_by);
         setAccessDenied(true);
         return null;
       }
@@ -65,15 +88,24 @@ export default function SessionChat() {
     enabled: !!sessionId && !!currentUser?.email,
   });
 
-  // ── Messages ─────────────────────────────────────────────────────────────
-  const { data: messages = [], isLoading: msgsLoading } = useQuery({
+  // ── Messages — filter by session_id only (assistant msgs have no created_by) ──
+  const { data: dbMessages = [], isLoading: msgsLoading, refetch: refetchMessages } = useQuery({
     queryKey: ["messages", sessionId, currentUser?.email],
-    queryFn: () => {
-      console.log("Loading messages for session:", sessionId, "user:", currentUser?.email);
-      return base44.entities.Message.filter({ session_id: sessionId, created_by: currentUser.email }, "created_date");
+    queryFn: async () => {
+      console.log("[SessionChat] loading messages for session:", sessionId);
+      // Fetch all messages for the session — ownership is ensured at session level
+      const msgs = await base44.entities.Message.filter({ session_id: sessionId }, "created_date");
+      console.log("[SessionChat] messages loaded:", msgs.length);
+      return msgs;
     },
     enabled: !!sessionId && !!currentUser?.email && !accessDenied,
   });
+
+  // Merge DB messages with optimistic ones (de-dup by content+role for pending)
+  const messages = useMemo(() => {
+    if (optimisticMessages.length === 0) return dbMessages;
+    return dbMessages;
+  }, [dbMessages, optimisticMessages]);
 
   // ── Total steps for progress bar ─────────────────────────────────────────
   useEffect(() => {
@@ -85,18 +117,22 @@ export default function SessionChat() {
 
   // ── Send initial greeting from step 1 ────────────────────────────────────
   useEffect(() => {
-    if (!session || msgsLoading || messages.length > 0 || initDone.current) return;
+    if (!session || msgsLoading || dbMessages.length > 0 || initDone.current) return;
+    if (isAdminView) return; // don't re-init for admin read-only view
     initDone.current = true;
 
     const modeId = session.mode_id;
     const stepNum = session.current_step || 1;
 
+    console.log("[SessionChat] initializing greeting for mode:", modeId, "step:", stepNum);
+
     fetchStep(modeId, stepNum).then(async (step) => {
       if (!step) {
+        console.warn("[SessionChat] step not found for init greeting:", modeId, stepNum);
         setStepError(true);
         return;
       }
-      const greeting = `Давайте начнём.\n\n${step.question}`;
+      const greeting = `Давай начнём.\n\n${step.question}`;
       await base44.entities.Message.create({
         session_id: sessionId,
         mode_id: modeId,
@@ -105,103 +141,134 @@ export default function SessionChat() {
         content: greeting,
         created_at: new Date().toISOString(),
       });
-      queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
+    }).catch((err) => {
+      console.error("[SessionChat] greeting init failed:", err);
+      setStepError(true);
     });
-  }, [session, msgsLoading, messages.length, sessionId, queryClient]);
+  }, [session, msgsLoading, dbMessages.length, sessionId, queryClient, isAdminView, currentUser?.email]);
 
   // ── Auto-scroll ───────────────────────────────────────────────────────────
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, optimisticMessages]);
 
   // ── Send user message ─────────────────────────────────────────────────────
   const handleSend = async (text) => {
-    if (!session) return;
+    if (!session || isAdminView) return;
+    setSendError(false);
+
     const modeId = session.mode_id;
     const currentStep = session.current_step || 1;
 
-    // Save user message
-    await base44.entities.Message.create({
-      session_id: sessionId,
-      mode_id: modeId,
-      step_number: currentStep,
+    console.log("[SessionChat] sending message:", text.substring(0, 60), "step:", currentStep);
+
+    // Optimistic: show user message immediately in UI
+    const optimisticUserMsg = {
+      id: `optimistic-${Date.now()}`,
       role: "user",
       content: text,
       created_at: new Date().toISOString(),
-    });
-    queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
+      session_id: sessionId,
+    };
+    setOptimisticMessages([optimisticUserMsg]);
 
-    // Crisis check
-    if (checkCrisis(text)) {
+    try {
+      // Save user message to backend
       await base44.entities.Message.create({
         session_id: sessionId,
-        role: "system",
-        content: CRISIS_MESSAGE,
+        mode_id: modeId,
+        step_number: currentStep,
+        role: "user",
+        content: text,
         created_at: new Date().toISOString(),
       });
-      await base44.entities.RiskEvent.create({
+      console.log("[SessionChat] user message saved");
+
+      // Clear optimistic after save
+      setOptimisticMessages([]);
+      queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
+
+      // Crisis check
+      if (checkCrisis(text)) {
+        await base44.entities.Message.create({
+          session_id: sessionId,
+          role: "system",
+          content: CRISIS_MESSAGE,
+          created_at: new Date().toISOString(),
+        });
+        await base44.entities.RiskEvent.create({
+          session_id: sessionId,
+          risk_type: "suicide_mention",
+          severity: "high",
+          trigger_text: text.substring(0, 500),
+          detected_at: new Date().toISOString(),
+          status: "open",
+        });
+        await base44.entities.Session.update(sessionId, { risk_flag: true });
+        queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
+        return;
+      }
+
+      // Fetch current step from DB
+      const step = await fetchStep(modeId, currentStep);
+      if (!step) {
+        console.warn("[SessionChat] step not found:", modeId, currentStep);
+        setStepError(true);
+        return;
+      }
+
+      setIsAiLoading(true);
+      setShiftSuggestion(null);
+
+      // Refresh messages for AI context (fetch all session messages)
+      const updatedMessages = await base44.entities.Message.filter(
+        { session_id: sessionId },
+        "created_date"
+      );
+      console.log("[SessionChat] context messages for AI:", updatedMessages.length);
+
+      // Get AI response
+      const rawResponse = await getAIResponse(session, step, updatedMessages, text);
+      console.log("[SessionChat] AI response received, length:", rawResponse?.length);
+      const { cleanText, suggestedMode } = parseShiftSuggestion(rawResponse);
+
+      // Save assistant message
+      await base44.entities.Message.create({
         session_id: sessionId,
-        risk_type: "suicide_mention",
-        severity: "high",
-        trigger_text: text.substring(0, 500),
-        detected_at: new Date().toISOString(),
-        status: "open",
+        mode_id: modeId,
+        step_number: currentStep,
+        role: "assistant",
+        content: cleanText,
+        created_at: new Date().toISOString(),
       });
-      await base44.entities.Session.update(sessionId, { risk_flag: true });
-      queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
-      return;
-    }
+      console.log("[SessionChat] assistant message saved");
 
-    // Fetch current step from DB
-    const step = await fetchStep(modeId, currentStep);
-    if (!step) {
-      setStepError(true);
-      return;
-    }
+      // Advance step using next_step_on_answer
+      const nextStep = step.next_step_on_answer ? Number(step.next_step_on_answer) : null;
 
-    setIsAiLoading(true);
-    setShiftSuggestion(null);
+      if (nextStep) {
+        await base44.entities.Session.update(sessionId, { current_step: nextStep });
+      } else {
+        // No next step — complete session
+        await handleEndSessionSilent(updatedMessages);
+        return;
+      }
 
-    // Refresh messages for context
-    const updatedMessages = await base44.entities.Message.filter(
-      { session_id: sessionId },
-      "created_date"
-    );
+      queryClient.invalidateQueries({ queryKey: ["session", sessionId, currentUser?.email] });
+      queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
+      setIsAiLoading(false);
 
-    // Get AI response
-    const rawResponse = await getAIResponse(session, step, updatedMessages, text);
-    const { cleanText, suggestedMode } = parseShiftSuggestion(rawResponse);
-
-    // Save assistant message
-    await base44.entities.Message.create({
-      session_id: sessionId,
-      mode_id: modeId,
-      step_number: currentStep,
-      role: "assistant",
-      content: cleanText,
-      created_at: new Date().toISOString(),
-    });
-
-    // Advance step using next_step_on_answer
-    const nextStep = step.next_step_on_answer
-      ? Number(step.next_step_on_answer)
-      : null;
-
-    if (nextStep) {
-      await base44.entities.Session.update(sessionId, { current_step: nextStep });
-    } else {
-      // No next step — complete session
-      await handleEndSessionSilent(updatedMessages);
-      return;
-    }
-
-    queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
-    queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
-    setIsAiLoading(false);
-
-    // Show mode shift suggestion if AI suggested one
-    if (suggestedMode) {
-      setShiftSuggestion({ suggestedMode });
+      if (suggestedMode) {
+        setShiftSuggestion({ suggestedMode });
+      }
+    } catch (err) {
+      console.error("[SessionChat] send failed:", err);
+      setOptimisticMessages([]); // keep user message in DB if it was saved
+      setIsAiLoading(false);
+      setSendError(true);
+      // Re-fetch to show what was actually saved
+      queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
     }
   };
 
@@ -215,7 +282,6 @@ export default function SessionChat() {
     await finalizeSession(allMessages);
   };
 
-  // ── End session (auto, no UI change needed) ───────────────────────────────
   const handleEndSessionSilent = async (msgs) => {
     setIsAiLoading(false);
     setIsEnding(true);
@@ -223,7 +289,6 @@ export default function SessionChat() {
   };
 
   const finalizeSession = async (allMessages) => {
-    // Hard redirect after 15s no matter what
     const redirectTimer = setTimeout(() => {
       navigate(`/session/${sessionId}/summary`);
     }, 15000);
@@ -253,8 +318,7 @@ export default function SessionChat() {
         );
       }
     } catch (e) {
-      console.error("Session finalization error:", e.message);
-      // Still mark session completed so user isn't stuck
+      console.error("[SessionChat] finalization error:", e.message);
       await base44.entities.Session.update(sessionId, {
         status: "completed",
         ended_at: new Date().toISOString(),
@@ -277,13 +341,20 @@ export default function SessionChat() {
       current_step: 1,
     });
     setShiftSuggestion(null);
-    initDone.current = false; // allow re-init for new mode start message
-    queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
-    queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
+    initDone.current = false;
+    queryClient.invalidateQueries({ queryKey: ["session", sessionId, currentUser?.email] });
+    queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
   };
 
-  // ── Loading ───────────────────────────────────────────────────────────────
-  if (!currentUser || sessionLoading || msgsLoading) {
+  // ── Manual reload ─────────────────────────────────────────────────────────
+  const handleReload = () => {
+    setSendError(false);
+    queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
+    refetchMessages();
+  };
+
+  // ── Guards ────────────────────────────────────────────────────────────────
+  if (userLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -291,7 +362,23 @@ export default function SessionChat() {
     );
   }
 
-  if (accessDenied || (!sessionLoading && currentUser && !session)) {
+  if (!currentUser) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Необходима авторизация</p>
+      </div>
+    );
+  }
+
+  if (sessionLoading || msgsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (accessDenied || (!sessionLoading && !session)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-muted-foreground">Сессия не найдена</p>
@@ -299,8 +386,21 @@ export default function SessionChat() {
     );
   }
 
+  // Combine DB messages with any pending optimistic ones
+  const displayMessages = optimisticMessages.length > 0
+    ? [...dbMessages, ...optimisticMessages]
+    : dbMessages;
+
   return (
     <div className="flex flex-col h-screen">
+      {/* Admin debug banner */}
+      {isAdminView && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border-b border-amber-200 text-amber-800 text-xs">
+          <ShieldAlert className="w-4 h-4 shrink-0" />
+          <span>Режим разработчика: просмотр чужой сессии (только чтение)</span>
+        </div>
+      )}
+
       <SessionHeader
         session={session}
         totalSteps={totalSteps}
@@ -320,7 +420,7 @@ export default function SessionChat() {
         <>
           <div className="flex-1 overflow-y-auto px-4 py-6">
             <div className="max-w-3xl mx-auto space-y-4">
-              {messages.map((msg) => (
+              {displayMessages.map((msg) => (
                 <ChatMessage
                   key={msg.id}
                   message={msg}
@@ -341,6 +441,20 @@ export default function SessionChat() {
                       <span className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-pulse" style={{ animationDelay: "0.2s" }} />
                       <span className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-pulse" style={{ animationDelay: "0.4s" }} />
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Send error */}
+              {sendError && (
+                <div className="flex items-start gap-3 p-4 rounded-xl border border-destructive/30 bg-destructive/5">
+                  <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-destructive">Ошибка отправки. Попробуй ещё раз.</p>
+                    <Button size="sm" variant="outline" className="mt-2 gap-1.5" onClick={handleReload}>
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Перезагрузить чат
+                    </Button>
                   </div>
                 </div>
               )}
@@ -395,7 +509,7 @@ export default function SessionChat() {
               <ChatInput
                 onSend={handleSend}
                 isLoading={isAiLoading}
-                disabled={!!stepError || !!shiftSuggestion}
+                disabled={!!stepError || !!shiftSuggestion || isAdminView}
               />
             </div>
           </div>
