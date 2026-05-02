@@ -98,7 +98,8 @@ export default function SessionChat() {
       console.log("[SessionChat] messages loaded:", msgs.length);
       return msgs;
     },
-    enabled: !!sessionId && !!currentUser?.email && !accessDenied,
+    // Only load messages AFTER session ownership has been confirmed (session !== null + not denied)
+    enabled: !!sessionId && !!currentUser?.email && !accessDenied && !!session,
   });
 
   // Merge DB messages with optimistic ones (de-dup by content+role for pending)
