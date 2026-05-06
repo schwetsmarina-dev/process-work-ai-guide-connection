@@ -27,9 +27,40 @@ export function checkCrisis(text) {
 
 // ─── Fetch step from DB ──────────────────────────────────────────────────────
 export async function fetchStep(modeId, stepNumber) {
-  const stepKey = `${modeId}_${stepNumber}`;
+  const modeIdClean = String(modeId || "").trim();
+  const stepNum = Number(stepNumber) || 1;
+  const stepKey = `${modeIdClean}_${stepNum}`;
+
+  console.log(`[STEP_DEBUG] Looking up step — mode_id="${modeIdClean}" current_step=${stepNum} step_key="${stepKey}"`);
+
+  // Primary lookup by step_key
   const rows = await base44.entities.ModeStep.filter({ step_key: stepKey });
-  return rows[0] || null;
+
+  if (rows.length > 0) {
+    console.log(`[STEP_DEBUG] Found step: step_key="${rows[0].step_key}" step_number=${rows[0].step_number}`);
+    return rows[0];
+  }
+
+  // Step not found — fetch all steps for this mode to show debug info
+  const allForMode = await base44.entities.ModeStep.filter({ mode_id: modeIdClean });
+  const allKeys = allForMode.map((s) => s.step_key);
+
+  console.error(
+    `[STEP_DEBUG] Step NOT found!\n` +
+    `  mode_id = "${modeIdClean}"\n` +
+    `  current_step = ${stepNum}\n` +
+    `  generated step_key = "${stepKey}"\n` +
+    `  available step_keys for this mode (${allForMode.length}): ${allKeys.join(", ") || "(none)"}`
+  );
+
+  // Also dump first few steps across all modes for cross-mode diagnosis
+  if (allForMode.length === 0) {
+    const sample = await base44.entities.ModeStep.list("step_number", 10);
+    const sampleKeys = sample.map((s) => `${s.mode_id}/${s.step_key}`);
+    console.error(`[STEP_DEBUG] No steps found for mode "${modeIdClean}". Sample of ALL steps in DB: ${sampleKeys.join(", ") || "(DB is empty)"}`);
+  }
+
+  return null;
 }
 
 // ─── Fetch related terms from DB ─────────────────────────────────────────────

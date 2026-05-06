@@ -36,6 +36,7 @@ export default function SessionChat() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [stepError, setStepError] = useState(false);
+  const [stepDebugInfo, setStepDebugInfo] = useState(null); // { stepKey, modeId, stepNum, availableKeys }
   const [sendError, setSendError] = useState(false);
   const [shiftSuggestion, setShiftSuggestion] = useState(null);
   const [totalSteps, setTotalSteps] = useState(0);
@@ -137,12 +138,13 @@ export default function SessionChat() {
 
     fetchStep(modeId, stepNum).then(async (step) => {
       if (!step) {
-        // Fetch available steps to show debug info
+        // Fetch available steps to show debug info in UI
         base44.entities.ModeStep.filter({ mode_id: modeId }).then((available) => {
-          const keys = available.map((s) => s.step_key).join(", ") || "(none)";
+          const availableKeys = available.map((s) => s.step_key);
           console.error(
-            `[SessionFlow] Step not found!\n  step_key = ${stepKey}\n  mode_id = ${modeId}\n  current_step = ${stepNum}\n  available = ${keys}`
+            `[STEP_DEBUG] Step not found!\n  step_key = ${stepKey}\n  mode_id = ${modeId}\n  current_step = ${stepNum}\n  available = ${availableKeys.join(", ") || "(none)"}`
           );
+          setStepDebugInfo({ stepKey, modeId, stepNum, availableKeys });
         });
         setStepError(true);
         return;
@@ -514,24 +516,38 @@ export default function SessionChat() {
                 </div>
               )}
 
-              {/* Step not found error */}
+              {/* Step not found error — full debug block */}
               {stepError && (
-                <div className="flex items-start gap-3 p-4 rounded-xl border border-destructive/30 bg-destructive/5">
-                  <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-destructive">Шаг не найден</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Потерян текущий шаг сессии. Пожалуйста, начните новую сессию.
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="mt-3"
-                      onClick={() => navigate("/dashboard")}
-                    >
-                      На главную
-                    </Button>
+                <div className="p-4 rounded-xl border border-destructive/30 bg-destructive/5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+                    <p className="text-sm font-medium text-destructive">Шаг не найден (MODE_STEPS)</p>
                   </div>
+                  {stepDebugInfo && (
+                    <pre className="text-xs bg-black/5 rounded-lg p-3 font-mono whitespace-pre-wrap text-foreground/80 overflow-x-auto">
+{`mode_id       = "${stepDebugInfo.modeId}"
+current_step  = ${stepDebugInfo.stepNum}
+step_key      = "${stepDebugInfo.stepKey}"
+
+Available step_keys for this mode (${stepDebugInfo.availableKeys.length}):
+${stepDebugInfo.availableKeys.length > 0 ? stepDebugInfo.availableKeys.join("\n") : "(нет данных — MODE_STEPS не загружены для этого mode_id)"}`}
+                    </pre>
+                  )}
+                  {!stepDebugInfo && (
+                    <p className="text-xs text-muted-foreground">
+                      mode_id = "{session?.mode_id}" · step = {session?.current_step} · загружаем диагностику…
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Проверьте: MODES.mode_id совпадает с MODE_STEPS.mode_id? Шаги импортированы через /admin/import?
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigate("/dashboard")}
+                  >
+                    На главную
+                  </Button>
                 </div>
               )}
 
