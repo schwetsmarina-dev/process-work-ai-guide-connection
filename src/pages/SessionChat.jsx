@@ -36,7 +36,7 @@ export default function SessionChat() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [stepError, setStepError] = useState(false);
-  const [stepDebugInfo, setStepDebugInfo] = useState(null); // { stepKey, modeId, stepNum, availableKeys }
+  const [stepDebugInfo, setStepDebugInfo] = useState(null);
   const [sendError, setSendError] = useState(false);
   const [shiftSuggestion, setShiftSuggestion] = useState(null);
   const [totalSteps, setTotalSteps] = useState(0);
@@ -138,14 +138,16 @@ export default function SessionChat() {
 
     fetchStep(modeId, stepNum).then(async (step) => {
       if (!step) {
-        // Fetch available steps to show debug info in UI
-        base44.entities.ModeStep.filter({ mode_id: modeId }).then((available) => {
-          const availableKeys = available.map((s) => s.step_key);
-          console.error(
-            `[STEP_DEBUG] Step not found!\n  step_key = ${stepKey}\n  mode_id = ${modeId}\n  current_step = ${stepNum}\n  available = ${availableKeys.join(", ") || "(none)"}`
-          );
-          setStepDebugInfo({ stepKey, modeId, stepNum, availableKeys });
-        });
+        // Gather full diagnostics for the debug UI
+        const [forMode, allSteps] = await Promise.all([
+          base44.entities.ModeStep.filter({ mode_id: modeId }),
+          base44.entities.ModeStep.list("step_number", 10),
+        ]);
+        const availableKeys = forMode.map((s) => s.step_key || `[no key, step_number=${s.step_number}]`);
+        const allModeIds = [...new Set(allSteps.map((s) => s.mode_id).filter(Boolean))];
+        const sampleRows = allSteps.map((s) => `${s.mode_id}/${s.step_key || s.step_number}`);
+        console.error(`[STEP_DEBUG] All mode_ids in DB: ${allModeIds.join(", ")} | Sample: ${sampleRows.join(", ")}`);
+        setStepDebugInfo({ stepKey, modeId, stepNum, availableKeys, totalStepsInDb: allSteps.length, allModeIds, sampleRows });
         setStepError(true);
         return;
       }
@@ -233,12 +235,13 @@ export default function SessionChat() {
       console.log("[SessionFlow] looking up step_key:", stepKey);
       const step = await fetchStep(modeId, currentStep);
       if (!step) {
-        base44.entities.ModeStep.filter({ mode_id: modeId }).then((available) => {
-          const keys = available.map((s) => s.step_key).join(", ") || "(none)";
-          console.error(
-            `[SessionFlow] Step not found!\n  step_key = ${stepKey}\n  mode_id = ${modeId}\n  current_step = ${currentStep}\n  available = ${keys}`
-          );
-        });
+        const [forMode, allSteps] = await Promise.all([
+          base44.entities.ModeStep.filter({ mode_id: modeId }),
+          base44.entities.ModeStep.list("step_number", 10),
+        ]);
+        const availableKeys = forMode.map((s) => s.step_key || `[no key, step_number=${s.step_number}]`);
+        const allModeIds = [...new Set(allSteps.map((s) => s.mode_id).filter(Boolean))];
+        setStepDebugInfo({ stepKey, modeId, stepNum: currentStep, availableKeys, totalStepsInDb: allSteps.length, allModeIds, sampleRows: allSteps.map((s) => `${s.mode_id}/${s.step_key || s.step_number}`) });
         setStepError(true);
         return;
       }
@@ -521,33 +524,33 @@ export default function SessionChat() {
                 <div className="p-4 rounded-xl border border-destructive/30 bg-destructive/5 space-y-3">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
-                    <p className="text-sm font-medium text-destructive">Шаг не найден (MODE_STEPS)</p>
+                    <p className="text-sm font-semibold text-destructive">Шаг не найден (MODE_STEPS)</p>
                   </div>
-                  {stepDebugInfo && (
-                    <pre className="text-xs bg-black/5 rounded-lg p-3 font-mono whitespace-pre-wrap text-foreground/80 overflow-x-auto">
-{`mode_id       = "${stepDebugInfo.modeId}"
-current_step  = ${stepDebugInfo.stepNum}
-step_key      = "${stepDebugInfo.stepKey}"
+                  <pre className="text-xs bg-black/5 rounded-lg p-3 font-mono whitespace-pre-wrap text-foreground/80 overflow-x-auto leading-relaxed">
+{stepDebugInfo
+  ? `mode_id        = "${stepDebugInfo.modeId}"
+current_step   = ${stepDebugInfo.stepNum}
+step_key       = "${stepDebugInfo.stepKey}"
 
-Available step_keys for this mode (${stepDebugInfo.availableKeys.length}):
-${stepDebugInfo.availableKeys.length > 0 ? stepDebugInfo.availableKeys.join("\n") : "(нет данных — MODE_STEPS не загружены для этого mode_id)"}`}
-                    </pre>
-                  )}
-                  {!stepDebugInfo && (
-                    <p className="text-xs text-muted-foreground">
-                      mode_id = "{session?.mode_id}" · step = {session?.current_step} · загружаем диагностику…
-                    </p>
-                  )}
+Steps for this mode (${stepDebugInfo.availableKeys.length}):
+${stepDebugInfo.availableKeys.length > 0
+  ? stepDebugInfo.availableKeys.join("\n")
+  : "  (none — режим не найден в MODE_STEPS)"}
+
+Total MODE_STEPS in DB: ${stepDebugInfo.totalStepsInDb ?? "?"}
+Mode IDs in DB: ${stepDebugInfo.allModeIds?.join(", ") || "(empty)"}
+
+DB sample (first 10):
+${stepDebugInfo.sampleRows?.join("\n") || "  (empty)"}`
+  : `mode_id = "${session?.mode_id}"  step = ${session?.current_step}  (загружаем диагностику...)`
+}</pre>
                   <p className="text-xs text-muted-foreground">
-                    Проверьте: MODES.mode_id совпадает с MODE_STEPS.mode_id? Шаги импортированы через /admin/import?
+                    Откройте /admin/import и загрузите mode_steps.csv. Убедитесь, что mode_id в CSV совпадает с mode_id в MODES.
                   </p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => navigate("/dashboard")}
-                  >
-                    На главную
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => navigate("/dashboard")}>На главную</Button>
+                    <Button size="sm" variant="outline" onClick={() => navigate("/admin/status")}>Статус данных</Button>
+                  </div>
                 </div>
               )}
 

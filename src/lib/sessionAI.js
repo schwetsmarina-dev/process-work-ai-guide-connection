@@ -25,42 +25,72 @@ export function checkCrisis(text) {
   return CRISIS_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
-// ─── Fetch step from DB ──────────────────────────────────────────────────────
+// ─── Fetch step from DB — multi-fallback lookup ──────────────────────────────
 export async function fetchStep(modeId, stepNumber) {
   const modeIdClean = String(modeId || "").trim();
   const stepNum = Number(stepNumber) || 1;
   const stepKey = `${modeIdClean}_${stepNum}`;
 
-  console.log(`[STEP_DEBUG] Looking up step — mode_id="${modeIdClean}" current_step=${stepNum} step_key="${stepKey}"`);
+  console.log(`[STEP_DEBUG] Looking up — mode_id="${modeIdClean}" step=${stepNum} step_key="${stepKey}"`);
 
-  // Primary lookup by step_key
-  const rows = await base44.entities.ModeStep.filter({ step_key: stepKey });
-
-  if (rows.length > 0) {
-    console.log(`[STEP_DEBUG] Found step: step_key="${rows[0].step_key}" step_number=${rows[0].step_number}`);
-    return rows[0];
+  // 1. Primary: exact step_key match
+  const byKey = await base44.entities.ModeStep.filter({ step_key: stepKey });
+  if (byKey.length > 0) {
+    console.log(`[STEP_DEBUG] Found by step_key: "${byKey[0].step_key}"`);
+    return byKey[0];
   }
 
-  // Step not found — fetch all steps for this mode to show debug info
+  // 2. Fallback: mode_id + step_number (number)
+  const byNum = await base44.entities.ModeStep.filter({ mode_id: modeIdClean, step_number: stepNum });
+  if (byNum.length > 0) {
+    console.log(`[STEP_DEBUG] Found by mode_id+step_number(num). step_key="${byNum[0].step_key}". Auto-repairing key...`);
+    return repairStepKey(byNum[0], modeIdClean, stepNum);
+  }
+
+  // 3. Fallback: mode_id + step (legacy field name, number)
+  const byStep = await base44.entities.ModeStep.filter({ mode_id: modeIdClean, step: stepNum });
+  if (byStep.length > 0) {
+    console.log(`[STEP_DEBUG] Found by mode_id+step(num). Auto-repairing key...`);
+    return repairStepKey(byStep[0], modeIdClean, stepNum);
+  }
+
+  // 4. Fallback: mode_id + step_number (string)
+  const byNumStr = await base44.entities.ModeStep.filter({ mode_id: modeIdClean, step_number: String(stepNum) });
+  if (byNumStr.length > 0) {
+    console.log(`[STEP_DEBUG] Found by mode_id+step_number(str). Auto-repairing key...`);
+    return repairStepKey(byNumStr[0], modeIdClean, stepNum);
+  }
+
+  // 5. Fallback: mode_id + step (legacy, string)
+  const byStepStr = await base44.entities.ModeStep.filter({ mode_id: modeIdClean, step: String(stepNum) });
+  if (byStepStr.length > 0) {
+    console.log(`[STEP_DEBUG] Found by mode_id+step(str). Auto-repairing key...`);
+    return repairStepKey(byStepStr[0], modeIdClean, stepNum);
+  }
+
+  // Nothing found — gather diagnostics
   const allForMode = await base44.entities.ModeStep.filter({ mode_id: modeIdClean });
-  const allKeys = allForMode.map((s) => s.step_key);
-
+  const allSample = await base44.entities.ModeStep.list("step_number", 20);
   console.error(
-    `[STEP_DEBUG] Step NOT found!\n` +
-    `  mode_id = "${modeIdClean}"\n` +
-    `  current_step = ${stepNum}\n` +
-    `  generated step_key = "${stepKey}"\n` +
-    `  available step_keys for this mode (${allForMode.length}): ${allKeys.join(", ") || "(none)"}`
+    `[STEP_DEBUG] FAILED — mode_id="${modeIdClean}" step_key="${stepKey}"\n` +
+    `  Steps for this mode (${allForMode.length}): ${allForMode.map((s) => s.step_key || `[no key, step_number=${s.step_number}]`).join(", ") || "(none)"}\n` +
+    `  DB sample (first 20): ${allSample.map((s) => `${s.mode_id}/${s.step_key || s.step_number}`).join(", ") || "(empty)"}`
   );
-
-  // Also dump first few steps across all modes for cross-mode diagnosis
-  if (allForMode.length === 0) {
-    const sample = await base44.entities.ModeStep.list("step_number", 10);
-    const sampleKeys = sample.map((s) => `${s.mode_id}/${s.step_key}`);
-    console.error(`[STEP_DEBUG] No steps found for mode "${modeIdClean}". Sample of ALL steps in DB: ${sampleKeys.join(", ") || "(DB is empty)"}`);
-  }
-
   return null;
+}
+
+async function repairStepKey(row, modeId, stepNum) {
+  if (!row.step_key) {
+    const computedKey = `${modeId}_${row.step_number || row.step || stepNum}`;
+    console.log(`[STEP_DEBUG] Auto-repairing step_key: "${computedKey}" for id=${row.id}`);
+    try {
+      await base44.entities.ModeStep.update(row.id, { step_key: computedKey });
+      return { ...row, step_key: computedKey };
+    } catch (e) {
+      console.warn(`[STEP_DEBUG] step_key repair failed:`, e.message);
+    }
+  }
+  return row;
 }
 
 // ─── Fetch related terms from DB ─────────────────────────────────────────────

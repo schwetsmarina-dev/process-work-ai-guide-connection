@@ -39,17 +39,25 @@ export default function Dashboard() {
 
     console.log("[SessionFlow] mode selected:", modeId, "looking up step_key:", stepKey);
 
-    // Verify step exists BEFORE creating session to prevent broken sessions
+    // Verify step exists BEFORE creating session — try by step_key AND by mode_id+step_number
     const steps = await base44.entities.ModeStep.filter({ mode_id: modeId });
-    const firstStep = steps.find((s) => s.step_key === stepKey);
+    const firstStep =
+      steps.find((s) => s.step_key === stepKey) ||
+      steps.find((s) => Number(s.step_number) === 1 || Number(s.step) === 1);
 
     if (!firstStep) {
-      const allStepKeys = steps.map((s) => s.step_key).join(", ") || "(none)";
+      const allSample = await base44.entities.ModeStep.list("step_number", 10);
+      const allModeIds = [...new Set(allSample.map((s) => s.mode_id).filter(Boolean))];
+      const allKeys = steps.map((s) => s.step_key || `[no key, step_number=${s.step_number}]`).join(", ") || "(none)";
       console.error(
-        `[SessionFlow] Step not found!\n  mode_id = ${modeId}\n  step_key = ${stepKey}\n  available = ${allStepKeys}`
+        `[SessionFlow] First step not found!\n  mode_id = ${modeId}\n  step_key = ${stepKey}\n  steps for mode = ${allKeys}\n  DB mode_ids = ${allModeIds.join(", ")}\n  total in DB = ${allSample.length}`
       );
       alert(
-        `Не удалось найти первый шаг для режима «${modeId}».\n\nstep_key: ${stepKey}\nДоступные шаги: ${allStepKeys || "(нет данных)"}\n\nПроверьте импорт MODE_STEPS.`
+        `Первый шаг не найден для режима «${modeId}».\n\nstep_key: ${stepKey}\n` +
+        `Шаги в DB для этого режима: ${allKeys}\n` +
+        `Все mode_id в DB: ${allModeIds.join(", ") || "(пусто)"}\n\n` +
+        `→ Откройте /admin/import и загрузите mode_steps.csv.\n` +
+        `→ Проверьте, что mode_id в CSV совпадает с «${modeId}».`
       );
       return;
     }
