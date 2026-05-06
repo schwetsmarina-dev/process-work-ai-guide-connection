@@ -34,13 +34,42 @@ export default function Dashboard() {
   const recentSessions = sessions.filter((s) => s.status !== "active").slice(0, 5);
 
   const handleModeSelect = async (mode) => {
+    const modeId = mode.mode_id;
+    const stepKey = `${modeId}_1`;
+
+    console.log("[SessionFlow] mode selected:", modeId, "looking up step_key:", stepKey);
+
+    // Verify step exists BEFORE creating session to prevent broken sessions
+    const steps = await base44.entities.ModeStep.filter({ mode_id: modeId });
+    const firstStep = steps.find((s) => s.step_key === stepKey);
+
+    if (!firstStep) {
+      const allStepKeys = steps.map((s) => s.step_key).join(", ") || "(none)";
+      console.error(
+        `[SessionFlow] Step not found!\n  mode_id = ${modeId}\n  step_key = ${stepKey}\n  available = ${allStepKeys}`
+      );
+      alert(
+        `Не удалось найти первый шаг для режима «${modeId}».\n\nstep_key: ${stepKey}\nДоступные шаги: ${allStepKeys || "(нет данных)"}\n\nПроверьте импорт MODE_STEPS.`
+      );
+      return;
+    }
+
     const session = await base44.entities.Session.create({
-      mode_id: mode.mode_id,
-      mode: mode.mode_id, // keep for legacy field
+      mode_id: modeId,
+      mode: modeId,
       status: "active",
       current_step: 1,
       started_at: new Date().toISOString(),
     });
+
+    console.log(
+      "[SessionFlow] session created:",
+      session.id,
+      "mode_id:", session.mode_id,
+      "step:", session.current_step,
+      "user:", currentUser?.email
+    );
+
     navigate(`/session/${session.id}`);
   };
 

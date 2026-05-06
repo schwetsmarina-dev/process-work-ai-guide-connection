@@ -123,8 +123,8 @@ export default function SessionSummary() {
           </Card>
         </motion.div>
 
-        {/* Themes */}
-        {session.themes?.length > 0 && (
+        {/* Themes — only show if summary is not the fallback */}
+        {session.themes?.length > 0 && session.summary !== "Сессия завершена. Резюме недоступно." && (
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -146,8 +146,8 @@ export default function SessionSummary() {
           </motion.div>
         )}
 
-        {/* Signals */}
-        {session.signals?.length > 0 && (
+        {/* Signals — only show if summary is not the fallback */}
+        {session.signals?.length > 0 && session.summary !== "Сессия завершена. Резюме недоступно." && (
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}

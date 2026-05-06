@@ -92,10 +92,9 @@ export default function SessionChat() {
   const { data: dbMessages = [], isLoading: msgsLoading, refetch: refetchMessages } = useQuery({
     queryKey: ["messages", sessionId, currentUser?.email],
     queryFn: async () => {
-      console.log("[SessionChat] loading messages for session:", sessionId);
-      // Fetch all messages for the session — ownership is ensured at session level
+      console.log("[SessionFlow] loading messages — session:", sessionId, "user:", currentUser?.email);
       const msgs = await base44.entities.Message.filter({ session_id: sessionId }, "created_date");
-      console.log("[SessionChat] messages loaded:", msgs.length);
+      console.log("[SessionFlow] messages loaded:", msgs.length, "for session:", sessionId);
       return msgs;
     },
     // Only load messages AFTER session ownership has been confirmed (session !== null + not denied)
@@ -120,19 +119,35 @@ export default function SessionChat() {
   useEffect(() => {
     if (!session || msgsLoading || dbMessages.length > 0 || initDone.current) return;
     if (isAdminView) return; // don't re-init for admin read-only view
-    initDone.current = true;
 
     const modeId = session.mode_id;
     const stepNum = session.current_step || 1;
 
-    console.log("[SessionChat] initializing greeting for mode:", modeId, "step:", stepNum);
+    // Guard: must have valid modeId and stepNum
+    if (!modeId || !stepNum) {
+      console.error("[SessionFlow] Cannot init greeting — missing modeId or stepNum:", { modeId, stepNum });
+      setStepError(true);
+      return;
+    }
+
+    initDone.current = true;
+
+    const stepKey = `${modeId}_${stepNum}`;
+    console.log("[SessionFlow] initializing greeting — step_key:", stepKey, "session:", sessionId);
 
     fetchStep(modeId, stepNum).then(async (step) => {
       if (!step) {
-        console.warn("[SessionChat] step not found for init greeting:", modeId, stepNum);
+        // Fetch available steps to show debug info
+        base44.entities.ModeStep.filter({ mode_id: modeId }).then((available) => {
+          const keys = available.map((s) => s.step_key).join(", ") || "(none)";
+          console.error(
+            `[SessionFlow] Step not found!\n  step_key = ${stepKey}\n  mode_id = ${modeId}\n  current_step = ${stepNum}\n  available = ${keys}`
+          );
+        });
         setStepError(true);
         return;
       }
+      console.log("[SessionFlow] step found:", step.step_key, "— creating greeting");
       const greeting = `Давай начнём.\n\n${step.question}`;
       await base44.entities.Message.create({
         session_id: sessionId,
@@ -144,7 +159,7 @@ export default function SessionChat() {
       });
       queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
     }).catch((err) => {
-      console.error("[SessionChat] greeting init failed:", err);
+      console.error("[SessionFlow] greeting init failed:", err);
       setStepError(true);
     });
   }, [session, msgsLoading, dbMessages.length, sessionId, queryClient, isAdminView, currentUser?.email]);
@@ -212,9 +227,16 @@ export default function SessionChat() {
       }
 
       // Fetch current step from DB
+      const stepKey = `${modeId}_${currentStep}`;
+      console.log("[SessionFlow] looking up step_key:", stepKey);
       const step = await fetchStep(modeId, currentStep);
       if (!step) {
-        console.warn("[SessionChat] step not found:", modeId, currentStep);
+        base44.entities.ModeStep.filter({ mode_id: modeId }).then((available) => {
+          const keys = available.map((s) => s.step_key).join(", ") || "(none)";
+          console.error(
+            `[SessionFlow] Step not found!\n  step_key = ${stepKey}\n  mode_id = ${modeId}\n  current_step = ${currentStep}\n  available = ${keys}`
+          );
+        });
         setStepError(true);
         return;
       }
@@ -289,41 +311,73 @@ export default function SessionChat() {
     await finalizeSession(msgs);
   };
 
-  const finalizeSession = async (allMessages) => {
+  const finalizeSession = async (passedMessages) => {
     const redirectTimer = setTimeout(() => {
       navigate(`/session/${sessionId}/summary`);
     }, 15000);
 
     try {
-      const summaryData = await generateSessionSummary(session, allMessages);
-      await base44.entities.Session.update(sessionId, {
-        status: "completed",
-        ended_at: new Date().toISOString(),
-        summary: summaryData.summary,
-        themes: summaryData.themes,
-        signals: summaryData.signals,
-        next_step_suggestion: summaryData.next_step_suggestion,
-      });
-      if (summaryData.memories?.length > 0) {
-        await base44.entities.UserMemory.bulkCreate(
-          summaryData.memories.map((m) => ({
-            memory_key: m.key,
-            memory_value: m.value,
-            memory_type: m.category,
-            importance: m.importance,
-            source_session_id: sessionId,
-            source_mode_id: session.mode_id,
-            is_active: true,
-            created_at: new Date().toISOString(),
-          }))
-        );
+      // Always re-fetch messages scoped strictly to THIS session to prevent data mixing
+      const sessionMessages = await base44.entities.Message.filter(
+        { session_id: sessionId },
+        "created_date"
+      );
+
+      const userMessages = sessionMessages.filter((m) => m.role === "user");
+
+      console.log(
+        "[SessionFlow] finalizing session:", sessionId,
+        "owner:", currentUser?.email,
+        "total messages:", sessionMessages.length,
+        "user messages:", userMessages.length,
+        "first preview:", userMessages[0]?.content?.substring(0, 60) || "(none)"
+      );
+
+      // Guard: if no real user messages, skip LLM and save fallback only
+      if (userMessages.length === 0) {
+        console.warn("[SessionFlow] No user messages found — saving fallback summary only");
+        await base44.entities.Session.update(sessionId, {
+          status: "completed",
+          ended_at: new Date().toISOString(),
+          summary: "Сессия завершена. Резюме недоступно.",
+          themes: [],
+          signals: [],
+          next_step_suggestion: "",
+        });
+      } else {
+        const summaryData = await generateSessionSummary(session, sessionMessages);
+        await base44.entities.Session.update(sessionId, {
+          status: "completed",
+          ended_at: new Date().toISOString(),
+          summary: summaryData.summary || "Сессия завершена.",
+          themes: summaryData.themes || [],
+          signals: summaryData.signals || [],
+          next_step_suggestion: summaryData.next_step_suggestion || "",
+        });
+        if (summaryData.memories?.length > 0) {
+          await base44.entities.UserMemory.bulkCreate(
+            summaryData.memories.map((m) => ({
+              memory_key: m.key,
+              memory_value: m.value,
+              memory_type: m.category,
+              importance: m.importance,
+              source_session_id: sessionId,
+              source_mode_id: session.mode_id,
+              is_active: true,
+              created_at: new Date().toISOString(),
+            }))
+          );
+        }
       }
     } catch (e) {
-      console.error("[SessionChat] finalization error:", e.message);
+      console.error("[SessionFlow] finalization error:", e.message);
       await base44.entities.Session.update(sessionId, {
         status: "completed",
         ended_at: new Date().toISOString(),
         summary: "Сессия завершена. Резюме недоступно.",
+        themes: [],
+        signals: [],
+        next_step_suggestion: "",
       }).catch(() => {});
     } finally {
       clearTimeout(redirectTimer);
