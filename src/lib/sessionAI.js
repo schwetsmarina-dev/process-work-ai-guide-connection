@@ -460,6 +460,51 @@ const NEXT_LAYER_INSTRUCTIONS = {
     "Следующий слой — ВТОРАЯ ЧАСТЬ конфликта. Спроси: а что говорит другая сторона — та, которая противостоит первой?",
 };
 
+// ─── Primary Process Thread detection ────────────────────────────────────────
+// Detects the dominant emerging state from assistant messages to protect thread continuity
+
+const PRIMARY_STATE_SIGNALS = [
+  // Maturity / readiness / movement
+  { keywords: ["зрелост", "зрелая", "зрелый", "беременн", "готовност", "готова", "готов"], label: "зрелость и готовность" },
+  { keywords: ["уверенност", "уверенная", "уверен", "опора", "устойчивост"], label: "уверенность и опора" },
+  { keywords: ["целостност", "целостная", "целостный", "интеграц"], label: "целостность" },
+  { keywords: ["направленност", "стрела", "движение вперёд", "действие", "действуй", "действую", "импульс", "вектор"], label: "направленность и действие" },
+  { keywords: ["тепло", "тёплое", "согревающее", "центр", "центральное"], label: "центрированное тепло" },
+  { keywords: ["спокойстви", "покой", "умиротворени"], label: "покой и спокойствие" },
+  { keywords: ["свобод", "освобождени", "лёгкость", "простор"], label: "свобода и лёгкость" },
+  { keywords: ["сил", "энергия", "наполненност", "живост"], label: "сила и энергия" },
+];
+
+// Secondary material — user expresses these AFTER a strong state has emerged
+const SECONDARY_MATERIAL_SIGNALS = [
+  "тревог", "страх", "беспокойств", "сомнени", "неуверенност",
+  "боюсь", "боится", "пугает", "напряжени", "тяжело", "трудно", "сложно",
+];
+
+function detectPrimaryProcessThread(messages) {
+  // Look at assistant messages from the middle of the conversation onward
+  const assistantMsgs = messages
+    .filter((m) => m.role === "assistant")
+    .slice(2); // skip greeting + first response
+
+  if (assistantMsgs.length < 2) return null;
+
+  // Find the most recently reinforced primary state
+  const combined = assistantMsgs.map((m) => m.content.toLowerCase()).join(" ");
+
+  for (const signal of PRIMARY_STATE_SIGNALS) {
+    if (signal.keywords.some((kw) => combined.includes(kw))) {
+      return signal.label;
+    }
+  }
+  return null;
+}
+
+function detectSecondaryMaterialInLatestMessage(userMessage) {
+  const lower = userMessage.toLowerCase();
+  return SECONDARY_MATERIAL_SIGNALS.some((kw) => lower.includes(kw));
+}
+
 // Detects if the user has entered the integration stage (inner shift expressed)
 function detectIntegrationStage(messages) {
   const userMessages = messages
@@ -693,6 +738,25 @@ export async function getAIResponse(session, step, messages, userMessage) {
     ? `\n\n━━━ УЖЕ ПРОЙДЕННЫЕ СЛОИ (НЕ возвращайся к ним) ━━━\n${[...coveredLayers].map((l) => `✓ ${l}`).join("\n")}`
     : "";
 
+  // PRIMARY PROCESS THREAD: detect dominant emerging state and protect continuity
+  const primaryThread = detectPrimaryProcessThread(messages);
+  const hasSecondaryMaterial = primaryThread && detectSecondaryMaterialInLatestMessage(userMessage);
+  const primaryThreadGuard = primaryThread
+    ? `\n\n🔵 ЦЕНТРАЛЬНЫЙ ПРОЦЕСС СЕССИИ: "${primaryThread}"\n` +
+      `Этот процесс уже глубоко раскрылся в разговоре. Он является ПЕРВИЧНЫМ.\n` +
+      (hasSecondaryMaterial
+        ? `Пользователь только что выразил вторичный материал (тревогу, страх, сомнение).\n` +
+          `НЕ переключай фасилитацию на этот вторичный материал.\n` +
+          `ВМЕСТО ЭТОГО: исследуй, как первичное состояние («${primaryThread}») трансформирует или содержит вторичное.\n` +
+          `Примеры:\n` +
+          `• «Как меняется эта тревога, когда ты соединяешься с ощущением ${primaryThread}?»\n` +
+          `• «Что становится возможным, когда ты опираешься на это состояние ${primaryThread}?»\n` +
+          `• «Как бы изменилось это ожидание, если бы ты больше исходила из этой ${primaryThread}?»\n` +
+          `ЗАПРЕЩЕНО: «Что хочет сделать тревога?», «Где в теле страх?» — не исследуй вторичный материал как главный.\n`
+        : `Каждый следующий вопрос должен опираться на это состояние и углублять его.\n` +
+          `Используй конкретные слова: «когда ты ощущаешь эту ${primaryThread}», «что меняется из этого состояния», «что становится возможным».\n`)
+    : "";
+
   // INTEGRATION LOCK: hard override when user has expressed inner shift
   const isConflictMode = (currentMode || "").toLowerCase().includes("conflict");
   const integrationLock = isIntegrationStage
@@ -748,7 +812,7 @@ ${step.facilitator_hint ? `Подсказка: ${step.facilitator_hint}` : ""}`
     : "";
 
   const buildPrompt = (extraInstruction = "") =>
-    `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${integrationLock}${forcedInstruction}${loopWarning}${extraInstruction}
+    `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${primaryThreadGuard}${integrationLock}${forcedInstruction}${loopWarning}${extraInstruction}
 
 Режим: ${currentMode}
 
@@ -780,6 +844,8 @@ ${userMessage}
     forcedNextLayer: forcedNext,
     integrationLock: isIntegrationStage,
     isLooping,
+    primaryThread,
+    hasSecondaryMaterial,
   });
 
   if (estimatedTokens > 6000) {
