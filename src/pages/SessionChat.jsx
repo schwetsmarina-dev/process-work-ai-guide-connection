@@ -14,6 +14,7 @@ import {
 import SessionHeader from "@/components/session/SessionHeader";
 import ChatMessage from "@/components/session/ChatMessage";
 import ChatInput from "@/components/session/ChatInput";
+import StepErrorDebug from "@/components/session/StepErrorDebug";
 
 // Parse [SHIFT_SUGGEST:mode] tag from AI response
 function parseShiftSuggestion(text) {
@@ -562,37 +563,11 @@ export default function SessionChat() {
 
               {/* Step not found error — full debug block */}
               {stepError && (
-                <div className="p-4 rounded-xl border border-destructive/30 bg-destructive/5 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
-                    <p className="text-sm font-semibold text-destructive">Шаг не найден (MODE_STEPS)</p>
-                  </div>
-                  <pre className="text-xs bg-black/5 rounded-lg p-3 font-mono whitespace-pre-wrap text-foreground/80 overflow-x-auto leading-relaxed">
-{stepDebugInfo
-  ? `mode_id        = "${stepDebugInfo.modeId}"
-current_step   = ${stepDebugInfo.stepNum}
-step_key       = "${stepDebugInfo.stepKey}"
-
-Steps for this mode (${stepDebugInfo.availableKeys.length}):
-${stepDebugInfo.availableKeys.length > 0
-  ? stepDebugInfo.availableKeys.join("\n")
-  : "  (none — режим не найден в MODE_STEPS)"}
-
-Total MODE_STEPS in DB: ${stepDebugInfo.totalStepsInDb ?? "?"}
-Mode IDs in DB: ${stepDebugInfo.allModeIds?.join(", ") || "(empty)"}
-
-DB sample (first 10):
-${stepDebugInfo.sampleRows?.join("\n") || "  (empty)"}`
-  : `mode_id = "${session?.mode_id}"  step = ${session?.current_step}  (загружаем диагностику...)`
-}</pre>
-                  <p className="text-xs text-muted-foreground">
-                    Откройте /admin/import и загрузите mode_steps.csv. Убедитесь, что mode_id в CSV совпадает с mode_id в MODES.
-                  </p>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => navigate("/dashboard")}>На главную</Button>
-                    <Button size="sm" variant="outline" onClick={() => navigate("/admin/status")}>Статус данных</Button>
-                  </div>
-                </div>
+                <StepErrorDebug
+                  session={session}
+                  stepDebugInfo={stepDebugInfo}
+                  navigate={navigate}
+                />
               )}
 
               {/* Mode shift suggestion */}
