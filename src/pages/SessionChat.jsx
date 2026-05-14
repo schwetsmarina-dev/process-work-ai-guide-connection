@@ -38,6 +38,7 @@ export default function SessionChat() {
   const [stepError, setStepError] = useState(false);
   const [stepDebugInfo, setStepDebugInfo] = useState(null);
   const [sendError, setSendError] = useState(false);
+  const [sendErrorMessage, setSendErrorMessage] = useState(null);
   const [shiftSuggestion, setShiftSuggestion] = useState(null);
   const [totalSteps, setTotalSteps] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
@@ -177,11 +178,12 @@ export default function SessionChat() {
   const handleSend = async (text) => {
     if (!session || isAdminView) return;
     setSendError(false);
+    setSendErrorMessage(null);
 
     const modeId = session.mode_id;
     const currentStep = session.current_step || 1;
 
-    console.log("[SessionChat] sending message:", text.substring(0, 60), "step:", currentStep);
+    console.log("[CHAT_FLOW] 1. user message received:", text.substring(0, 60), "step:", currentStep);
 
     // Optimistic: show user message immediately in UI
     const optimisticUserMsg = {
@@ -203,7 +205,7 @@ export default function SessionChat() {
         content: text,
         created_at: new Date().toISOString(),
       });
-      console.log("[SessionChat] user message saved");
+      console.log("[CHAT_FLOW] 2. user message saved");
 
       // Clear optimistic after save
       setOptimisticMessages([]);
@@ -232,7 +234,7 @@ export default function SessionChat() {
 
       // Fetch current step from DB
       const stepKey = `${modeId}_${currentStep}`;
-      console.log("[SessionFlow] looking up step_key:", stepKey);
+      console.log("[CHAT_FLOW] looking up step_key:", stepKey);
       const step = await fetchStep(modeId, currentStep);
       if (!step) {
         const [forMode, allSteps] = await Promise.all([
@@ -249,28 +251,47 @@ export default function SessionChat() {
       setIsAiLoading(true);
       setShiftSuggestion(null);
 
-      // Refresh messages for AI context (fetch all session messages)
+      // Refresh messages for AI context
+      console.log("[CHAT_FLOW] 3. AI generation started");
       const updatedMessages = await base44.entities.Message.filter(
         { session_id: sessionId },
         "created_date"
       );
-      console.log("[SessionChat] context messages for AI:", updatedMessages.length);
 
       // Get AI response
-      const rawResponse = await getAIResponse(session, step, updatedMessages, text);
-      console.log("[SessionChat] AI response received, length:", rawResponse?.length);
+      let rawResponse;
+      try {
+        rawResponse = await getAIResponse(session, step, updatedMessages, text);
+        console.log("[CHAT_FLOW] 4. AI response generated, length:", rawResponse?.length);
+      } catch (aiErr) {
+        console.error("[CHAT_FLOW] AI generation failed:", aiErr);
+        rawResponse = "Сейчас произошла ошибка генерации ответа. Попробуй ещё раз.";
+        setSendErrorMessage(`Ошибка AI: ${aiErr?.message || String(aiErr)}`);
+      }
+
       const { cleanText, suggestedMode } = parseShiftSuggestion(rawResponse);
 
-      // Save assistant message
-      await base44.entities.Message.create({
-        session_id: sessionId,
-        mode_id: modeId,
-        step_number: currentStep,
-        role: "assistant",
-        content: cleanText,
-        created_at: new Date().toISOString(),
-      });
-      console.log("[SessionChat] assistant message saved");
+      // Save assistant message (always, even if AI failed — show fallback)
+      console.log("[CHAT_FLOW] 5. assistant message save started");
+      try {
+        await base44.entities.Message.create({
+          session_id: sessionId,
+          mode_id: modeId,
+          step_number: currentStep,
+          role: "assistant",
+          content: cleanText,
+          created_at: new Date().toISOString(),
+        });
+        console.log("[CHAT_FLOW] 6. assistant message save success");
+      } catch (saveErr) {
+        console.error("[CHAT_FLOW] assistant message save failed:", saveErr);
+        setSendErrorMessage(`Ошибка сохранения ответа: ${saveErr?.message || String(saveErr)}`);
+        setIsAiLoading(false);
+        queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
+        return;
+      }
+
+      console.log("[CHAT_FLOW] 7. assistant message rendered");
 
       // Advance step using next_step_on_answer
       const nextStep = step.next_step_on_answer ? Number(step.next_step_on_answer) : null;
@@ -291,11 +312,11 @@ export default function SessionChat() {
         setShiftSuggestion({ suggestedMode });
       }
     } catch (err) {
-      console.error("[SessionChat] send failed:", err);
-      setOptimisticMessages([]); // keep user message in DB if it was saved
+      console.error("[CHAT_FLOW] send failed at unknown stage:", err);
+      setOptimisticMessages([]);
       setIsAiLoading(false);
       setSendError(true);
-      // Re-fetch to show what was actually saved
+      setSendErrorMessage(err?.message || String(err));
       queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
     }
   };
@@ -510,7 +531,7 @@ export default function SessionChat() {
                 <div className="flex items-start gap-3 p-4 rounded-xl border border-destructive/30 bg-destructive/5">
                   <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-destructive">Ошибка отправки. Попробуй ещё раз.</p>
+                    <p className="text-sm font-medium text-destructive">{sendErrorMessage || "Ошибка отправки. Попробуй ещё раз."}</p>
                     <Button size="sm" variant="outline" className="mt-2 gap-1.5" onClick={handleReload}>
                       <RefreshCw className="w-3.5 h-3.5" />
                       Перезагрузить чат
