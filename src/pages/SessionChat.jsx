@@ -50,6 +50,14 @@ export default function SessionChat() {
   const messagesEndRef = useRef(null);
   const initDone = useRef(false);
 
+  // ── Reset all init state when sessionId changes ───────────────────────────
+  useEffect(() => {
+    initDone.current = false;
+    setStepError(false);
+    setStepDebugInfo(null);
+    setOptimisticMessages([]);
+  }, [sessionId]);
+
   // ── Load current user first ───────────────────────────────────────────────
   useEffect(() => {
     base44.auth.me().then((u) => {
@@ -120,40 +128,47 @@ export default function SessionChat() {
   // ── Send initial greeting from step 1 ────────────────────────────────────
   useEffect(() => {
     if (!session || msgsLoading || dbMessages.length > 0 || initDone.current) return;
-    if (isAdminView) return; // don't re-init for admin read-only view
+    if (isAdminView) return;
 
     const modeId = String(session.mode_id || session.mode || "").trim();
-    // Always start from step 1 for the greeting regardless of current_step value
     const stepNum = 1;
 
-    // Guard: must have valid modeId
     if (!modeId) {
-      console.error("[SessionFlow] Cannot init greeting — missing modeId:", { mode_id: session.mode_id, mode: session.mode });
+      console.error("[SESSION_INIT] Cannot init — missing modeId", { mode_id: session.mode_id, mode: session.mode });
       setStepError(true);
       return;
     }
 
+    // Mark init started — prevent double-fire
     initDone.current = true;
 
+    // Always clear stale error state before attempting lookup
+    setStepError(false);
+    setStepDebugInfo(null);
+
     const stepKey = `${modeId}_${stepNum}`;
-    console.log("[SessionFlow] initializing greeting — mode_id:", modeId, "step_key:", stepKey, "session:", sessionId);
+    console.log("[SESSION_INIT] session loaded — mode:", modeId, "step_key:", stepKey, "session:", sessionId);
+    console.log("[SESSION_INIT] fetching step...");
+
+    let cancelled = false;
 
     fetchStep(modeId, stepNum).then(async (step) => {
+      if (cancelled) return;
+
       if (!step) {
-        // Gather full diagnostics for the debug UI
-        const [forMode, allSteps] = await Promise.all([
-          base44.entities.ModeStep.filter({ mode_id: modeId }),
-          base44.entities.ModeStep.list("step_number", 10),
-        ]);
+        console.error("[SESSION_INIT] step render failed — fetchStep returned null for", stepKey);
+        // Gather diagnostics without doing duplicate ModeStep queries (fetchStep already logged them)
+        const allSteps = await base44.entities.ModeStep.list("step_number", 20).catch(() => []);
+        const forMode = allSteps.filter((s) => String(s.mode_id || "").trim() === modeId);
         const availableKeys = forMode.map((s) => s.step_key || `[no key, step_number=${s.step_number}]`);
         const allModeIds = [...new Set(allSteps.map((s) => s.mode_id).filter(Boolean))];
         const sampleRows = allSteps.map((s) => `${s.mode_id}/${s.step_key || s.step_number}`);
-        console.error(`[STEP_DEBUG] All mode_ids in DB: ${allModeIds.join(", ")} | Sample: ${sampleRows.join(", ")}`);
         setStepDebugInfo({ stepKey, modeId, stepNum, availableKeys, totalStepsInDb: allSteps.length, allModeIds, sampleRows });
         setStepError(true);
         return;
       }
-      console.log("[SessionFlow] step found:", step.step_key, "— creating greeting");
+
+      console.log("[SESSION_INIT] step found:", step.step_key || step._stepKey);
       const greeting = `Давай начнём.\n\n${step.question}`;
       await base44.entities.Message.create({
         session_id: sessionId,
@@ -163,12 +178,16 @@ export default function SessionChat() {
         content: greeting,
         created_at: new Date().toISOString(),
       });
+      console.log("[SESSION_INIT] step render success — greeting saved");
       queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
     }).catch((err) => {
-      console.error("[SessionFlow] greeting init failed:", err);
+      if (cancelled) return;
+      console.error("[SESSION_INIT] step render failed — exception:", err?.message || err);
       setStepError(true);
     });
-  }, [session, msgsLoading, dbMessages.length, sessionId, queryClient, isAdminView, currentUser?.email]);
+
+    return () => { cancelled = true; };
+  }, [session?.id, msgsLoading, dbMessages.length, isAdminView]);
 
   // ── Auto-scroll ───────────────────────────────────────────────────────────
   useEffect(() => {
