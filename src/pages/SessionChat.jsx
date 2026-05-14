@@ -191,6 +191,37 @@ export default function SessionChat() {
     return () => { cancelled = true; };
   }, [session?.id, msgsLoading, dbMessages.length, isAdminView]);
 
+  // ── Auto-recover: if stepError is set but fetchStep actually works, create greeting silently ──
+  useEffect(() => {
+    if (!stepError || !session || isAdminView || dbMessages.length > 0) return;
+
+    const modeId = String(session.mode_id || session.mode || "").trim();
+    const stepNum = session.current_step || 1;
+    if (!modeId) return;
+
+    let cancelled = false;
+    fetchStep(modeId, stepNum).then(async (step) => {
+      if (cancelled || !step) return;
+      console.log("[SESSION_AUTORECOVERY] fetchStep succeeded on retry — creating greeting");
+      const greeting = `Давай начнём.\n\n${step.question}`;
+      await base44.entities.Message.create({
+        session_id: sessionId,
+        mode_id: modeId,
+        step_number: stepNum,
+        role: "assistant",
+        content: greeting,
+        created_at: new Date().toISOString(),
+      });
+      if (cancelled) return;
+      initDone.current = true;
+      setStepError(false);
+      setStepDebugInfo(null);
+      queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
+    }).catch(() => {/* stay in error state */});
+
+    return () => { cancelled = true; };
+  }, [stepError]);
+
   // ── Auto-scroll ───────────────────────────────────────────────────────────
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

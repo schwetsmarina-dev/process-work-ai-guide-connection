@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchStep } from "@/lib/sessionAI";
+import { base44 } from "@/api/base44Client";
 
 export default function StepErrorDebug({ session, stepDebugInfo, navigate, onGreetingCreated }) {
   const [testResult, setTestResult] = useState(null);
@@ -36,7 +37,6 @@ export default function StepErrorDebug({ session, stepDebugInfo, navigate, onGre
     if (!testResult?.found || !testResult.step) return;
     setRecovering(true);
     try {
-      const { base44 } = await import("@/api/base44Client");
       const greeting = `Давай начнём.\n\n${testResult.step.question}`;
       await base44.entities.Message.create({
         session_id: session.id,
@@ -49,8 +49,8 @@ export default function StepErrorDebug({ session, stepDebugInfo, navigate, onGre
       if (onGreetingCreated) onGreetingCreated();
     } catch (e) {
       alert("Ошибка: " + (e?.message || String(e)));
+      setRecovering(false);
     }
-    setRecovering(false);
   };
 
   return (
@@ -126,7 +126,7 @@ ${stepDebugInfo.sampleRows?.join("\n") || "  (empty)"}`}
             disabled={recovering}
             onClick={handleUseFoundStep}
           >
-            {recovering ? "Создаём приветствие…" : "Use found step and continue"}
+            {recovering ? "Создаём приветствие…" : "Создать первый вопрос и продолжить"}
           </Button>
         )}
       </div>
