@@ -166,16 +166,31 @@ export default function SessionChat() {
       }
 
       // Step found — create greeting, THEN mark init done
-      console.log("[SESSION_INIT] step found:", step.step_key || step._stepKey);
+      console.log("[SESSION_INIT] step found:", step.step_key || step._stepKey, "session.id:", sessionId);
       const greeting = `Давай начнём.\n\n${step.question}`;
-      await base44.entities.Message.create({
-        session_id: sessionId,
-        mode_id: modeId,
-        step_number: stepNum,
-        role: "assistant",
-        content: greeting,
-        created_at: new Date().toISOString(),
-      });
+      try {
+        await base44.entities.Message.create({
+          session_id: sessionId,
+          mode_id: modeId,
+          step_number: stepNum,
+          role: "assistant",
+          content: greeting,
+          created_at: new Date().toISOString(),
+        });
+      } catch (createErr) {
+        if (cancelled) return;
+        console.error("[SESSION_INIT] Message.create failed:", {
+          status: createErr?.response?.status || createErr?.status,
+          code: createErr?.response?.data?.code || createErr?.code,
+          message: createErr?.message,
+          session_id: sessionId,
+          entity: "Message",
+          action: "create",
+        });
+        setStepError(true);
+        return;
+      }
+      if (cancelled) return;
       initDone.current = true; // only mark done on success
       setStepError(false);
       setStepDebugInfo(null);
@@ -183,9 +198,8 @@ export default function SessionChat() {
       queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
     }).catch((err) => {
       if (cancelled) return;
-      console.error("[SESSION_INIT] fetchStep threw exception:", err?.message || err);
+      console.error("[SESSION_INIT] unexpected error:", err?.message || err);
       setStepError(true);
-      // Do NOT set initDone — allow retry
     });
 
     return () => { cancelled = true; };
@@ -202,7 +216,7 @@ export default function SessionChat() {
     let cancelled = false;
     fetchStep(modeId, stepNum).then(async (step) => {
       if (cancelled || !step) return;
-      console.log("[SESSION_AUTORECOVERY] fetchStep succeeded on retry — creating greeting");
+      console.log("[SESSION_AUTORECOVERY] fetchStep succeeded — creating greeting, session.id:", sessionId);
       const greeting = `Давай начнём.\n\n${step.question}`;
       await base44.entities.Message.create({
         session_id: sessionId,
@@ -211,13 +225,24 @@ export default function SessionChat() {
         role: "assistant",
         content: greeting,
         created_at: new Date().toISOString(),
+      }).catch((e) => {
+        console.error("[SESSION_AUTORECOVERY] Message.create failed:", {
+          status: e?.response?.status || e?.status,
+          code: e?.response?.data?.code || e?.code,
+          message: e?.message,
+          session_id: sessionId,
+        });
+        throw e;
       });
       if (cancelled) return;
       initDone.current = true;
       setStepError(false);
       setStepDebugInfo(null);
       queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
-    }).catch(() => {/* stay in error state */});
+    }).catch((e) => {
+      console.error("[SESSION_AUTORECOVERY] failed:", e?.message);
+      /* stay in error state so user sees StepErrorDebug */
+    });
 
     return () => { cancelled = true; };
   }, [stepError]);
@@ -529,7 +554,7 @@ export default function SessionChat() {
     <div className="flex flex-col h-screen">
       {/* ████ PERMANENT BUILD PROBE — remove after diagnosis ████ */}
       <div style={{ background: "#7c3aed", color: "#fff", fontFamily: "monospace", fontSize: "11px", padding: "4px 12px", letterSpacing: "0.05em", zIndex: 9999 }}>
-        REAL SESSION COMPONENT ACTIVE · StepErrorDebug wired · build 2026-05-14-v3
+        REAL SESSION COMPONENT ACTIVE · Message.create error logging · build 2026-05-14-v4
       </div>
 
       {/* Admin debug banner */}

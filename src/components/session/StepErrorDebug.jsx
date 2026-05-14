@@ -8,6 +8,7 @@ export default function StepErrorDebug({ session, stepDebugInfo, navigate, onGre
   const [testResult, setTestResult] = useState(null);
   const [testing, setTesting] = useState(false);
   const [recovering, setRecovering] = useState(false);
+  const [createError, setCreateError] = useState(null);
 
   const modeId = session?.mode_id || session?.mode || "dream";
   const stepNum = session?.current_step || 1;
@@ -35,9 +36,15 @@ export default function StepErrorDebug({ session, stepDebugInfo, navigate, onGre
 
   const handleUseFoundStep = async () => {
     if (!testResult?.found || !testResult.step) return;
+    if (!session?.id) {
+      alert("Ошибка: session.id не определён — сессия не загружена.");
+      return;
+    }
     setRecovering(true);
+    setCreateError(null);
     try {
       const greeting = `Давай начнём.\n\n${testResult.step.question}`;
+      console.log("[StepErrorDebug] Creating greeting message:", { session_id: session.id, modeId, stepNum });
       await base44.entities.Message.create({
         session_id: session.id,
         mode_id: modeId,
@@ -48,7 +55,16 @@ export default function StepErrorDebug({ session, stepDebugInfo, navigate, onGre
       });
       if (onGreetingCreated) onGreetingCreated();
     } catch (e) {
-      alert("Ошибка: " + (e?.message || String(e)));
+      const detail = {
+        message: e?.message || String(e),
+        status: e?.response?.status || e?.status || "?",
+        code: e?.response?.data?.code || e?.code || "?",
+        entity: "Message",
+        action: "create",
+        session_id: session?.id || "UNDEFINED",
+      };
+      console.error("[StepErrorDebug] Message.create failed:", detail);
+      setCreateError(detail);
       setRecovering(false);
     }
   };
@@ -82,10 +98,11 @@ DB sample (first 10):
 ${stepDebugInfo.sampleRows?.join("\n") || "  (empty)"}`}
         </pre>
       ) : (
-        <div className="text-xs font-mono bg-red-50 border border-red-200 text-red-700 rounded-lg p-3">
-          stepDebugInfo is empty — fetchStep failed before diagnostics
-          <br />
-          session.mode_id = &quot;{session?.mode_id}&quot; | session.current_step = {session?.current_step}
+        <div className="text-xs font-mono bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 space-y-0.5">
+          <div>stepDebugInfo is empty — fetchStep failed before diagnostics</div>
+          <div>session.id = &quot;{session?.id || "UNDEFINED"}&quot;</div>
+          <div>session.mode_id = &quot;{session?.mode_id}&quot;</div>
+          <div>session.current_step = {session?.current_step ?? "?"}</div>
         </div>
       )}
 
@@ -128,6 +145,17 @@ ${stepDebugInfo.sampleRows?.join("\n") || "  (empty)"}`}
           >
             {recovering ? "Создаём приветствие…" : "Создать первый вопрос и продолжить"}
           </Button>
+        )}
+
+        {createError && (
+          <div className="text-xs font-mono rounded-lg px-3 py-2 border bg-red-50 border-red-200 text-red-800 space-y-0.5">
+            <div className="font-semibold">❌ Message.create failed</div>
+            <div>entity: Message | action: create</div>
+            <div>session_id: {createError.session_id}</div>
+            <div>status: {createError.status}</div>
+            <div>code: {createError.code}</div>
+            <div>message: {createError.message}</div>
+          </div>
         )}
       </div>
 
