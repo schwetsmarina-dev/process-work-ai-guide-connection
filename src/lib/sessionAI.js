@@ -662,8 +662,13 @@ function getSafeFallback(currentMode, forcedNextLayer, integrationLock) {
 }
 
 export async function getAIResponse(session, step, messages, userMessage) {
-  // Last 8 messages for context
-  const recent = messages.slice(-8);
+  const currentMode = session.mode_id || session.mode;
+
+  // Last 8 messages for context — hard cap to prevent token overflow
+  const recent = messages.slice(-8).map((m) => ({
+    ...m,
+    content: m.content.length > 800 ? m.content.slice(0, 800) + "…" : m.content,
+  }));
   const history = recent
     .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
     .join("\n");
@@ -681,7 +686,7 @@ export async function getAIResponse(session, step, messages, userMessage) {
     ? null
     : needsMapping
     ? "process_mapping"
-    : getForcedNextLayer(session.mode_id || session.mode, coveredLayers);
+    : getForcedNextLayer(currentMode, coveredLayers);
   const isLooping = detectLoopInLastExchanges(messages);
 
   const layerStatus = coveredLayers.size > 0
@@ -742,8 +747,6 @@ ${step.facilitator_hint ? `Подсказка: ${step.facilitator_hint}` : ""}`
     ? `\n\nВозможный переход: ${step.possible_mode_shift}. Если это уместно — предложи пользователю: включи в конец ответа фразу «[SHIFT_SUGGEST:${step.pending_mode || ""}]» чтобы система показала кнопки выбора. Делай это только если смена режима явно уместна.`
     : "";
 
-  const currentMode = session.mode_id || session.mode;
-
   const buildPrompt = (extraInstruction = "") =>
     `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${integrationLock}${forcedInstruction}${loopWarning}${extraInstruction}
 
@@ -762,6 +765,56 @@ ${userMessage}
 4. Задай 1 точный вопрос к следующему слою, строя его на том, что уже сказано.
 Строго 2–3 предложения. Никаких повторов. Никаких шаблонов. Движение вперёд.`;
 
+  const fullPrompt = buildPrompt();
+  const estimatedTokens = Math.ceil(fullPrompt.length / 4);
+
+  // ── [AI_RUNTIME] diagnostics ──────────────────────────────────────────────
+  console.log("[AI_RUNTIME] Pre-call diagnostics:", {
+    mode: currentMode,
+    currentStep: step?.step_number ?? "?",
+    systemPromptLen: SYSTEM_PROMPT.length,
+    historyMessages: recent.length,
+    userMessageLen: userMessage.length,
+    estimatedTokens,
+    coveredLayers: [...coveredLayers],
+    forcedNextLayer: forcedNext,
+    integrationLock: isIntegrationStage,
+    isLooping,
+  });
+
+  if (estimatedTokens > 6000) {
+    console.warn("[AI_RUNTIME] Prompt too large (" + estimatedTokens + " est. tokens). Trimming history to 4 messages.");
+    // Rebuild with trimmed history
+    const trimmed = messages.slice(-4).map((m) => ({
+      ...m,
+      content: m.content.length > 400 ? m.content.slice(0, 400) + "…" : m.content,
+    }));
+    const trimmedHistory = trimmed
+      .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
+      .join("\n");
+    // Override history in prompt by rebuilding inline
+    const trimmedPrompt = `${SYSTEM_PROMPT}${stepContext}${layerStatus}${integrationLock}${forcedInstruction}${loopWarning}
+
+Режим: ${currentMode}
+
+━━━ ИСТОРИЯ РАЗГОВОРА ━━━
+${trimmedHistory}
+
+━━━ ПОСЛЕДНЕЕ СООБЩЕНИЕ ЧЕЛОВЕКА ━━━
+${userMessage}
+
+Напиши 1 отражение и 1 вопрос к следующему слою. Строго 2–3 предложения.`;
+    try {
+      console.log("[AI_RUNTIME] Calling InvokeLLM with trimmed prompt, est tokens:", Math.ceil(trimmedPrompt.length / 4));
+      const r = await base44.integrations.Core.InvokeLLM({ prompt: trimmedPrompt });
+      console.log("[AI_RUNTIME] InvokeLLM success (trimmed), response length:", r?.length);
+      return r || getSafeFallback(currentMode, forcedNext, isIntegrationStage);
+    } catch (e) {
+      console.error("[AI_RUNTIME] InvokeLLM FAILED (trimmed):", e?.message, e?.status, e?.code, String(e));
+      throw e;
+    }
+  }
+
   const validationParams = {
     currentMode,
     forcedNextLayer: forcedNext,
@@ -771,37 +824,55 @@ ${userMessage}
   };
 
   // ── Pass 1: initial generation ────────────────────────────────────────────
-  const firstResponse = await base44.integrations.Core.InvokeLLM({ prompt: buildPrompt() });
+  let firstResponse;
+  try {
+    console.log("[AI_RUNTIME] Calling InvokeLLM (pass 1), est tokens:", estimatedTokens);
+    firstResponse = await base44.integrations.Core.InvokeLLM({ prompt: fullPrompt });
+    console.log("[AI_RUNTIME] InvokeLLM pass 1 success, response length:", firstResponse?.length);
+  } catch (e) {
+    console.error("[AI_RUNTIME] InvokeLLM FAILED (pass 1):", e?.message, e?.status, e?.code, String(e));
+    // Safe-mode retry with minimal prompt
+    console.log("[AI_RUNTIME] Attempting safe-mode retry with minimal prompt...");
+    const minimalPrompt = `Ты Process Work guide. Задавай один мягкий вопрос.\n\nПоследнее сообщение пользователя: ${userMessage}`;
+    try {
+      const safeResponse = await base44.integrations.Core.InvokeLLM({ prompt: minimalPrompt });
+      console.log("[AI_RUNTIME] Safe-mode retry succeeded, response length:", safeResponse?.length);
+      return safeResponse || getSafeFallback(currentMode, forcedNext, isIntegrationStage);
+    } catch (e2) {
+      console.error("[AI_RUNTIME] Safe-mode retry ALSO FAILED:", e2?.message, String(e2));
+      throw e;
+    }
+  }
+
   const firstValidation = validateAssistantResponse({ responseText: firstResponse, ...validationParams });
 
   if (firstValidation.isValid) {
     return firstResponse;
   }
 
-  // ── Pass 1 failed: log and regenerate ─────────────────────────────────────
-  console.warn("[QF] Invalid response (pass 1):", {
-    response: firstResponse,
-    reason: firstValidation.reason,
-    correctedInstruction: firstValidation.correctedInstruction,
-  });
+  // ── Pass 1 failed validation: log and regenerate ──────────────────────────
+  console.warn("[AI_RUNTIME] Pass 1 failed validation:", firstValidation.reason);
 
   const retryInstruction = `\n\n🚨 ВАЖНО: предыдущий ответ был ОТКЛОНЁН. Причина: ${firstValidation.reason}. ${firstValidation.correctedInstruction}`;
-  const secondResponse = await base44.integrations.Core.InvokeLLM({ prompt: buildPrompt(retryInstruction) });
+  let secondResponse;
+  try {
+    secondResponse = await base44.integrations.Core.InvokeLLM({ prompt: buildPrompt(retryInstruction) });
+    console.log("[AI_RUNTIME] InvokeLLM pass 2 success, response length:", secondResponse?.length);
+  } catch (e) {
+    console.error("[AI_RUNTIME] InvokeLLM FAILED (pass 2):", e?.message, String(e));
+    return getSafeFallback(currentMode, forcedNext, isIntegrationStage);
+  }
+
   const secondValidation = validateAssistantResponse({ responseText: secondResponse, ...validationParams });
 
   if (secondValidation.isValid) {
-    console.info("[QF] Regenerated response passed validation.");
+    console.info("[AI_RUNTIME] Pass 2 passed validation.");
     return secondResponse;
   }
 
-  // ── Pass 2 failed: use safe fallback ─────────────────────────────────────
-  console.warn("[QF] Invalid response (pass 2):", {
-    response: secondResponse,
-    reason: secondValidation.reason,
-  });
-
+  console.warn("[AI_RUNTIME] Pass 2 also failed validation:", secondValidation.reason);
   const fallback = getSafeFallback(currentMode, forcedNext, isIntegrationStage);
-  console.info("[QF] Using safe fallback:", fallback);
+  console.info("[AI_RUNTIME] Using safe fallback:", fallback);
   return fallback;
 }
 
