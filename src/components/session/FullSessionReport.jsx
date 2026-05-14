@@ -2,13 +2,119 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, FileText, Zap, GitBranch, ListChecks, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, FileText, Zap, GitBranch, ListChecks, ChevronDown, ChevronUp, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { format } from "date-fns";
+import { jsPDF } from "jspdf";
+
+const MODE_LABELS_RU = {
+  body: "Работа с телом",
+  dream: "Работа со сном",
+  conflict: "Работа с конфликтом",
+  journaling: "Свободное письмо",
+};
 
 export default function FullSessionReport({ session, messages }) {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(true);
+
+  const downloadPDF = () => {
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 18;
+    const maxW = pageW - margin * 2;
+    let y = 20;
+
+    const addText = (text, opts = {}) => {
+      const { size = 10, bold = false, color = [60, 60, 60], indent = 0 } = opts;
+      doc.setFontSize(size);
+      doc.setFont("helvetica", bold ? "bold" : "normal");
+      doc.setTextColor(...color);
+      const lines = doc.splitTextToSize(String(text || ""), maxW - indent);
+      if (y + lines.length * (size * 0.4 + 1) > 275) { doc.addPage(); y = 20; }
+      doc.text(lines, margin + indent, y);
+      y += lines.length * (size * 0.4 + 1) + 1;
+    };
+
+    const addSection = (title, color = [80, 80, 80]) => {
+      y += 5;
+      if (y > 265) { doc.addPage(); y = 20; }
+      doc.setFillColor(...color);
+      doc.rect(margin, y - 4, maxW, 8, "F");
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(255, 255, 255);
+      doc.text(title, margin + 3, y + 1);
+      y += 9;
+      doc.setTextColor(60, 60, 60);
+    };
+
+    const addLine = () => {
+      y += 2;
+      doc.setDrawColor(220, 220, 220);
+      doc.line(margin, y, pageW - margin, y);
+      y += 4;
+    };
+
+    // Title
+    addText("Inner Process Path", { size: 18, bold: true, color: [70, 130, 100] });
+    addText("Отчёт о сессии", { size: 13, bold: false, color: [100, 100, 100] });
+    y += 2;
+
+    // Meta
+    const modeName = MODE_LABELS_RU[session.mode_id || session.mode] || (session.mode_id || session.mode);
+    const dateStr = session.created_date ? format(new Date(session.created_date), "d MMM yyyy, HH:mm") : "";
+    addText(`Режим: ${modeName}   |   Дата: ${dateStr}`, { size: 9, color: [130, 130, 130] });
+    addLine();
+
+    // Session summary (from session entity)
+    if (session.summary && session.summary !== "Сессия завершена. Резюме недоступно.") {
+      addSection("Краткое резюме", [70, 130, 100]);
+      addText(session.summary, { size: 10 });
+    }
+
+    // Key signals
+    if (report.key_signals?.length > 0) {
+      addSection("Ключевые сигналы", [200, 150, 50]);
+      report.key_signals.forEach((s) => addText(`• ${s}`, { size: 10, indent: 3 }));
+    }
+
+    // Polarities
+    if (report.polarities?.length > 0) {
+      addSection("Выявленные полярности", [110, 80, 160]);
+      report.polarities.forEach((p, i) => {
+        addText(`${i + 1}. ${p.primary}  ↔  ${p.secondary}`, { size: 10, bold: true, indent: 3, color: [90, 60, 140] });
+        if (p.tension) addText(p.tension, { size: 9, indent: 6, color: [120, 100, 160] });
+        y += 1;
+      });
+    }
+
+    // Self-work plan
+    if (report.self_work_plan?.length > 0) {
+      addSection("План самостоятельной работы", [50, 110, 160]);
+      report.self_work_plan.forEach((item, i) => {
+        addText(`${i + 1}. ${item.practice}`, { size: 10, bold: true, indent: 3 });
+        if (item.how) addText(item.how, { size: 9, indent: 6, color: [100, 100, 100] });
+        y += 1;
+      });
+    }
+
+    // Closing reflection
+    if (report.closing_reflection) {
+      addSection("Завершающее отражение", [100, 100, 100]);
+      addText(report.closing_reflection, { size: 10, color: [80, 80, 80] });
+    }
+
+    // Footer
+    y = doc.internal.pageSize.getHeight() - 12;
+    doc.setFontSize(8);
+    doc.setTextColor(180, 180, 180);
+    doc.text("Inner Process Path · Сгенерировано автоматически", margin, y);
+
+    const filename = `session-report-${session.id?.slice(0, 8) || "export"}.pdf`;
+    doc.save(filename);
+  };
 
   const generate = async () => {
     setLoading(true);
@@ -181,15 +287,26 @@ ${conversation}
                   </Card>
                 )}
 
-                {/* Regenerate */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground text-xs w-full"
-                  onClick={generate}
-                >
-                  Сгенерировать заново
-                </Button>
+                {/* Actions */}
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="flex-1 rounded-xl"
+                    onClick={downloadPDF}
+                  >
+                    <Download className="w-3.5 h-3.5 mr-1.5" />
+                    Скачать отчёт (PDF)
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground text-xs"
+                    onClick={generate}
+                  >
+                    Заново
+                  </Button>
+                </div>
               </div>
             )}
           </motion.div>
