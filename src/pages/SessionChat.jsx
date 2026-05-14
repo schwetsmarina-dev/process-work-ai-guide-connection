@@ -11,7 +11,7 @@ import {
   getAIResponse,
   generateSessionSummary,
 } from "@/lib/sessionAI";
-import { createMessage } from "@/lib/messageApi";
+import { createMessage, listMessages } from "@/lib/messageApi";
 import SessionHeader from "@/components/session/SessionHeader";
 import ChatMessage from "@/components/session/ChatMessage";
 import ChatInput from "@/components/session/ChatInput";
@@ -105,7 +105,7 @@ export default function SessionChat() {
     queryKey: ["messages", sessionId, currentUser?.email],
     queryFn: async () => {
       console.log("[SessionFlow] loading messages — session:", sessionId, "user:", currentUser?.email);
-      const msgs = await base44.entities.Message.filter({ session_id: sessionId }, "created_date");
+      const msgs = await listMessages(sessionId);
       console.log("[SessionFlow] messages loaded:", msgs.length, "for session:", sessionId);
       return msgs;
     },
@@ -113,10 +113,9 @@ export default function SessionChat() {
     enabled: !!sessionId && !!currentUser?.email && !accessDenied && !!session,
   });
 
-  // Merge DB messages with optimistic ones (de-dup by content+role for pending)
+  // Merge DB messages with optimistic ones
   const messages = useMemo(() => {
-    if (optimisticMessages.length === 0) return dbMessages;
-    return dbMessages;
+    return [...dbMessages, ...optimisticMessages];
   }, [dbMessages, optimisticMessages]);
 
   // ── Total steps for progress bar ─────────────────────────────────────────
@@ -295,10 +294,7 @@ export default function SessionChat() {
 
       // Refresh messages for AI context
       console.log("[CHAT_FLOW] 3. AI generation started");
-      const updatedMessages = await base44.entities.Message.filter(
-        { session_id: sessionId },
-        "created_date"
-      );
+      const updatedMessages = await listMessages(sessionId);
 
       // Get AI response
       let rawResponse;
@@ -359,10 +355,7 @@ export default function SessionChat() {
   // ── End session (manual) ──────────────────────────────────────────────────
   const handleEndSession = async () => {
     setIsEnding(true);
-    const allMessages = await base44.entities.Message.filter(
-      { session_id: sessionId },
-      "created_date"
-    );
+    const allMessages = await listMessages(sessionId);
     await finalizeSession(allMessages);
   };
 
@@ -379,10 +372,7 @@ export default function SessionChat() {
 
     try {
       // Always re-fetch messages scoped strictly to THIS session to prevent data mixing
-      const sessionMessages = await base44.entities.Message.filter(
-        { session_id: sessionId },
-        "created_date"
-      );
+      const sessionMessages = await listMessages(sessionId);
 
       const userMessages = sessionMessages.filter((m) => m.role === "user");
 
@@ -502,16 +492,11 @@ export default function SessionChat() {
     );
   }
 
-  // Combine DB messages with any pending optimistic ones
-  const displayMessages = optimisticMessages.length > 0
-    ? [...dbMessages, ...optimisticMessages]
-    : dbMessages;
-
   return (
     <div className="flex flex-col h-screen">
       {/* ████ PERMANENT BUILD PROBE — remove after diagnosis ████ */}
       <div style={{ background: "#7c3aed", color: "#fff", fontFamily: "monospace", fontSize: "11px", padding: "4px 12px", letterSpacing: "0.05em", zIndex: 9999 }}>
-        SESSIONCHAT BUILD: backend message function active · 2026-05-14-v7
+        SESSIONCHAT BUILD: backend message function active · listSessionMessages read · 2026-05-14-v8
       </div>
 
       {/* Admin debug banner */}
@@ -541,7 +526,7 @@ export default function SessionChat() {
         <>
           <div className="flex-1 overflow-y-auto px-4 py-6">
             <div className="max-w-3xl mx-auto space-y-4">
-              {displayMessages.map((msg) => (
+              {messages.map((msg) => (
                 <ChatMessage
                   key={msg.id}
                   message={msg}
