@@ -8,7 +8,6 @@ export default function RlsDiagnostic({ session }) {
   const [testResult, setTestResult] = useState(null);
   const [testing, setTesting] = useState(false);
 
-  // Load auth state immediately on mount
   useEffect(() => {
     base44.auth.me().then((u) => {
       setAuthInfo({
@@ -26,42 +25,32 @@ export default function RlsDiagnostic({ session }) {
     setTesting(true);
     setTestResult(null);
 
-    const payload = {
-      session_id: session?.id || "MISSING",
-      role: "assistant",
-      content: "RLS diagnostic test — safe to delete",
-      created_at: new Date().toISOString(),
-    };
-
-    console.log("[RLS_DIAG] Attempting Message.create with payload:", payload);
-    console.log("[RLS_DIAG] Auth state:", authInfo);
+    console.log("[RLS_DIAG] Invoking createSessionMessage backend function for session:", session?.id);
 
     try {
-      const result = await createMessage({ session_id: session?.id, role: "assistant", content: "RLS diagnostic test — safe to delete" });
-      console.log("[RLS_DIAG] SUCCESS:", result);
-      setTestResult({
-        success: true,
-        id: result?.id,
-        created_by: result?.created_by,
-        payload,
+      const result = await createMessage({
+        session_id: session?.id,
+        role: "assistant",
+        content: "RLS diagnostic test — safe to delete",
       });
+
+      console.log("[RLS_DIAG] SUCCESS:", result);
+      setTestResult({ success: true, result });
+
       // Clean up test record
       if (result?.id) {
         base44.entities.Message.delete(result.id).catch(() => {});
       }
     } catch (e) {
-      // Extract every possible field from the error object
       const raw = {
         message: e?.message || String(e),
         status: e?.response?.status ?? e?.status ?? "?",
-        statusText: e?.response?.statusText ?? "?",
         code: e?.response?.data?.code ?? e?.code ?? "?",
         detail: e?.response?.data?.detail ?? e?.response?.data?.message ?? "?",
         responseData: e?.response?.data ? JSON.stringify(e.response.data) : "?",
-        stack: e?.stack?.split("\n").slice(0, 4).join(" | ") ?? "?",
       };
       console.error("[RLS_DIAG] FAILED:", raw);
-      setTestResult({ success: false, error: raw, payload });
+      setTestResult({ success: false, error: raw });
     }
 
     setTesting(false);
@@ -69,7 +58,13 @@ export default function RlsDiagnostic({ session }) {
 
   return (
     <div className="mt-3 p-3 rounded-lg border border-violet-200 bg-violet-50 space-y-3 text-xs font-mono">
-      <div className="font-semibold text-violet-800">🔬 RLS Runtime Diagnostics</div>
+      {/* Build marker */}
+      <div className="font-semibold text-violet-800">
+        🔬 RLS Runtime Diagnostics
+        <span className="ml-2 text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5 text-xs">
+          RLS DIAG BUILD: backend function test active
+        </span>
+      </div>
 
       {/* Auth state */}
       <div className="space-y-0.5">
@@ -103,7 +98,7 @@ export default function RlsDiagnostic({ session }) {
         disabled={testing || !session?.id}
         onClick={handleTestCreate}
       >
-        {testing ? "Testing…" : "▶ Test Message.create directly"}
+        {testing ? "Testing…" : "▶ Test createSessionMessage backend function"}
       </Button>
 
       {/* Result */}
@@ -111,25 +106,24 @@ export default function RlsDiagnostic({ session }) {
         <div className={`rounded-lg px-3 py-2 border space-y-1 ${testResult.success ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}>
           {testResult.success ? (
             <>
-              <div className="font-semibold">✅ Message.create SUCCEEDED</div>
-              <div>created id: {testResult.id}</div>
-              <div>created_by: {testResult.created_by}</div>
+              <div className="font-semibold">✅ createSessionMessage SUCCEEDED</div>
+              <div>backend function invoked: <span className="font-bold">true</span></div>
+              <div>function name: <span className="font-bold">createSessionMessage</span></div>
+              <div>result message id: {testResult.result?.id || "(none)"}</div>
+              <div className="break-all">raw response: {JSON.stringify(testResult.result)}</div>
             </>
           ) : (
             <>
-              <div className="font-semibold">❌ Message.create FAILED</div>
+              <div className="font-semibold">❌ createSessionMessage FAILED</div>
+              <div>backend function invoked: <span className="font-bold">true</span></div>
+              <div>function name: <span className="font-bold">createSessionMessage</span></div>
               <div>status: {testResult.error.status}</div>
-              <div>statusText: {testResult.error.statusText}</div>
               <div>code: {testResult.error.code}</div>
-              <div>message: {testResult.error.message}</div>
               <div>detail: {testResult.error.detail}</div>
-              <div>responseData: {testResult.error.responseData}</div>
-              <div className="text-xs opacity-70 break-all">stack: {testResult.error.stack}</div>
+              <div>message: {testResult.error.message}</div>
+              <div className="break-all">raw error: {testResult.error.responseData}</div>
             </>
           )}
-          <div className="opacity-60 text-xs pt-1">
-            payload: {JSON.stringify(testResult.payload)}
-          </div>
         </div>
       )}
     </div>
