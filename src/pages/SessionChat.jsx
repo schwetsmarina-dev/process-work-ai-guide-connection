@@ -495,6 +495,11 @@ export default function SessionChat() {
 
   return (
     <div className="flex flex-col h-screen">
+      {/* ████ PERMANENT BUILD PROBE — remove after diagnosis ████ */}
+      <div style={{ background: "#7c3aed", color: "#fff", fontFamily: "monospace", fontSize: "11px", padding: "4px 12px", letterSpacing: "0.05em", zIndex: 9999 }}>
+        REAL SESSION COMPONENT ACTIVE · StepErrorDebug wired · build 2026-05-14-v3
+      </div>
+
       {/* Admin debug banner */}
       {isAdminView && (
         <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border-b border-amber-200 text-amber-800 text-xs">
