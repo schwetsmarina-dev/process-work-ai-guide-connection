@@ -31,82 +31,64 @@ export async function fetchStep(modeId, stepNumber) {
   const stepNum = Number(stepNumber) || 1;
   const stepKey = `${modeIdClean}_${stepNum}`;
 
-  console.log(`[STEP_DEBUG] Looking up — mode_id="${modeIdClean}" step=${stepNum} step_key="${stepKey}"`);
-
-  // Load ALL steps for this mode in one query — most reliable approach
-  // This avoids index/filter issues with individual field lookups
-  let allForMode = [];
+  // Load ALL records unconditionally — avoids filter/index issues
+  let all = [];
   try {
-    allForMode = await base44.entities.ModeStep.filter({ mode_id: modeIdClean });
-    console.log(`[STEP_DEBUG] Loaded ${allForMode.length} steps for mode "${modeIdClean}"`);
+    all = await base44.entities.ModeStep.list("step_number", 500);
   } catch (e) {
-    console.warn(`[STEP_DEBUG] filter by mode_id failed: ${e.message}. Falling back to full list.`);
-    try {
-      const allSteps = await base44.entities.ModeStep.list("step_number", 500);
-      allForMode = allSteps.filter((s) => String(s.mode_id || "").trim() === modeIdClean);
-      console.log(`[STEP_DEBUG] Fallback: found ${allForMode.length} steps for mode "${modeIdClean}" from full list`);
-    } catch (e2) {
-      console.error(`[STEP_DEBUG] Full list fallback also failed: ${e2.message}`);
-      return null;
-    }
-  }
-
-  if (allForMode.length === 0) {
-    console.error(`[STEP_DEBUG] No steps found for mode_id="${modeIdClean}"`);
+    console.error(`[FETCH_STEP_DEBUG] ModeStep.list failed: ${e.message}`);
     return null;
   }
 
-  // Normalize all rows for matching
-  const normalized = allForMode.map((s) => ({
+  // Normalize every row
+  const normalized = all.map((s) => ({
     ...s,
     _modeId: String(s.mode_id || "").trim(),
     _stepKey: String(s.step_key || "").trim(),
     _stepNum: Number(s.step_number) || Number(s.step) || 0,
   }));
 
-  // Match strategy a: exact step_key match
-  let match = normalized.find((s) => s._stepKey === stepKey);
+  const forMode = normalized.filter((s) => s._modeId === modeIdClean);
+  const availableKeys = forMode.map((s) => s._stepKey || `[no key, step_number=${s._stepNum}]`);
+
+  console.log(
+    `[FETCH_STEP_DEBUG] modeId="${modeIdClean}" stepNumber=${stepNum} stepKey="${stepKey}" ` +
+    `totalRows=${all.length} rowsForMode=${forMode.length} ` +
+    `availableStepKeys=[${availableKeys.join(", ")}]`
+  );
+
+  if (forMode.length === 0) {
+    const allModeIds = [...new Set(normalized.map((s) => s._modeId).filter(Boolean))];
+    console.error(`[FETCH_STEP_DEBUG] No rows for mode "${modeIdClean}". DB mode_ids: [${allModeIds.join(", ")}]`);
+    return null;
+  }
+
+  // Strategy 1: exact step_key match
+  let match = forMode.find((s) => s._stepKey === stepKey);
   if (match) {
-    console.log(`[STEP_DEBUG] Found by step_key: "${match._stepKey}"`);
+    console.log(`[FETCH_STEP_DEBUG] Found by step_key: "${match._stepKey}"`);
     return match;
   }
 
-  // Match strategy b: step_number === stepNum
-  match = normalized.find((s) => s._stepNum === stepNum);
+  // Strategy 2: step_number match
+  match = forMode.find((s) => s._stepNum === stepNum);
   if (match) {
-    console.log(`[STEP_DEBUG] Found by step_number=${stepNum}. step_key="${match._stepKey}". Auto-repairing...`);
-    return repairStepKey(match, modeIdClean, stepNum);
-  }
-
-  // Match strategy c: step_key contains _${stepNum} suffix
-  match = normalized.find((s) => s._stepKey.endsWith(`_${stepNum}`));
-  if (match) {
-    console.log(`[STEP_DEBUG] Found by step_key suffix _${stepNum}: "${match._stepKey}"`);
+    console.log(`[FETCH_STEP_DEBUG] Found by step_number=${stepNum}, step_key="${match._stepKey}"`);
     return match;
   }
 
-  // Nothing found
-  const allSample = await base44.entities.ModeStep.list("step_number", 20).catch(() => []);
+  // Strategy 3: step_key ends with _${stepNum}
+  match = forMode.find((s) => s._stepKey.endsWith(`_${stepNum}`));
+  if (match) {
+    console.log(`[FETCH_STEP_DEBUG] Found by step_key suffix "_${stepNum}": "${match._stepKey}"`);
+    return match;
+  }
+
   console.error(
-    `[STEP_DEBUG] FAILED — mode_id="${modeIdClean}" step_key="${stepKey}"\n` +
-    `  Steps for this mode (${allForMode.length}): ${allForMode.map((s) => s.step_key || `[no key, step_number=${s.step_number}]`).join(", ") || "(none)"}\n` +
-    `  DB sample (first 20): ${allSample.map((s) => `${s.mode_id}/${s.step_key || s.step_number}`).join(", ") || "(empty)"}`
+    `[FETCH_STEP_DEBUG] NOT FOUND — modeId="${modeIdClean}" stepKey="${stepKey}" ` +
+    `availableKeys=[${availableKeys.join(", ")}]`
   );
   return null;
-}
-
-async function repairStepKey(row, modeId, stepNum) {
-  if (!row.step_key) {
-    const computedKey = `${modeId}_${row.step_number || row.step || stepNum}`;
-    console.log(`[STEP_DEBUG] Auto-repairing step_key: "${computedKey}" for id=${row.id}`);
-    try {
-      await base44.entities.ModeStep.update(row.id, { step_key: computedKey });
-      return { ...row, step_key: computedKey };
-    } catch (e) {
-      console.warn(`[STEP_DEBUG] step_key repair failed:`, e.message);
-    }
-  }
-  return row;
 }
 
 // ─── Fetch related terms from DB ─────────────────────────────────────────────
