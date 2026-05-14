@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, CheckCircle2, AlertTriangle, Database, Trash2, Wrench, RefreshCw } from "lucide-react";
+import { Loader2, CheckCircle2, AlertTriangle, Database, Trash2, Wrench, RefreshCw, GitMerge } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,8 @@ export default function AdminDataStatus() {
   const [cleared, setCleared] = useState(false);
   const [repairing, setRepairing] = useState(false);
   const [repairResult, setRepairResult] = useState(null);
+  const [patching, setPatching] = useState(false);
+  const [patchResult, setPatchResult] = useState(null);
 
   const { data: modes = [], isLoading: modesLoading } = useQuery({
     queryKey: ["admin-modes"],
@@ -128,11 +130,40 @@ export default function AdminDataStatus() {
     setCleared(true);
   };
 
+  // Duplicate step_key detection
+  const stepKeyCount = {};
+  for (const s of steps) {
+    if (s.step_key) stepKeyCount[s.step_key] = (stepKeyCount[s.step_key] || 0) + 1;
+  }
+  const duplicateStepKeys = Object.entries(stepKeyCount)
+    .filter(([, count]) => count > 1)
+    .map(([key]) => key);
+
   const brokenSteps = steps.filter((s) => !s.step_key);
   const firstStepsMissing = EXPECTED_MODES.filter((mode) => {
     const first = steps.find((s) => s.step_key === `${mode}_1`);
     return !first;
   });
+
+  // Check if process_mapping steps are present
+  const mappingStepsMissing = EXPECTED_MODES.filter((mode) => {
+    const s = steps.find((s) => s.step_key === `${mode}_1`);
+    return !s || !s.goal?.includes("process mapping");
+  });
+
+  const handlePatchProcessMapping = async () => {
+    setPatching(true);
+    setPatchResult(null);
+    try {
+      const res = await base44.functions.invoke("patchProcessMappingSteps", {});
+      await queryClient.invalidateQueries({ queryKey: ["admin-steps"] });
+      await refetchSteps();
+      setPatchResult({ success: true, report: res.data?.report });
+    } catch (e) {
+      setPatchResult({ success: false, error: e.message });
+    }
+    setPatching(false);
+  };
 
   return (
     <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
@@ -152,6 +183,17 @@ export default function AdminDataStatus() {
           >
             {repairing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Wrench className="w-4 h-4 mr-2" />}
             Repair step keys
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={patching || stepsLoading}
+            onClick={handlePatchProcessMapping}
+            className="border-blue-200 text-blue-700 hover:bg-blue-50"
+          >
+            {patching ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <GitMerge className="w-4 h-4 mr-2" />}
+            Patch process mapping
           </Button>
 
           <Button
@@ -200,6 +242,14 @@ export default function AdminDataStatus() {
 
       {/* Notifications */}
       {cleared && <Ok text="Справочные таблицы очищены. Загрузите данные через «Импорт данных»." />}
+      {patchResult && (
+        <div className="mt-3">
+          {patchResult.success
+            ? <Ok text={`Process mapping patch applied. ${Object.entries(patchResult.report || {}).map(([m, r]) => `${m}: ${r.skipped ? "skipped" : r.inserted ? `shifted ${r.shifted}, inserted _1` : "error"}`).join(" | ")}`} />
+            : <Warning text={`Patch failed: ${patchResult.error}`} />
+          }
+        </div>
+      )}
       {repairResult && (
         <div className="mt-3">
           {repairResult.total === 0
@@ -222,6 +272,42 @@ export default function AdminDataStatus() {
         </div>
       ) : (
         <div className="space-y-6">
+
+          {/* Duplicate step_keys warning */}
+          {duplicateStepKeys.length > 0 && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-1">
+              <div className="flex items-center gap-2 text-sm font-semibold text-red-700">
+                <AlertTriangle className="w-4 h-4" />
+                {duplicateStepKeys.length} дублирующихся step_key — могут сломать сессии:
+              </div>
+              <div className="text-xs font-mono text-red-600 ml-6 flex flex-wrap gap-1 mt-1">
+                {duplicateStepKeys.map((k) => (
+                  <span key={k} className="bg-red-100 border border-red-200 rounded px-2 py-0.5">{k} ×{stepKeyCount[k]}</span>
+                ))}
+              </div>
+              <p className="text-xs text-red-600 ml-6">Нажмите «Patch process mapping» — дубликаты будут удалены автоматически.</p>
+            </div>
+          )}
+
+          {/* Process mapping steps status */}
+          {mappingStepsMissing.length > 0 && steps.length > 0 && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-1">
+              <div className="flex items-center gap-2 text-sm font-semibold text-blue-700">
+                <GitMerge className="w-4 h-4" />
+                Отсутствуют шаги картирования процесса (process_mapping):
+              </div>
+              <div className="text-xs font-mono text-blue-600 ml-6 flex flex-wrap gap-1 mt-1">
+                {mappingStepsMissing.map((m) => (
+                  <span key={m} className="bg-blue-100 border border-blue-200 rounded px-2 py-0.5">{m}_1 (process mapping)</span>
+                ))}
+              </div>
+              <p className="text-xs text-blue-600 ml-6">Нажмите «Patch process mapping» чтобы добавить их и сдвинуть существующие шаги.</p>
+            </div>
+          )}
+
+          {mappingStepsMissing.length === 0 && steps.length > 0 && (
+            <Ok text="Все шаги картирования процесса (process_mapping) установлены на позиции _1." />
+          )}
 
           {/* Critical: missing first steps */}
           {steps.length === 0 && (
