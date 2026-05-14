@@ -17,6 +17,7 @@ import AppLayout from './components/layout/AppLayout';
 import AdminImport from './pages/AdminImport';
 import AdminDataStatus from './pages/AdminDataStatus';
 import InsightLibrary from './pages/InsightLibrary';
+import InsightAgent from './pages/InsightAgent';
 import RequireAuth from './components/layout/RequireAuth';
 
 const AuthenticatedApp = () => {
@@ -61,6 +62,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/import" element={<AdminImport />} />
         <Route path="/admin/status" element={<AdminDataStatus />} />
         <Route path="/insights-library" element={<InsightLibrary />} />
+        <Route path="/insight-agent" element={<InsightAgent />} />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />
