@@ -39,30 +39,47 @@ export default function Dashboard() {
 
     console.log("[SessionFlow] mode selected:", modeId, "looking up step_key:", stepKey);
 
-    // Verify step exists BEFORE creating session — try by step_key AND by mode_id+step_number
-    const steps = await base44.entities.ModeStep.filter({ mode_id: modeId });
+    // Load all steps for mode — bulletproof check before creating session
+    let allModeSteps = [];
+    try {
+      allModeSteps = await base44.entities.ModeStep.filter({ mode_id: modeId });
+    } catch (e) {
+      // Permissions issue — try listing all
+      try {
+        const all = await base44.entities.ModeStep.list("step_number", 500);
+        allModeSteps = all.filter((s) => String(s.mode_id || "").trim() === modeId);
+      } catch (e2) {
+        console.error("[SessionFlow] Cannot read ModeStep:", e2.message);
+      }
+    }
+
     const firstStep =
-      steps.find((s) => s.step_key === stepKey) ||
-      steps.find((s) => Number(s.step_number) === 1 || Number(s.step) === 1);
+      allModeSteps.find((s) => String(s.step_key || "").trim() === stepKey) ||
+      allModeSteps.find((s) => Number(s.step_number) === 1) ||
+      allModeSteps.find((s) => Number(s.step) === 1) ||
+      allModeSteps.find((s) => String(s.step_key || "").endsWith("_1"));
 
     if (!firstStep) {
-      const allSample = await base44.entities.ModeStep.list("step_number", 10);
+      const allSample = await base44.entities.ModeStep.list("step_number", 10).catch(() => []);
       const allModeIds = [...new Set(allSample.map((s) => s.mode_id).filter(Boolean))];
-      const allKeys = steps.map((s) => s.step_key || `[no key, step_number=${s.step_number}]`).join(", ") || "(none)";
+      const allKeys = allModeSteps.map((s) => s.step_key || `[no key, step_number=${s.step_number}]`).join(", ") || "(none)";
       console.error(
-        `[SessionFlow] First step not found!\n  mode_id = ${modeId}\n  step_key = ${stepKey}\n  steps for mode = ${allKeys}\n  DB mode_ids = ${allModeIds.join(", ")}\n  total in DB = ${allSample.length}`
+        `[SessionFlow] First step not found!\n  mode_id = ${modeId}\n  step_key = ${stepKey}\n  steps for mode = ${allKeys}\n  DB mode_ids = ${allModeIds.join(", ")}\n  ModeStep rows readable = ${allSample.length}`
       );
       alert(
-        `Первый шаг не найден для режима «${modeId}».\n\nstep_key: ${stepKey}\n` +
-        `Шаги в DB для этого режима: ${allKeys}\n` +
-        `Все mode_id в DB: ${allModeIds.join(", ") || "(пусто)"}\n\n` +
-        `→ Откройте /admin/import и загрузите mode_steps.csv.\n` +
-        `→ Проверьте, что mode_id в CSV совпадает с «${modeId}».`
+        `Первый шаг не найден для режима «${modeId}».\n\n` +
+        `step_key: ${stepKey}\n` +
+        `Шаги для этого режима: ${allKeys}\n` +
+        `Все mode_id в DB: ${allModeIds.join(", ") || "(пусто)"}\n` +
+        `ModeStep записей, доступных пользователю: ${allSample.length}\n\n` +
+        `→ Откройте /admin/status → «Test step lookup» для диагностики.\n` +
+        `→ Или откройте /admin/import и загрузите mode_steps.csv.`
       );
       return;
     }
 
     const session = await base44.entities.Session.create({
+      user_id: currentUser?.id,
       mode_id: modeId,
       mode: modeId,
       status: "active",

@@ -25,7 +25,7 @@ export function checkCrisis(text) {
   return CRISIS_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
-// ─── Fetch step from DB — multi-fallback lookup ──────────────────────────────
+// ─── Fetch step from DB — bulletproof lookup ─────────────────────────────────
 export async function fetchStep(modeId, stepNumber) {
   const modeIdClean = String(modeId || "").trim();
   const stepNum = Number(stepNumber) || 1;
@@ -33,44 +33,60 @@ export async function fetchStep(modeId, stepNumber) {
 
   console.log(`[STEP_DEBUG] Looking up — mode_id="${modeIdClean}" step=${stepNum} step_key="${stepKey}"`);
 
-  // 1. Primary: exact step_key match
-  const byKey = await base44.entities.ModeStep.filter({ step_key: stepKey });
-  if (byKey.length > 0) {
-    console.log(`[STEP_DEBUG] Found by step_key: "${byKey[0].step_key}"`);
-    return byKey[0];
+  // Load ALL steps for this mode in one query — most reliable approach
+  // This avoids index/filter issues with individual field lookups
+  let allForMode = [];
+  try {
+    allForMode = await base44.entities.ModeStep.filter({ mode_id: modeIdClean });
+    console.log(`[STEP_DEBUG] Loaded ${allForMode.length} steps for mode "${modeIdClean}"`);
+  } catch (e) {
+    console.warn(`[STEP_DEBUG] filter by mode_id failed: ${e.message}. Falling back to full list.`);
+    try {
+      const allSteps = await base44.entities.ModeStep.list("step_number", 500);
+      allForMode = allSteps.filter((s) => String(s.mode_id || "").trim() === modeIdClean);
+      console.log(`[STEP_DEBUG] Fallback: found ${allForMode.length} steps for mode "${modeIdClean}" from full list`);
+    } catch (e2) {
+      console.error(`[STEP_DEBUG] Full list fallback also failed: ${e2.message}`);
+      return null;
+    }
   }
 
-  // 2. Fallback: mode_id + step_number (number)
-  const byNum = await base44.entities.ModeStep.filter({ mode_id: modeIdClean, step_number: stepNum });
-  if (byNum.length > 0) {
-    console.log(`[STEP_DEBUG] Found by mode_id+step_number(num). step_key="${byNum[0].step_key}". Auto-repairing key...`);
-    return repairStepKey(byNum[0], modeIdClean, stepNum);
+  if (allForMode.length === 0) {
+    console.error(`[STEP_DEBUG] No steps found for mode_id="${modeIdClean}"`);
+    return null;
   }
 
-  // 3. Fallback: mode_id + step (legacy field name, number)
-  const byStep = await base44.entities.ModeStep.filter({ mode_id: modeIdClean, step: stepNum });
-  if (byStep.length > 0) {
-    console.log(`[STEP_DEBUG] Found by mode_id+step(num). Auto-repairing key...`);
-    return repairStepKey(byStep[0], modeIdClean, stepNum);
+  // Normalize all rows for matching
+  const normalized = allForMode.map((s) => ({
+    ...s,
+    _modeId: String(s.mode_id || "").trim(),
+    _stepKey: String(s.step_key || "").trim(),
+    _stepNum: Number(s.step_number) || Number(s.step) || 0,
+  }));
+
+  // Match strategy a: exact step_key match
+  let match = normalized.find((s) => s._stepKey === stepKey);
+  if (match) {
+    console.log(`[STEP_DEBUG] Found by step_key: "${match._stepKey}"`);
+    return match;
   }
 
-  // 4. Fallback: mode_id + step_number (string)
-  const byNumStr = await base44.entities.ModeStep.filter({ mode_id: modeIdClean, step_number: String(stepNum) });
-  if (byNumStr.length > 0) {
-    console.log(`[STEP_DEBUG] Found by mode_id+step_number(str). Auto-repairing key...`);
-    return repairStepKey(byNumStr[0], modeIdClean, stepNum);
+  // Match strategy b: step_number === stepNum
+  match = normalized.find((s) => s._stepNum === stepNum);
+  if (match) {
+    console.log(`[STEP_DEBUG] Found by step_number=${stepNum}. step_key="${match._stepKey}". Auto-repairing...`);
+    return repairStepKey(match, modeIdClean, stepNum);
   }
 
-  // 5. Fallback: mode_id + step (legacy, string)
-  const byStepStr = await base44.entities.ModeStep.filter({ mode_id: modeIdClean, step: String(stepNum) });
-  if (byStepStr.length > 0) {
-    console.log(`[STEP_DEBUG] Found by mode_id+step(str). Auto-repairing key...`);
-    return repairStepKey(byStepStr[0], modeIdClean, stepNum);
+  // Match strategy c: step_key contains _${stepNum} suffix
+  match = normalized.find((s) => s._stepKey.endsWith(`_${stepNum}`));
+  if (match) {
+    console.log(`[STEP_DEBUG] Found by step_key suffix _${stepNum}: "${match._stepKey}"`);
+    return match;
   }
 
-  // Nothing found — gather diagnostics
-  const allForMode = await base44.entities.ModeStep.filter({ mode_id: modeIdClean });
-  const allSample = await base44.entities.ModeStep.list("step_number", 20);
+  // Nothing found
+  const allSample = await base44.entities.ModeStep.list("step_number", 20).catch(() => []);
   console.error(
     `[STEP_DEBUG] FAILED — mode_id="${modeIdClean}" step_key="${stepKey}"\n` +
     `  Steps for this mode (${allForMode.length}): ${allForMode.map((s) => s.step_key || `[no key, step_number=${s.step_number}]`).join(", ") || "(none)"}\n` +

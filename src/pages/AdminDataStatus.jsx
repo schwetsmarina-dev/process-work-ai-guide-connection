@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, CheckCircle2, AlertTriangle, Database, Trash2, Wrench, RefreshCw, GitMerge } from "lucide-react";
+import { Loader2, CheckCircle2, AlertTriangle, Database, Trash2, Wrench, RefreshCw, GitMerge, FlaskConical } from "lucide-react";
+import { fetchStep } from "@/lib/sessionAI";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,8 @@ export default function AdminDataStatus() {
   const [repairResult, setRepairResult] = useState(null);
   const [patching, setPatching] = useState(false);
   const [patchResult, setPatchResult] = useState(null);
+  const [testing, setTesting] = useState(false);
+  const [testResults, setTestResults] = useState(null);
 
   const { data: modes = [], isLoading: modesLoading } = useQuery({
     queryKey: ["admin-modes"],
@@ -151,6 +154,24 @@ export default function AdminDataStatus() {
     return !s || !s.goal?.includes("process mapping");
   });
 
+  const handleTestStepLookup = async () => {
+    setTesting(true);
+    setTestResults(null);
+    const results = {};
+    for (const mode of EXPECTED_MODES) {
+      try {
+        const step = await fetchStep(mode, 1);
+        results[mode] = step
+          ? { found: true, step_key: step.step_key || step._stepKey, question_preview: (step.question || "").substring(0, 60) }
+          : { found: false };
+      } catch (e) {
+        results[mode] = { found: false, error: e.message };
+      }
+    }
+    setTestResults(results);
+    setTesting(false);
+  };
+
   const handlePatchProcessMapping = async () => {
     setPatching(true);
     setPatchResult(null);
@@ -183,6 +204,17 @@ export default function AdminDataStatus() {
           >
             {repairing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Wrench className="w-4 h-4 mr-2" />}
             Repair step keys
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={testing || stepsLoading}
+            onClick={handleTestStepLookup}
+            className="border-violet-200 text-violet-700 hover:bg-violet-50"
+          >
+            {testing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FlaskConical className="w-4 h-4 mr-2" />}
+            Test step lookup
           </Button>
 
           <Button
@@ -256,6 +288,29 @@ export default function AdminDataStatus() {
             ? <Ok text="Все step_key уже заполнены — ничего не исправлено." />
             : <Ok text={`Исправлено step_key: ${repairResult.fixed} из ${repairResult.total}. Ошибок: ${repairResult.failed}.`} />
           }
+        </div>
+      )}
+      {testResults && (
+        <div className="mt-3 rounded-lg border border-violet-200 bg-violet-50 p-4 space-y-2">
+          <p className="text-sm font-semibold text-violet-700 flex items-center gap-2">
+            <FlaskConical className="w-4 h-4" /> Test public step lookup — fetchStep(mode, 1)
+          </p>
+          {EXPECTED_MODES.map((mode) => {
+            const r = testResults[mode];
+            return (
+              <div key={mode} className={`flex items-start gap-3 text-sm rounded-md px-3 py-2 ${r?.found ? "bg-green-50 text-green-800 border border-green-200" : "bg-red-50 text-red-800 border border-red-200"}`}>
+                {r?.found
+                  ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-green-600" />
+                  : <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />}
+                <div>
+                  <span className="font-mono font-semibold">{mode}_1</span>
+                  {r?.found
+                    ? <span className="ml-2 text-green-700">FOUND — step_key: {r.step_key} | "{r.question_preview}…"</span>
+                    : <span className="ml-2 text-red-700">NOT FOUND{r?.error ? ` — ${r.error}` : ""}</span>}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
