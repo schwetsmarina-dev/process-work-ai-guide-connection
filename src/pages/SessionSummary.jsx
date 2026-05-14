@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { motion } from "framer-motion";
 import SessionInsightSuggestions from "@/components/session/SessionInsightSuggestions";
 import { extractInsightsFromSession } from "@/lib/insightAI";
+import FullSessionReport from "@/components/session/FullSessionReport";
 
 const iconMap = { Heart, Moon, GitBranch, PenLine };
 
@@ -189,6 +190,11 @@ export default function SessionSummary() {
           </motion.div>
         )}
       </div>
+
+      {/* Full session report */}
+      {messages.length > 0 && (
+        <FullSessionReport session={session} messages={messages} />
+      )}
 
       {/* Insight suggestions */}
       {insightSuggestions.length > 0 && (
