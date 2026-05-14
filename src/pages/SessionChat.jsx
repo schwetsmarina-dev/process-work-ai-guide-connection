@@ -122,12 +122,13 @@ export default function SessionChat() {
     if (!session || msgsLoading || dbMessages.length > 0 || initDone.current) return;
     if (isAdminView) return; // don't re-init for admin read-only view
 
-    const modeId = session.mode_id;
-    const stepNum = session.current_step || 1;
+    const modeId = String(session.mode_id || session.mode || "").trim();
+    // Always start from step 1 for the greeting regardless of current_step value
+    const stepNum = 1;
 
-    // Guard: must have valid modeId and stepNum
-    if (!modeId || !stepNum) {
-      console.error("[SessionFlow] Cannot init greeting — missing modeId or stepNum:", { modeId, stepNum });
+    // Guard: must have valid modeId
+    if (!modeId) {
+      console.error("[SessionFlow] Cannot init greeting — missing modeId:", { mode_id: session.mode_id, mode: session.mode });
       setStepError(true);
       return;
     }
@@ -135,7 +136,7 @@ export default function SessionChat() {
     initDone.current = true;
 
     const stepKey = `${modeId}_${stepNum}`;
-    console.log("[SessionFlow] initializing greeting — step_key:", stepKey, "session:", sessionId);
+    console.log("[SessionFlow] initializing greeting — mode_id:", modeId, "step_key:", stepKey, "session:", sessionId);
 
     fetchStep(modeId, stepNum).then(async (step) => {
       if (!step) {
@@ -180,7 +181,7 @@ export default function SessionChat() {
     setSendError(false);
     setSendErrorMessage(null);
 
-    const modeId = session.mode_id;
+    const modeId = String(session.mode_id || session.mode || "").trim();
     const currentStep = session.current_step || 1;
 
     console.log("[CHAT_FLOW] 1. user message received:", text.substring(0, 60), "step:", currentStep);
