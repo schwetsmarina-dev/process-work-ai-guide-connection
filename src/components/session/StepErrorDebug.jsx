@@ -3,6 +3,7 @@ import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchStep } from "@/lib/sessionAI";
 import { base44 } from "@/api/base44Client";
+import RlsDiagnostic from "./RlsDiagnostic";
 
 export default function StepErrorDebug({ session, stepDebugInfo, navigate, onGreetingCreated }) {
   const [testResult, setTestResult] = useState(null);
@@ -158,6 +159,9 @@ ${stepDebugInfo.sampleRows?.join("\n") || "  (empty)"}`}
           </div>
         )}
       </div>
+
+      {/* Live RLS diagnostics panel */}
+      <RlsDiagnostic session={session} />
 
       <p className="text-xs text-muted-foreground">
         Откройте /admin/import и загрузите mode_steps.csv.
