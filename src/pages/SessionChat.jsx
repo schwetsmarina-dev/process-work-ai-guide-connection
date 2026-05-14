@@ -511,7 +511,7 @@ export default function SessionChat() {
     <div className="flex flex-col h-screen">
       {/* ████ PERMANENT BUILD PROBE — remove after diagnosis ████ */}
       <div style={{ background: "#7c3aed", color: "#fff", fontFamily: "monospace", fontSize: "11px", padding: "4px 12px", letterSpacing: "0.05em", zIndex: 9999 }}>
-        REAL SESSION COMPONENT ACTIVE · createSessionMessage backend · build 2026-05-14-v6
+        SESSIONCHAT BUILD: backend message function active · 2026-05-14-v7
       </div>
 
       {/* Admin debug banner */}

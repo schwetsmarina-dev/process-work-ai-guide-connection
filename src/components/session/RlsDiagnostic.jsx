@@ -62,7 +62,7 @@ export default function RlsDiagnostic({ session }) {
       <div className="font-semibold text-violet-800">
         🔬 RLS Runtime Diagnostics
         <span className="ml-2 text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5 text-xs">
-          RLS DIAG BUILD: backend function test active
+          RLS DIAG BUILD: backend function active · v{/* 2026-05-14-v7 */}2026-05-14-v7
         </span>
       </div>
 
