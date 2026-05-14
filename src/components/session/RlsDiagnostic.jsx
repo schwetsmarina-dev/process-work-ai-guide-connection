@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
+import { createMessage } from "@/lib/messageApi";
 
 export default function RlsDiagnostic({ session }) {
   const [authInfo, setAuthInfo] = useState(null);
@@ -36,7 +37,7 @@ export default function RlsDiagnostic({ session }) {
     console.log("[RLS_DIAG] Auth state:", authInfo);
 
     try {
-      const result = await base44.entities.Message.create(payload);
+      const result = await createMessage({ session_id: session?.id, role: "assistant", content: "RLS diagnostic test — safe to delete" });
       console.log("[RLS_DIAG] SUCCESS:", result);
       setTestResult({
         success: true,

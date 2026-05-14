@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchStep } from "@/lib/sessionAI";
-import { base44 } from "@/api/base44Client";
 import RlsDiagnostic from "./RlsDiagnostic";
+import { createMessage } from "@/lib/messageApi";
 
 export default function StepErrorDebug({ session, stepDebugInfo, navigate, onGreetingCreated }) {
   const [testResult, setTestResult] = useState(null);
@@ -46,14 +46,7 @@ export default function StepErrorDebug({ session, stepDebugInfo, navigate, onGre
     try {
       const greeting = `Давай начнём.\n\n${testResult.step.question}`;
       console.log("[StepErrorDebug] Creating greeting message:", { session_id: session.id, modeId, stepNum });
-      await base44.entities.Message.create({
-        session_id: session.id,
-        mode_id: modeId,
-        step_number: stepNum,
-        role: "assistant",
-        content: greeting,
-        created_at: new Date().toISOString(),
-      });
+      await createMessage({ session_id: session.id, mode_id: modeId, step_number: stepNum, role: "assistant", content: greeting });
       if (onGreetingCreated) onGreetingCreated();
     } catch (e) {
       const detail = {

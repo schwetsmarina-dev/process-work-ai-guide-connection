@@ -11,6 +11,7 @@ import {
   getAIResponse,
   generateSessionSummary,
 } from "@/lib/sessionAI";
+import { createMessage } from "@/lib/messageApi";
 import SessionHeader from "@/components/session/SessionHeader";
 import ChatMessage from "@/components/session/ChatMessage";
 import ChatInput from "@/components/session/ChatInput";
@@ -169,23 +170,13 @@ export default function SessionChat() {
       console.log("[SESSION_INIT] step found:", step.step_key || step._stepKey, "session.id:", sessionId);
       const greeting = `Давай начнём.\n\n${step.question}`;
       try {
-        await base44.entities.Message.create({
-          session_id: sessionId,
-          mode_id: modeId,
-          step_number: stepNum,
-          role: "assistant",
-          content: greeting,
-          created_at: new Date().toISOString(),
-        });
+        await createMessage({ session_id: sessionId, mode_id: modeId, step_number: stepNum, role: "assistant", content: greeting });
       } catch (createErr) {
         if (cancelled) return;
-        console.error("[SESSION_INIT] Message.create failed:", {
+        console.error("[SESSION_INIT] createMessage failed:", {
           status: createErr?.response?.status || createErr?.status,
-          code: createErr?.response?.data?.code || createErr?.code,
           message: createErr?.message,
           session_id: sessionId,
-          entity: "Message",
-          action: "create",
         });
         setStepError(true);
         return;
@@ -218,22 +209,7 @@ export default function SessionChat() {
       if (cancelled || !step) return;
       console.log("[SESSION_AUTORECOVERY] fetchStep succeeded — creating greeting, session.id:", sessionId);
       const greeting = `Давай начнём.\n\n${step.question}`;
-      await base44.entities.Message.create({
-        session_id: sessionId,
-        mode_id: modeId,
-        step_number: stepNum,
-        role: "assistant",
-        content: greeting,
-        created_at: new Date().toISOString(),
-      }).catch((e) => {
-        console.error("[SESSION_AUTORECOVERY] Message.create failed:", {
-          status: e?.response?.status || e?.status,
-          code: e?.response?.data?.code || e?.code,
-          message: e?.message,
-          session_id: sessionId,
-        });
-        throw e;
-      });
+      await createMessage({ session_id: sessionId, mode_id: modeId, step_number: stepNum, role: "assistant", content: greeting });
       if (cancelled) return;
       initDone.current = true;
       setStepError(false);
@@ -275,14 +251,7 @@ export default function SessionChat() {
 
     try {
       // Save user message to backend
-      await base44.entities.Message.create({
-        session_id: sessionId,
-        mode_id: modeId,
-        step_number: currentStep,
-        role: "user",
-        content: text,
-        created_at: new Date().toISOString(),
-      });
+      await createMessage({ session_id: sessionId, mode_id: modeId, step_number: currentStep, role: "user", content: text });
       console.log("[CHAT_FLOW] 2. user message saved");
 
       // Clear optimistic after save
@@ -291,12 +260,7 @@ export default function SessionChat() {
 
       // Crisis check
       if (checkCrisis(text)) {
-        await base44.entities.Message.create({
-          session_id: sessionId,
-          role: "system",
-          content: CRISIS_MESSAGE,
-          created_at: new Date().toISOString(),
-        });
+        await createMessage({ session_id: sessionId, role: "system", content: CRISIS_MESSAGE });
         await base44.entities.RiskEvent.create({
           session_id: sessionId,
           risk_type: "suicide_mention",
@@ -352,14 +316,7 @@ export default function SessionChat() {
       // Save assistant message (always, even if AI failed — show fallback)
       console.log("[CHAT_FLOW] 5. assistant message save started");
       try {
-        await base44.entities.Message.create({
-          session_id: sessionId,
-          mode_id: modeId,
-          step_number: currentStep,
-          role: "assistant",
-          content: cleanText,
-          created_at: new Date().toISOString(),
-        });
+        await createMessage({ session_id: sessionId, mode_id: modeId, step_number: currentStep, role: "assistant", content: cleanText });
         console.log("[CHAT_FLOW] 6. assistant message save success");
       } catch (saveErr) {
         console.error("[CHAT_FLOW] assistant message save failed:", saveErr);
@@ -554,7 +511,7 @@ export default function SessionChat() {
     <div className="flex flex-col h-screen">
       {/* ████ PERMANENT BUILD PROBE — remove after diagnosis ████ */}
       <div style={{ background: "#7c3aed", color: "#fff", fontFamily: "monospace", fontSize: "11px", padding: "4px 12px", letterSpacing: "0.05em", zIndex: 9999 }}>
-        REAL SESSION COMPONENT ACTIVE · RLS diagnostics panel · build 2026-05-14-v5
+        REAL SESSION COMPONENT ACTIVE · createSessionMessage backend · build 2026-05-14-v6
       </div>
 
       {/* Admin debug banner */}
