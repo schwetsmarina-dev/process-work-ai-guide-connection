@@ -3,20 +3,25 @@ import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchStep } from "@/lib/sessionAI";
 
-export default function StepErrorDebug({ session, stepDebugInfo, navigate }) {
+export default function StepErrorDebug({ session, stepDebugInfo, navigate, onGreetingCreated }) {
   const [testResult, setTestResult] = useState(null);
   const [testing, setTesting] = useState(false);
+  const [recovering, setRecovering] = useState(false);
+
+  const modeId = session?.mode_id || session?.mode || "dream";
+  const stepNum = session?.current_step || 1;
 
   const handleTestFetchStep = async () => {
     setTesting(true);
     setTestResult(null);
     try {
-      const step = await fetchStep("dream", 1);
+      const step = await fetchStep(modeId, stepNum);
       if (step) {
         setTestResult({
           found: true,
           step_key: step.step_key || step._stepKey || "(no key)",
           question_preview: (step.question || "").substring(0, 100),
+          step,
         });
       } else {
         setTestResult({ found: false, error: "fetchStep returned null" });
@@ -25,6 +30,27 @@ export default function StepErrorDebug({ session, stepDebugInfo, navigate }) {
       setTestResult({ found: false, error: e?.message || String(e) });
     }
     setTesting(false);
+  };
+
+  const handleUseFoundStep = async () => {
+    if (!testResult?.found || !testResult.step) return;
+    setRecovering(true);
+    try {
+      const { base44 } = await import("@/api/base44Client");
+      const greeting = `Давай начнём.\n\n${testResult.step.question}`;
+      await base44.entities.Message.create({
+        session_id: session.id,
+        mode_id: modeId,
+        step_number: stepNum,
+        role: "assistant",
+        content: greeting,
+        created_at: new Date().toISOString(),
+      });
+      if (onGreetingCreated) onGreetingCreated();
+    } catch (e) {
+      alert("Ошибка: " + (e?.message || String(e)));
+    }
+    setRecovering(false);
   };
 
   return (
@@ -90,6 +116,18 @@ ${stepDebugInfo.sampleRows?.join("\n") || "  (empty)"}`}
               </>
             )}
           </div>
+        )}
+
+        {testResult?.found && (
+          <Button
+            size="sm"
+            variant="default"
+            className="bg-green-600 hover:bg-green-700 text-white"
+            disabled={recovering}
+            onClick={handleUseFoundStep}
+          >
+            {recovering ? "Создаём приветствие…" : "Use found step and continue"}
+          </Button>
         )}
       </div>
 

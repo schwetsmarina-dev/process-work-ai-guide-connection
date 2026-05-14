@@ -132,7 +132,7 @@ export default function SessionChat() {
     if (isAdminView) return;
 
     const modeId = String(session.mode_id || session.mode || "").trim();
-    const stepNum = 1;
+    const stepNum = session.current_step || 1;
 
     if (!modeId) {
       console.error("[SESSION_INIT] Cannot init — missing modeId", { mode_id: session.mode_id, mode: session.mode });
@@ -140,16 +140,12 @@ export default function SessionChat() {
       return;
     }
 
-    // Mark init started — prevent double-fire
-    initDone.current = true;
-
-    // Always clear stale error state before attempting lookup
+    // Clear any stale error state — do NOT set stepError here, only after fetchStep fails
     setStepError(false);
     setStepDebugInfo(null);
 
     const stepKey = `${modeId}_${stepNum}`;
     console.log("[SESSION_INIT] session loaded — mode:", modeId, "step_key:", stepKey, "session:", sessionId);
-    console.log("[SESSION_INIT] fetching step...");
 
     let cancelled = false;
 
@@ -157,8 +153,7 @@ export default function SessionChat() {
       if (cancelled) return;
 
       if (!step) {
-        console.error("[SESSION_INIT] step render failed — fetchStep returned null for", stepKey);
-        // Gather diagnostics without doing duplicate ModeStep queries (fetchStep already logged them)
+        console.error("[SESSION_INIT] fetchStep returned null for", stepKey);
         const allSteps = await base44.entities.ModeStep.list("step_number", 20).catch(() => []);
         const forMode = allSteps.filter((s) => String(s.mode_id || "").trim() === modeId);
         const availableKeys = forMode.map((s) => s.step_key || `[no key, step_number=${s.step_number}]`);
@@ -166,9 +161,11 @@ export default function SessionChat() {
         const sampleRows = allSteps.map((s) => `${s.mode_id}/${s.step_key || s.step_number}`);
         setStepDebugInfo({ stepKey, modeId, stepNum, availableKeys, totalStepsInDb: allSteps.length, allModeIds, sampleRows });
         setStepError(true);
+        // Do NOT set initDone — allow retry
         return;
       }
 
+      // Step found — create greeting, THEN mark init done
       console.log("[SESSION_INIT] step found:", step.step_key || step._stepKey);
       const greeting = `Давай начнём.\n\n${step.question}`;
       await base44.entities.Message.create({
@@ -179,12 +176,16 @@ export default function SessionChat() {
         content: greeting,
         created_at: new Date().toISOString(),
       });
-      console.log("[SESSION_INIT] step render success — greeting saved");
+      initDone.current = true; // only mark done on success
+      setStepError(false);
+      setStepDebugInfo(null);
+      console.log("[SESSION_INIT] greeting saved — init complete");
       queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
     }).catch((err) => {
       if (cancelled) return;
-      console.error("[SESSION_INIT] step render failed — exception:", err?.message || err);
+      console.error("[SESSION_INIT] fetchStep threw exception:", err?.message || err);
       setStepError(true);
+      // Do NOT set initDone — allow retry
     });
 
     return () => { cancelled = true; };
@@ -572,6 +573,12 @@ export default function SessionChat() {
                   session={session}
                   stepDebugInfo={stepDebugInfo}
                   navigate={navigate}
+                  onGreetingCreated={() => {
+                    initDone.current = true;
+                    setStepError(false);
+                    setStepDebugInfo(null);
+                    queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
+                  }}
                 />
               )}
 
