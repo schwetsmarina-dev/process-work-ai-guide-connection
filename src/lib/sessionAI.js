@@ -504,14 +504,46 @@ const DREAM_INVITE_MARKERS = [
   "как ты его помнишь", "какие моменты", "что тебе запомнилось",
 ];
 
-// Dream-content signals: user has actually shared dream narrative
-// (past-tense narration, mention of dream events/characters/places)
+// Dream-content signals: covers full narratives, fragments, recurring themes,
+// dream clusters/series, symbolic images, and dream-related emotions.
+// ALL forms count — "сон про", "снятся сны", "в этих снах", etc.
 const DREAM_CONTENT_SIGNALS = [
-  "снилось", "приснился", "во сне", "я видела", "я видел",
+  // Full narrative / past-tense dream events
+  "снилось", "приснился", "приснилась", "приснилось", "мне приснил",
+  "во сне", "я видела", "я видел",
   "был сон", "была во сне", "был во сне", "я шла", "я шёл",
   "стояла", "стоял", "пришёл", "пришла", "увидела", "увидел",
-  "оказалась", "оказался", "появился", "появилась", "мне приснил",
+  "оказалась", "оказался", "появился", "появилась",
+  // Dream cluster / recurring / series
+  "снятся сны", "мне снятся", "последнее время снятся", "часто снятся",
+  "повторяющийся сон", "снятся похожие сны", "серия снов", "несколько снов",
+  "снился сон",
+  // Dream fragment / theme using "сон про / о / с"
+  "сон про ", "сон о ", "сны про ", "сны о ", "сны, связанные",
+  "сон был про", "сон с ",
+  // Dream emotions / atmosphere ("в этих снах я чувствую", etc.)
+  "в этих снах", "в этом сне", "из снов", "из этих снов",
+  "во снах", "эти сны",
 ];
+
+// User "already told" loop signals — user is correcting a repeated dream invite
+const DREAM_ALREADY_TOLD_SIGNALS = [
+  "рассказала же", "рассказал же",
+  "я уже рассказала", "я уже рассказал",
+  "я уже сказала", "я уже сказал",
+  "я же рассказала", "я же рассказал",
+  "уже рассказывала", "уже рассказывал",
+  "почему ты снова спрашиваешь", "ты опять спрашиваешь",
+  "ты уже спрашивал", "ты уже спрашивала",
+  "я уже написала", "я уже написал",
+  "опять то же самое",
+];
+
+// Detect if user is complaining that AI already asked for the dream (loop)
+function detectDreamAlreadyTold(userMessage) {
+  const lower = userMessage.toLowerCase();
+  return DREAM_ALREADY_TOLD_SIGNALS.some((sig) => lower.includes(sig));
+}
 
 // User correction/mismatch signals — indicate the AI jumped ahead prematurely
 const MISMATCH_SIGNALS = [
@@ -545,13 +577,33 @@ function detectMapStatusQuery(userMessage) {
   return MAP_STATUS_SIGNALS.some((sig) => lower.includes(sig));
 }
 
-// Detect if user has shared dream content (not just meta-comment about the dream)
+// Detect if user has shared dream content (full narrative, fragment, theme, cluster, or dream emotion)
 function detectDreamContent(messages) {
   const userMsgs = messages.filter((m) => m.role === "user");
-  // Skip the very first user message if it's very short (likely just "ok" or mode selection)
-  const substantialMsgs = userMsgs.filter((m) => m.content.trim().length > 30);
-  const combined = substantialMsgs.map((m) => m.content.toLowerCase()).join(" ");
-  return DREAM_CONTENT_SIGNALS.some((sig) => combined.includes(sig));
+  // Scan ALL user messages — clusters/themes are often given in the very first message
+  const combined = userMsgs.map((m) => m.content.toLowerCase()).join(" ");
+
+  const matched = DREAM_CONTENT_SIGNALS.find((sig) => combined.includes(sig));
+
+  // ── [DREAM_STAGE_DEBUG] ──────────────────────────────────────────────────
+  const FULL_NARRATIVE = ["снилось","приснился","приснилась","приснилось","мне приснил","во сне","был сон","была во сне","был во сне","я шла","я шёл","стояла","стоял","пришёл","пришла","увидела","увидел","оказалась","оказался","появился","появилась"];
+  const CLUSTER = ["снятся сны","мне снятся","последнее время снятся","часто снятся","повторяющийся сон","снятся похожие сны","серия снов","несколько снов","снился сон"];
+  const THEME = ["сон про ","сон о ","сны про ","сны о ","сны, связанные","сон был про","сон с "];
+  let reason = "none";
+  if (matched) {
+    if (FULL_NARRATIVE.includes(matched)) reason = "full_narrative";
+    else if (CLUSTER.includes(matched)) reason = "dream_cluster";
+    else if (THEME.includes(matched)) reason = "dream_theme";
+    else reason = "dream_emotion";
+  }
+  console.log("[DREAM_STAGE_DEBUG]", {
+    dreamMaterialDetected: !!matched,
+    reason,
+    totalUserMessages: userMsgs.length,
+    matchedSignal: matched || null,
+  });
+
+  return !!matched;
 }
 
 // Detect if the AI has already asked for the dream narrative
@@ -1213,12 +1265,14 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
   return { isValid: true, reason: "", correctedInstruction: "" };
 }
 
-function getSafeFallback(currentMode, forcedNextLayer, integrationLock, mappingStage, isMismatch) {
+function getSafeFallback(currentMode, forcedNextLayer, integrationLock, mappingStage, isMismatch, isDreamAlreadyTold) {
   const modeKey = (currentMode || "").toLowerCase();
   if (integrationLock) {
     if (modeKey.includes("conflict")) return SAFE_FALLBACKS.conflict_integration;
     return SAFE_FALLBACKS.integration;
   }
+  // "Already told" loop: user already gave dream material — never repeat invite
+  if (isDreamAlreadyTold) return SAFE_FALLBACKS.awaiting_primary;
   // Mismatch: rollback to correct stage
   if (isMismatch && mappingStage) {
     if (mappingStage.stage === "awaiting_dream") return SAFE_FALLBACKS.mismatch_dream;
@@ -1264,6 +1318,8 @@ export async function getAIResponse(session, step, messages, userMessage) {
 
   // Detect user mismatch/correction signal → need to rollback stage
   const isMismatch = detectMismatch(userMessage);
+  // Detect "I already told you the dream" loop — user frustrated that invite was repeated
+  const isDreamAlreadyTold = isDreamMode && detectDreamAlreadyTold(userMessage);
   // Detect map-status query → AI must answer directly, not redirect
   const isMapStatusQuery = detectMapStatusQuery(userMessage);
 
@@ -1299,8 +1355,27 @@ export async function getAIResponse(session, step, messages, userMessage) {
 
   let mappingStageInstruction = "";
 
+  // ── DREAM ALREADY TOLD LOOP: user says "I already told you" ──────────────
+  if (isDreamAlreadyTold) {
+    // User is frustrated that the dream invite was repeated when they already gave material.
+    // Acknowledge and move directly to primary_process question.
+    const dreamSummaryHint = messages
+      .filter((m) => m.role === "user")
+      .map((m) => m.content.substring(0, 80))
+      .join(" | ");
+    mappingStageInstruction = `\n\n🟠 ПЕТЛЯ DREAM INVITE — ПОЛЬЗОВАТЕЛЬ УЖЕ ДАЛ МАТЕРИАЛ\n` +
+      `Пользователь указал, что уже рассказала сновидение / тему сна.\n` +
+      `ЗАПРЕЩЕНО: повторять вопрос «Расскажи мне свой сон...»\n` +
+      `ОБЯЗАТЕЛЬНО:\n` +
+      `1. Признай одним предложением: «Да, ты уже дала материал» — и кратко перечисли что именно (используй точные слова из сообщений пользователя).\n` +
+      `2. Немедленно задай вопрос первичного процесса:\n` +
+      `«${PRIMARY_QUESTIONS[modeKey] || "Что из принесённого материала больше всего откликается с твоей реальной жизнью, привычными чувствами или знакомыми ситуациями?"}»\n` +
+      `Доступный материал пользователя: ${dreamSummaryHint.substring(0, 200)}\n` +
+      `ЗАПРЕЩЕНО: спрашивать про тело, образы, смысл до ответа на первичный вопрос.`;
+  }
+
   // ── MISMATCH ROLLBACK: user says AI jumped ahead ──────────────────────────
-  if (isMismatch) {
+  else if (isMismatch) {
     // Determine what stage we should actually be in based on what IS confirmed
     const rollbackStage = mappingStage.stage;
     let rollbackInstruction = "";
@@ -1326,7 +1401,7 @@ export async function getAIResponse(session, step, messages, userMessage) {
   }
 
   // ── MAP STATUS QUERY: user asks about map state → answer directly ─────────
-  else if (isMapStatusQuery && !mappingStageComplete) {
+  else if (!isDreamAlreadyTold && isMapStatusQuery && !mappingStageComplete) {
     const knownPrimary = mappingStage.primary_answer
       ? `Первичный процесс: «${mappingStage.primary_answer.substring(0, 80)}».`
       : "Первичный процесс пока не определён.";
@@ -1344,7 +1419,7 @@ export async function getAIResponse(session, step, messages, userMessage) {
   }
 
   // ── NORMAL STAGE PROGRESSION ──────────────────────────────────────────────
-  else if (!mappingStageComplete && !isIntegrationStage && modeKey) {
+  else if (!isDreamAlreadyTold && !mappingStageComplete && !isIntegrationStage && modeKey) {
     if (mappingStage.stage === "awaiting_dream") {
       mappingStageInstruction = `\n\n🔴 СТАДИЯ: ОЖИДАНИЕ СНОВИДЕНИЯ\n` +
         `Пользователь ещё НЕ рассказал свой сон. Это первый и единственный шаг сейчас.\n` +
@@ -1528,6 +1603,7 @@ ${userMessage}
     currentStep: step?.step_number ?? "?",
     mappingStage: mappingStage.stage,
     isMismatch,
+    isDreamAlreadyTold,
     isMapStatusQuery,
     systemPromptLen: SYSTEM_PROMPT.length,
     historyMessages: recent.length,
@@ -1567,7 +1643,7 @@ ${userMessage}
       console.log("[AI_RUNTIME] Calling InvokeLLM with trimmed prompt, est tokens:", Math.ceil(trimmedPrompt.length / 4));
       const r = await base44.integrations.Core.InvokeLLM({ prompt: trimmedPrompt });
       console.log("[AI_RUNTIME] InvokeLLM success (trimmed), response length:", r?.length);
-      return r || getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch);
+      return r || getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold);
     } catch (e) {
       console.error("[AI_RUNTIME] InvokeLLM FAILED (trimmed):", e?.message, e?.status, e?.code, String(e));
       throw e;
@@ -1599,7 +1675,7 @@ ${userMessage}
     try {
       const safeResponse = await base44.integrations.Core.InvokeLLM({ prompt: minimalPrompt });
       console.log("[AI_RUNTIME] Safe-mode retry succeeded, response length:", safeResponse?.length);
-      return safeResponse || getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch);
+      return safeResponse || getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold);
     } catch (e2) {
       console.error("[AI_RUNTIME] Safe-mode retry ALSO FAILED:", e2?.message, String(e2));
       throw e;
@@ -1622,7 +1698,7 @@ ${userMessage}
     console.log("[AI_RUNTIME] InvokeLLM pass 2 success, response length:", secondResponse?.length);
   } catch (e) {
     console.error("[AI_RUNTIME] InvokeLLM FAILED (pass 2):", e?.message, String(e));
-    return getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch);
+    return getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold);
   }
 
   const secondValidation = validateAssistantResponse({ responseText: secondResponse, ...validationParams });
@@ -1633,7 +1709,7 @@ ${userMessage}
   }
 
   console.warn("[AI_RUNTIME] Pass 2 also failed validation:", secondValidation.reason);
-  const fallback = getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch);
+  const fallback = getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold);
   console.info("[AI_RUNTIME] Using safe fallback:", fallback);
   return fallback;
 }
