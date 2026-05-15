@@ -269,6 +269,27 @@ const SYSTEM_PROMPT = `Ты — процесс-ориентированный ф
 2. Один точный вопрос к СЛЕДУЮЩЕМУ слою — строй его на том, что уже было сказано.
 Итого: 2–3 предложения. Никогда больше.
 
+━━━ ДИСЦИПЛИНА КАНАЛОВ — СТРОГОЕ ПРАВИЛО ━━━
+Ты НЕ МОЖЕШЬ вводить сенсорный, символический или двигательный канал, пока он явно не присутствует в текущем сообщении пользователя или карте процесса этой сессии.
+
+ЗАПРЕЩЕНО вводить без явного основания в ТЕКУЩЕЙ сессии:
+✗ вкус / «какой вкус появляется?» — если пользователь не упомянул вкус
+✗ контакт / «что происходит в контакте?» — если не было описания контакта
+✗ текстура, запах, температура, цвет, звук — если не были названы
+✗ движение / импульс / «что хочет двигаться?» — если тело/движение не упоминалось
+✗ образ / «если бы это стало образом...» — если пользователь не ввёл образный материал
+✗ голос / послание — если не было речевого/аудиального сигнала
+
+ПРАВИЛО ПРОВЕРКИ перед каждым ответом:
+Задай себе вопрос: «Этот канал или образ явно присутствует в ТЕКУЩЕМ разговоре?»
+Если НЕТ — убери его из ответа.
+
+РАЗРЕШЕНО вводить канал только когда:
+1. Пользователь сам его упомянул в этой сессии, ИЛИ
+2. Он явно зафиксирован в карте процесса текущей сессии.
+
+ЕСЛИ НЕУВЕРЕН — оставайся близко к точным словам пользователя. Не импровизируй символику.
+
 ━━━ АБСОЛЮТНЫЙ ЗАПРЕТ: НИКАКОЙ ИНТЕРПРЕТАЦИИ ━━━
 Ты — фасилитатор, не психолог. Ты исследуешь опыт, а не объясняешь его.
 
@@ -1001,6 +1022,34 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
         reason: `Transformation layer violated: jumped to meaning/message too early`,
         correctedInstruction: "Stay strictly in transformation layer. Ask only about sensory experience during contact. Do not ask about meaning, message, life connection, image or metaphor.",
       };
+    }
+  }
+
+  // 4b. Channel contamination check: block sensory/symbolic channels not present in current session
+  const SENSORY_CHANNELS = [
+    { phrase: "какой вкус", signal: ["вкус", "пробу", "съел", "ем ", "попробова", "ест "] },
+    { phrase: "запах",      signal: ["запах", "нюха", "пахнет"] },
+    { phrase: "текстур",    signal: ["текстур", "на ощупь", "шершав", "гладк", "мягк"] },
+    { phrase: "температур", signal: ["температур", "тепло", "холодн", "горяч", "прохладн"] },
+    { phrase: "в контакт",  signal: ["контакт", "дотронул", "касани", "прикосновени", "трогаю", "касаюсь"] },
+    { phrase: "что за цвет",signal: ["цвет", "краска", "оттенок"] },
+  ];
+
+  const sessionUserText = conversationHistory
+    .filter((m) => m.role === "user")
+    .map((m) => m.content.toLowerCase())
+    .join(" ");
+
+  for (const channel of SENSORY_CHANNELS) {
+    if (lower.includes(channel.phrase)) {
+      const hasSignal = channel.signal.some((sig) => sessionUserText.includes(sig));
+      if (!hasSignal) {
+        return {
+          isValid: false,
+          reason: `Channel contamination: introduced "${channel.phrase}" without any user signal for this channel in current session`,
+          correctedInstruction: `Do NOT introduce "${channel.phrase}" — the user never mentioned this sensory channel. Stay strictly with the user's own words and the current process map. Remove this channel entirely.`,
+        };
+      }
     }
   }
 
