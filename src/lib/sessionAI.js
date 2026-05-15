@@ -111,51 +111,38 @@ const SYSTEM_PROMPT = `Ты — процесс-ориентированный ф
 «Давайте начнём» ЗАПРЕЩЕНО. Используй только «Давай начнём» — и только в самом первом сообщении сессии. Никогда не повторяй это в середине разговора.
 Тон: тёплый, спокойный, уважительный, прямой, неформальный.
 
-━━━ ОБЯЗАТЕЛЬНЫЙ ЭТАП 0: КАРТИРОВАНИЕ ПРОЦЕССА ━━━
-ПЕРЕД любым углублением — в КАЖДОМ режиме — ты ОБЯЗАН пройти этап картирования.
+━━━ ОБЯЗАТЕЛЬНЫЙ ЭТАП 0: КАРТИРОВАНИЕ — ДВА ОТДЕЛЬНЫХ ВОПРОСА ━━━
+ПЕРЕД любым углублением — в КАЖДОМ режиме — ты ОБЯЗАН задать ДВА отдельных уточняющих вопроса.
 
-Этот этап нельзя пропустить. Он выполняется ОДИН РАЗ в начале сессии.
+Этот этап нельзя пропустить и нельзя сократить до одного вопроса.
 
-ЧТО ДЕЛАТЬ НА ЭТАПЕ КАРТИРОВАНИЯ:
+ШАГ 1 — ПЕРВИЧНЫЙ ПРОЦЕСС (знакомое):
+Задай ОДИН вопрос о том, что человеку знакомо, привычно, связано с обычной жизнью.
+Сохрани ответ как ПЕРВИЧНЫЙ ПРОЦЕСС.
+ЗАПРЕЩЕНО: переходить к вторичному вопросу или исследованию до получения ответа.
 
-Шаг 0а — Собери контекст уровня консенсуса:
-Узнай, что пользователь принёс в сессию. Один открытый вопрос:
-- «Что сейчас привлекает твоё внимание — что принёс(ла) ты сегодня?»
-(если это не очевидно из первого сообщения)
+ШАГ 2 — ВТОРИЧНЫЙ ПРОЦЕСС (новое/странное):
+Только ПОСЛЕ получения ответа на шаг 1 — задай ОТДЕЛЬНЫЙ вопрос о том, что странное, новое, непривычное, заряженное.
+Сохрани ответ как ВТОРИЧНЫЙ ПРОЦЕСС.
+ЗАПРЕЩЕНО: делать вывод о вторичном процессе без прямого ответа пользователя.
 
-Шаг 0б — Мягко обозначь гипотезу первичного и вторичного процесса:
-Найди в материале:
-- Первичное (знакомое, устойчивое, идентичное, привычное)
-- Вторичное (новое, непривычное, живое, удивляющее, напряжённое)
+ШАГ 3 — ИССЛЕДОВАНИЕ:
+Только ПОСЛЕ получения обоих ответов — начни исследование вторичного процесса.
+Скажи: «Тогда давай исследуем именно это — [слова пользователя из вторичного]...»
 
-Используй ТОЛЬКО гипотетический язык. НИКОГДА не утверждай:
-✓ «Похоже, одна часть — более привычная...»
-✓ «А другая — как будто что-то менее знакомое или новое...»
-✗ «Это означает...» / «Это указывает на...»
-
-Шаг 0в — Детектируй грань (edge):
-Заметь: колебание, неуверенность, заряд, противоречие.
-Отрази кратко: «Как будто здесь есть граница между привычным и чем-то новым.»
-
-Шаг 0г — ОБЯЗАТЕЛЬНЫЙ вопрос ориентации (задаётся ОДИН раз):
-Выбери один вопрос из:
-- «Где из этого сейчас больше отклика или живости?»
-- «Что кажется более непривычным или притягивающим?»
-- «Куда тебе хочется посмотреть глубже?»
-
-ОТВЕТ ПОЛЬЗОВАТЕЛЯ НА ВОПРОС ОРИЕНТАЦИИ определяет направление всего дальнейшего процесса.
-
-ВАЖНО:
-- НЕ углубляй самый приятный или лёгкий материал автоматически
-- Следуй туда, где есть: грань / любопытство / непривычность / энергия
-- Картирование занимает 1–2 обмена, не больше
+ПРАВИЛО: НЕ объединяй оба вопроса в один. НЕ делай выводы о первичном/вторичном самостоятельно.
+Если пользователь спрашивает «разве мы уже наметили карту?» — ВСЕГДА ответи:
+«Ты права, мы ещё не завершили карту. Давай сначала отделим знакомое от нового.»
+И задай пропущенный вопрос (первичный или вторичный — тот, который ещё не был задан).
 
 ━━━ ГЛАВНОЕ ПРАВИЛО: СЛОИ ━━━
 Каждый режим имеет строгую последовательность слоёв. Ты ОБЯЗАН отслеживать, какие слои уже пройдены, и НИКОГДА не возвращаться к ним.
 ЭТАП 0 (картирование) → ТОЛЬКО ПОТОМ слои 1–N.
 
 ТЕЛО (строгий порядок):
-0. КАРТИРОВАНИЕ: что знакомо в этом ощущении, что — странное или неожиданное?
+0а. Попроси описать телесный сигнал/симптом.
+0б. ПЕРВИЧНЫЙ: «Как ты обычно объясняешь это ощущение? Что в нём для тебя понятно, знакомо или связано с твоей обычной жизнью?»
+0в. ВТОРИЧНЫЙ: «А что в этом телесном ощущении странное, необычное, непонятное, неожиданное или как будто не совсем твоё?»
 1. локализация (где в теле?)
 2. качество (какое ощущение — тяжесть, тепло, сжатие?)
 3. движение / импульс (что хочет сделать?)
@@ -165,28 +152,21 @@ const SYSTEM_PROMPT = `Ты — процесс-ориентированный ф
 7. интеграция с жизнью (насколько этого сейчас хватает? где не хватает?)
 
 СОН (строгий порядок — нельзя пропускать шаги):
-0. КАРТИРОВАНИЕ ПРОЦЕССА — ОБЯЗАТЕЛЬНЫЙ ПОЛНЫЙ ЭТАП (нельзя сокращать):
-   Ты должен выявить и назвать ВСЕ из следующих элементов карты перед переходом к слоям 1–6:
-   а) Первичный процесс (что знакомо, устойчиво, идентично для человека)
-   б) Вторичный/тревожащий процесс (что новое, напряжённое, непривычное)
-   в) Возможная полярность/напряжение между ними
-   г) Главная эмоциональная атмосфера
-   д) Важные фигуры поля (если есть)
-   е) Ещё не исследованный/зарождающийся импульс или качество
+0а. Попроси рассказать сон:
+   «Расскажи мне свой сон так, как ты его помнишь. Какие моменты или чувства в нём самые заметные?»
 
-   КАРТИРОВАНИЕ считается ЗАВЕРШЁННЫМ только когда ≥4 из 6 элементов карты обозначены.
-   ЗАПРЕЩЕНО переходить к слою 1 (атмосфера сна) пока карта не содержит ≥4 элементов.
+0б. ПЕРВИЧНЫЙ ПРОЦЕСС — задай отдельный вопрос:
+   «Что из этого сна больше всего откликается с твоей реальной жизнью, привычными чувствами или знакомыми ситуациями?»
+   Сохрани ответ как первичный процесс.
+   ЗАПРЕЩЕНО переходить к шагу 0в до получения ответа.
 
-   ПОСЛЕ ПОЛНОГО КАРТИРОВАНИЯ задай вопрос ориентации:
-   «На что из этого тебе хочется посмотреть внимательнее?»
-   и ЖДИ ответа пользователя перед переходом к углублению.
+0в. ВТОРИЧНЫЙ ПРОЦЕСС — задай отдельный вопрос:
+   «А что в этом сне кажется тебе самым странным, новым, непривычным, заряженным или совсем не похожим на тебя?»
+   Сохрани ответ как вторичный процесс.
+   ЗАПРЕЩЕНО переходить к исследованию до получения ответа.
 
-   ЕСЛИ ПОЛЬЗОВАТЕЛЬ СПРАШИВАЕТ «разве мы уже наметили карту?» или «а карта?» —
-   ВСЕГДА показывай текущий статус карты с конкретными элементами:
-   «Пока только частично. Сейчас уже начинают проявляться:
-   — [элементы карты из разговора]
-   На что из этого тебе хочется посмотреть внимательнее?»
-   НИКОГДА не перенаправляй обратно к телесным ощущениям в этот момент.
+0г. НАЧАЛО ИССЛЕДОВАНИЯ (только после обоих ответов):
+   «Тогда давай исследуем именно это — [слова пользователя из вторичного]. Где ты ощущаешь это в теле?»
 
 1. описание / атмосфера сна
 2. эмоция / настроение
@@ -196,7 +176,9 @@ const SYSTEM_PROMPT = `Ты — процесс-ориентированный ф
 6. интеграция с реальной жизнью → будущий сдвиг → завершение
 
 КОНФЛИКТ (строгий порядок):
-0. КАРТИРОВАНИЕ: какая часть более знакомая/устойчивая (первичная), какая — новая/напряжённая (вторичная)? Вопрос ориентации.
+0а. Попроси описать обе стороны конфликта.
+0б. ПЕРВИЧНЫЙ: «Какая из этих сторон для тебя более привычная, знакомая или ближе к тому, как ты обычно себя ведёшь?»
+0в. ВТОРИЧНЫЙ: «Какая сторона более новая, непривычная, труднее принимается или вызывает больше напряжения?»
 1. часть А (одна сторона конфликта)
 2. часть Б (другая сторона)
 3. потребности / страхи каждой части
@@ -220,7 +202,9 @@ const SYSTEM_PROMPT = `Ты — процесс-ориентированный ф
 - «Что становится яснее — что для тебя важно в этом выборе?»
 
 ДНЕВНИК (строгий порядок):
-0. КАРТИРОВАНИЕ: что ясно, что — живое или неясное? Гипотеза первичного/вторичного. Вопрос ориентации.
+0а. Попроси рассказать, что хочется исследовать.
+0б. ПЕРВИЧНЫЙ: «Что в этой ситуации для тебя уже понятно, знакомо или похоже на твой обычный способ реагировать?»
+0в. ВТОРИЧНЫЙ: «А что здесь кажется новым, странным, живым, тревожащим, непривычным или пока не до конца понятным?»
 1. самый сильный сигнал (эмоция / образ / мысль / ощущение)
 2. качество сигнала
 3. движение / импульс
@@ -381,69 +365,131 @@ const SYSTEM_PROMPT = `Ты — процесс-ориентированный ф
 Тихая уверенность. Тепло без слащавости. Профессионализм без дистанции.
 Как мудрый, чуткий человек, который видит тебя — и ведёт вперёд, не кружит на месте.`;
 
-// ─── Dream Process Map tracker ───────────────────────────────────────────────
-// Extracts a structured process map from the full conversation history.
-// Returns an object with fields populated where the conversation reveals them.
-function buildDreamProcessMap(messages) {
-  const allText = messages.map((m) => m.content.toLowerCase()).join(" ");
-  const userText = messages.filter((m) => m.role === "user").map((m) => m.content.toLowerCase()).join(" ");
-  const assistantText = messages.filter((m) => m.role === "assistant").map((m) => m.content.toLowerCase()).join(" ");
+// ─── Process Mapping Stage Tracker ───────────────────────────────────────────
+// Detects what stage of the primary/secondary clarification flow we're in.
+// Stages: "need_primary" | "need_secondary" | "complete"
+//
+// How it works: scan assistant messages for whether the primary and secondary
+// clarifying questions have been ASKED, and user messages for whether they
+// have been ANSWERED. We track by question content, not keywords in answers.
 
-  const map = {
-    primary_process: null,       // знакомое, устойчивое, идентичное
-    secondary_process: null,     // новое, непривычное, напряжённое
-    edge: null,                  // граница/колебание между ними
-    field_figures: null,         // важные фигуры поля (мать, муж, начальник...)
-    channels: null,              // задействованные каналы (тело, образ, движение...)
-    emerging_quality: null,      // зарождающееся качество/новое
-    polarity: null,              // полярность/напряжение
-    atmosphere: null,            // эмоциональная атмосфера
-  };
+const PRIMARY_QUESTION_MARKERS = {
+  dream:      ["откликается с твоей реальной жизнью", "привычными чувствами", "знакомыми ситуациями", "больше всего откликается"],
+  body:       ["как ты обычно объясняешь", "понятно, знакомо", "связано с твоей обычной жизнью"],
+  conflict:   ["более привычная, знакомая", "ближе к тому, как ты обычно"],
+  journaling: ["уже понятно, знакомо", "похоже на твой обычный способ"],
+};
 
-  // Detect primary process — what user identifies as familiar/stable
-  const primarySignals = [
-    ["зрелост", "зрелость"], ["ответственност", "ответственность"],
-    ["устойчивост", "устойчивость"], ["спокойстви", "спокойствие"],
-    ["контрол", "контроль"], ["порядок", "порядок"],
-    ["привычн", "привычное"], ["знаком", "знакомое"],
-    ["надёжн", "надёжность"], ["стабильн", "стабильность"],
-  ];
-  for (const [kw, label] of primarySignals) {
-    if (allText.includes(kw)) { map.primary_process = label; break; }
+const SECONDARY_QUESTION_MARKERS = {
+  dream:      ["самым странным", "новым, непривычным", "заряженным", "совсем не похожим на тебя"],
+  body:       ["странное, необычное", "неожиданное", "не совсем твоё"],
+  conflict:   ["более новая, непривычная", "труднее принимается", "больше напряжения"],
+  journaling: ["новым, странным, живым", "тревожащим, непривычным", "пока не до конца понятным"],
+};
+
+function getModeKey(modeId) {
+  const lower = (modeId || "").toLowerCase();
+  if (lower.includes("dream")) return "dream";
+  if (lower.includes("body")) return "body";
+  if (lower.includes("conflict")) return "conflict";
+  if (lower.includes("journal")) return "journaling";
+  return null;
+}
+
+// Returns: { stage: "need_primary"|"need_secondary"|"complete", primary_answer: string|null, secondary_answer: string|null }
+function detectProcessMappingStage(messages, modeId) {
+  const modeKey = getModeKey(modeId);
+  if (!modeKey) return { stage: "complete", primary_answer: null, secondary_answer: null };
+
+  const primaryMarkers = PRIMARY_QUESTION_MARKERS[modeKey] || [];
+  const secondaryMarkers = SECONDARY_QUESTION_MARKERS[modeKey] || [];
+
+  let primaryQuestionAsked = false;
+  let primaryQuestionIndex = -1;
+  let secondaryQuestionAsked = false;
+  let secondaryQuestionIndex = -1;
+
+  // Scan assistant messages for which questions have been asked
+  messages.forEach((m, i) => {
+    if (m.role !== "assistant") return;
+    const lower = m.content.toLowerCase();
+    if (!primaryQuestionAsked && primaryMarkers.some((marker) => lower.includes(marker))) {
+      primaryQuestionAsked = true;
+      primaryQuestionIndex = i;
+    }
+    if (!secondaryQuestionAsked && secondaryMarkers.some((marker) => lower.includes(marker))) {
+      secondaryQuestionAsked = true;
+      secondaryQuestionIndex = i;
+    }
+  });
+
+  // Find user answers: first user message AFTER the question was asked
+  let primary_answer = null;
+  let secondary_answer = null;
+
+  if (primaryQuestionAsked) {
+    // Find first user message after primaryQuestionIndex
+    const afterPrimary = messages.slice(primaryQuestionIndex + 1).find((m) => m.role === "user");
+    if (afterPrimary) primary_answer = afterPrimary.content;
   }
 
-  // Detect secondary process — what feels new, strange, suppressed
-  const secondarySignals = [
-    ["молчани", "молчание/подавление"], ["подавля", "подавление себя"],
-    ["невозможн", "невозможность проявиться"], ["скрыва", "скрывание"],
-    ["боюсь", "страх"], ["напряжени", "напряжение"],
-    ["необычн", "что-то необычное"], ["странн", "странный элемент"],
-    ["удивительн", "удивляющее"], ["непривычн", "непривычное"],
-    ["тревог", "тревога"], ["сдержива", "сдерживание"],
-  ];
-  for (const [kw, label] of secondarySignals) {
-    if (userText.includes(kw)) { map.secondary_process = label; break; }
+  if (secondaryQuestionAsked) {
+    const afterSecondary = messages.slice(secondaryQuestionIndex + 1).find((m) => m.role === "user");
+    if (afterSecondary) secondary_answer = afterSecondary.content;
+  }
+
+  // Determine stage
+  if (!primaryQuestionAsked || !primary_answer) {
+    return { stage: "need_primary", primary_answer, secondary_answer };
+  }
+  if (!secondaryQuestionAsked || !secondary_answer) {
+    return { stage: "need_secondary", primary_answer, secondary_answer };
+  }
+  return { stage: "complete", primary_answer, secondary_answer };
+}
+
+// ─── Process Map (legacy — kept for dream map context display) ────────────────
+function buildProcessMap(messages, modeId) {
+  const userText = messages.filter((m) => m.role === "user").map((m) => m.content.toLowerCase()).join(" ");
+  const allText = messages.map((m) => m.content.toLowerCase()).join(" ");
+
+  const map = {
+    primary_process: null,
+    secondary_process: null,
+    edge: null,
+    field_figures: null,
+    channels: null,
+    emerging_quality: null,
+    polarity: null,
+    atmosphere: null,
+  };
+
+  // Extract primary/secondary from explicit answers (via stage detection)
+  const stage = detectProcessMappingStage(messages, modeId);
+  if (stage.primary_answer) {
+    // Use actual user answer text (truncated)
+    map.primary_process = stage.primary_answer.substring(0, 80);
+  }
+  if (stage.secondary_answer) {
+    map.secondary_process = stage.secondary_answer.substring(0, 80);
   }
 
   // Detect edge (boundary/hesitation)
   if (allText.includes("граница") || allText.includes("границ") || allText.includes("колебани") ||
-      allText.includes("не могу") || allText.includes("трудно") || allText.includes("сложно") ||
       allText.includes("с одной стороны") || allText.includes("но с другой")) {
     map.edge = "колебание между первичным и вторичным";
   }
 
-  // Detect field figures (people/entities mentioned)
+  // Detect field figures
   const figureSignals = ["мать", "мама", "папа", "отец", "муж", "жена", "партнёр", "начальник",
     "друг", "подруга", "ребёнок", "дети", "коллег", "учитель", "босс", "родители"];
   const foundFigures = figureSignals.filter((f) => userText.includes(f));
   if (foundFigures.length > 0) map.field_figures = foundFigures.join(", ");
 
-  // Detect channels engaged
+  // Detect channels
   const channelSignals = [
-    ["в теле", "телесный"], ["ощущаю", "телесный"], ["чувствую в", "телесный"],
-    ["образ", "визуальный"], ["вижу", "визуальный"], ["цвет", "визуальный"],
-    ["движени", "моторный"], ["хочет двигаться", "моторный"],
-    ["голос", "аудиальный"], ["слышу", "аудиальный"], ["звук", "аудиальный"],
+    ["образ", "визуальный"], ["вижу", "визуальный"],
+    ["движени", "моторный"], ["голос", "аудиальный"],
     ["во сне", "сновидческий"], ["снилось", "сновидческий"],
   ];
   const foundChannels = new Set();
@@ -454,12 +500,7 @@ function buildDreamProcessMap(messages) {
 
   // Detect emerging quality
   const emergingSignals = [
-    ["занять своё место", "способность занять своё место"],
-    ["своё дело", "движение к своему делу"],
-    ["проявиться", "импульс проявиться"],
-    ["новое качество", "новое качество"],
-    ["что-то зарождается", "зарождающийся импульс"],
-    ["свобод", "свобода"], ["сил", "новая сила"],
+    ["проявиться", "импульс проявиться"], ["свобод", "свобода"],
     ["целостност", "целостность"], ["зрелост", "зрелость"],
     ["готовност", "готовность к новому"],
   ];
@@ -467,27 +508,27 @@ function buildDreamProcessMap(messages) {
     if (allText.includes(kw)) { map.emerging_quality = label; break; }
   }
 
-  // Detect polarity
-  if (allText.includes("полярност") || allText.includes("противоречи") ||
-      allText.includes("с одной стороны") || allText.includes("противоположн") ||
-      (map.primary_process && map.secondary_process)) {
-    map.polarity = map.primary_process && map.secondary_process
-      ? `${map.primary_process} ↔ ${map.secondary_process}`
-      : "присутствует напряжение между полярностями";
+  // Derive polarity from primary + secondary
+  if (map.primary_process && map.secondary_process) {
+    map.polarity = "присутствует напряжение между знакомым и новым";
   }
 
   // Detect atmosphere
   const atmoSignals = [
     ["тяжёл", "тяжёлая"], ["грустн", "грустная"], ["тревожн", "тревожная"],
     ["светл", "светлая"], ["спокойн", "спокойная"], ["напряжённ", "напряжённая"],
-    ["радостн", "радостная"], ["тёпл", "тёплая"], ["холодн", "холодная"],
-    ["запутанн", "запутанная"], ["ясн", "ясная"],
+    ["радостн", "радостная"], ["тёпл", "тёплая"], ["запутанн", "запутанная"],
   ];
   for (const [kw, label] of atmoSignals) {
     if (userText.includes(kw)) { map.atmosphere = label; break; }
   }
 
   return map;
+}
+
+// Keep legacy name for call sites
+function buildDreamProcessMap(messages) {
+  return buildProcessMap(messages, "dream");
 }
 
 // Count how many map fields are populated
@@ -507,10 +548,10 @@ function formatProcessMapForPrompt(map, filledCount) {
   if (map.edge) lines.push(`— грань (edge): ${map.edge}`);
   if (map.channels) lines.push(`— задействованные каналы: ${map.channels}`);
 
-  const missing = 6 - Math.min(filledCount, 6);
+  const complete = map.primary_process && map.secondary_process;
   return lines.length > 0
-    ? lines.join("\n") + (missing > 0 ? `\n\n⚠ Карта ещё неполная — нужно ещё ~${missing} элемента.` : "\n\n✅ Карта достаточно полная.")
-    : "(карта пуста — материал ещё не собран)";
+    ? lines.join("\n") + (complete ? "\n\n✅ Первичный и вторичный процессы определены." : "\n\n⚠ Первичный/вторичный ещё не определены через отдельные вопросы.")
+    : "(карта пуста — уточняющие вопросы ещё не заданы)";
 }
 
 // ─── Layer detection & forced progression ────────────────────────────────────
@@ -772,17 +813,16 @@ const SAFE_FALLBACKS = {
 function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete }) {
   const lower = responseText.toLowerCase();
 
-  // 0. Dream somatic gate: block body questions before mapping is complete
-  const modeKeyForGate = (currentMode || "").toLowerCase();
-  if (modeKeyForGate.includes("dream") && dreamMappingComplete === false) {
+  // 0. Somatic gate: block body questions before primary+secondary are both clarified
+  if (dreamMappingComplete === false) {
     const somaticPhrases = ["где ты ощущаешь", "ощущаешь в теле", "что ты чувствуешь телесно",
       "телесный отклик", "в теле", "в груди", "в животе", "в горле", "в плечах"];
     for (const phrase of somaticPhrases) {
       if (lower.includes(phrase)) {
         return {
           isValid: false,
-          reason: `Somatic gate violated: body question asked before process mapping is complete ("${phrase}")`,
-          correctedInstruction: "Process mapping is not yet complete. Do NOT ask body/somatic questions. Continue identifying: primary process, secondary process, polarity, field figures, emerging quality. Show the current map state if asked.",
+          reason: `Somatic gate violated: body question asked before primary/secondary process clarification is complete ("${phrase}")`,
+          correctedInstruction: "Primary and secondary process have NOT yet been clarified through separate questions. Do NOT ask body/somatic questions. Ask the missing clarifying question first.",
         };
       }
     }
@@ -901,41 +941,90 @@ export async function getAIResponse(session, step, messages, userMessage) {
   const coveredLayers = detectCoveredLayers(messages);
   const isIntegrationStage = detectIntegrationStage(messages);
 
-  // Dream mode: build process map and check if it's complete enough to proceed
+  // Detect primary/secondary clarification stage (all modes)
+  const mappingStage = detectProcessMappingStage(messages, currentMode);
+  const mappingStageComplete = mappingStage.stage === "complete";
+
+  // Dream mode: build process map for display purposes
   const isDreamMode = (currentMode || "").toLowerCase().includes("dream");
   const dreamProcessMap = isDreamMode ? buildDreamProcessMap(messages) : null;
   const dreamMapFilledCount = dreamProcessMap ? countMapFields(dreamProcessMap) : 0;
-  const dreamMappingComplete = !isDreamMode || dreamMapFilledCount >= 4;
+  // Mapping is complete when both primary and secondary have been explicitly answered
+  const dreamMappingComplete = mappingStageComplete;
 
-  // Force process mapping if user has replied but mapping layer not yet covered
+  // Force process mapping if user has replied but mapping stage not yet complete
   const userMessageCount = messages.filter((m) => m.role === "user").length;
-  const mappingDone = coveredLayers.has("process_mapping") && dreamMappingComplete;
-  const needsMapping = userMessageCount >= 1 && !mappingDone && !isIntegrationStage;
+  const needsMapping = userMessageCount >= 1 && !mappingStageComplete && !isIntegrationStage;
 
+  // When mapping stage is incomplete, layer chain should not run — mappingStageInstruction handles it
   const forcedNext = isIntegrationStage
     ? null
     : needsMapping
-    ? "process_mapping"
-    : getForcedNextLayer(currentMode, coveredLayers);
+    ? null   // mappingStageInstruction injects the right clarifying question directly
+    : mappingStageComplete
+    ? getForcedNextLayer(currentMode, coveredLayers)
+    : null;
   const isLooping = detectLoopInLastExchanges(messages);
 
   const layerStatus = coveredLayers.size > 0
     ? `\n\n━━━ УЖЕ ПРОЙДЕННЫЕ СЛОИ (НЕ возвращайся к ним) ━━━\n${[...coveredLayers].map((l) => `✓ ${l}`).join("\n")}`
     : "";
 
-  // Dream process map injection
-  const dreamMapContext = isDreamMode && dreamProcessMap
-    ? `\n\n━━━ ТЕКУЩАЯ КАРТА ПРОЦЕССА (СОН) — ОБНОВЛЯЙ В КАЖДОМ ОТВЕТЕ ━━━
+  // Per-mode clarifying question instructions based on current stage
+  const modeKey = getModeKey(currentMode);
+  const PRIMARY_QUESTIONS = {
+    dream:      "Что из этого сна больше всего откликается с твоей реальной жизнью, привычными чувствами или знакомыми ситуациями?",
+    body:       "Как ты обычно объясняешь это ощущение? Что в нём для тебя понятно, знакомо или связано с твоей обычной жизнью?",
+    conflict:   "Какая из этих сторон для тебя более привычная, знакомая или ближе к тому, как ты обычно себя ведёшь?",
+    journaling: "Что в этой ситуации для тебя уже понятно, знакомо или похоже на твой обычный способ реагировать?",
+  };
+  const SECONDARY_QUESTIONS = {
+    dream:      "А что в этом сне кажется тебе самым странным, новым, непривычным, заряженным или совсем не похожим на тебя?",
+    body:       "А что в этом телесном ощущении странное, необычное, непонятное, неожиданное или как будто не совсем твоё?",
+    conflict:   "Какая сторона более новая, непривычная, труднее принимается или вызывает больше напряжения?",
+    journaling: "А что здесь кажется новым, странным, живым, тревожащим, непривычным или пока не до конца понятным?",
+  };
+
+  let mappingStageInstruction = "";
+  if (!mappingStageComplete && !isIntegrationStage && modeKey) {
+    if (mappingStage.stage === "need_primary") {
+      mappingStageInstruction = `\n\n🔴 ОБЯЗАТЕЛЬНЫЙ СЛЕДУЮЩИЙ ШАГ — КАРТИРОВАНИЕ: ПЕРВИЧНЫЙ ПРОЦЕСС\n` +
+        `Ты ОБЯЗАН задать один уточняющий вопрос для определения первичного процесса (знакомого/устойчивого).\n` +
+        `Задай ИМЕННО ЭТОТ вопрос (можно немного перефразировать, сохранив смысл):\n` +
+        `«${PRIMARY_QUESTIONS[modeKey]}»\n\n` +
+        `ЗАПРЕЩЕНО: задавать вопрос про вторичный процесс, про тело, про образы, про смысл.\n` +
+        `ЗАПРЕЩЕНО: переходить к исследованию пока этот вопрос не задан и ответ не получен.\n` +
+        `Если пользователь спрашивает «разве мы уже наметили карту?» — ответь: «Ты права, мы ещё не завершили карту. Давай сначала отделим знакомое от нового.» — и затем задай этот вопрос.`;
+    } else if (mappingStage.stage === "need_secondary") {
+      mappingStageInstruction = `\n\n🔴 ОБЯЗАТЕЛЬНЫЙ СЛЕДУЮЩИЙ ШАГ — КАРТИРОВАНИЕ: ВТОРИЧНЫЙ ПРОЦЕСС\n` +
+        `Первичный процесс уже определён (ответ пользователя: «${(mappingStage.primary_answer || "").substring(0, 100)}»).\n` +
+        `Теперь ты ОБЯЗАН задать отдельный уточняющий вопрос для определения вторичного процесса (нового/странного/непривычного).\n` +
+        `Задай ИМЕННО ЭТОТ вопрос (можно немного перефразировать, сохранив смысл):\n` +
+        `«${SECONDARY_QUESTIONS[modeKey]}»\n\n` +
+        `ЗАПРЕЩЕНО: переходить к телу, образам, смыслу или исследованию вторичного процесса пока ответ на этот вопрос не получен.\n` +
+        `ЗАПРЕЩЕНО: делать вывод о вторичном процессе самостоятельно без явного ответа пользователя.\n` +
+        `Если пользователь спрашивает «разве мы уже наметили карту?» — ответь: «Ты права, мы ещё не завершили карту. Нам осталось определить, что здесь кажется новым или непривычным.» — и задай этот вопрос.`;
+    }
+  }
+
+  // After both primary and secondary are defined — inject them into exploration context
+  const mappingCompleteContext = mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer
+    ? `\n\n✅ КАРТА ЗАВЕРШЕНА\n` +
+      `— первичный процесс: «${mappingStage.primary_answer.substring(0, 100)}»\n` +
+      `— вторичный процесс: «${mappingStage.secondary_answer.substring(0, 100)}»\n\n` +
+      `Теперь исследуй ИМЕННО вторичный процесс («${mappingStage.secondary_answer.substring(0, 60)}»).\n` +
+      `Начни с: «Тогда давай исследуем именно это — [слова пользователя из вторичного]...»\n` +
+      `Далее: тело / движение / образ / голос / интеграция с жизнью.`
+    : "";
+
+  // Dream process map injection (display only when mapping is active)
+  const dreamMapContext = isDreamMode && dreamProcessMap && !mappingStageComplete
+    ? `\n\n━━━ ТЕКУЩАЯ КАРТА ПРОЦЕССА (СОН) — СТАТУС ━━━
 ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
 
-${!dreamMappingComplete
-  ? `🔴 КАРТИРОВАНИЕ НЕ ЗАВЕРШЕНО (заполнено ${dreamMapFilledCount}/6 полей)\n` +
-    `ЗАПРЕЩЕНО: переходить к телесному исследованию, атмосфере сна или любым слоям 1–6.\n` +
-    `ЗАПРЕЩЕНО: спрашивать «где ты ощущаешь это в теле?» или любые соматические вопросы.\n` +
-    `ОБЯЗАТЕЛЬНО: продолжай выявлять недостающие элементы карты.\n` +
-    `Если пользователь спрашивает «мы уже наметили карту?» — покажи текущую карту с конкретными элементами и спроси «На что из этого тебе хочется посмотреть внимательнее?»`
-  : `✅ КАРТИРОВАНИЕ ЗАВЕРШЕНО — можно переходить к углублению в выбранный элемент.`
-}`
+🔴 Первичный и вторичный процессы ещё не определены через отдельные уточняющие вопросы.
+ЗАПРЕЩЕНО: переходить к телесному исследованию, атмосфере сна или любым слоям 1–6.
+ЗАПРЕЩЕНО: спрашивать «где ты ощущаешь это в теле?» или любые соматические вопросы.`
     : "";
 
   // PRIMARY PROCESS THREAD: detect dominant emerging state and protect continuity
@@ -979,7 +1068,8 @@ ${!dreamMappingComplete
       `Используй конкретные слова пользователя (спокойствие, взаимность, облегчение, ясность и т.д.).`
     : "";
 
-  const forcedInstruction = !isIntegrationStage && forcedNext && NEXT_LAYER_INSTRUCTIONS[forcedNext]
+  // Only inject layer instructions if mapping stage is complete (or not applicable)
+  const forcedInstruction = !isIntegrationStage && mappingStageComplete && forcedNext && NEXT_LAYER_INSTRUCTIONS[forcedNext]
     ? `\n\n🔴 ОБЯЗАТЕЛЬНЫЙ СЛЕДУЮЩИЙ ШАГ: ${NEXT_LAYER_INSTRUCTIONS[forcedNext]}\n` +
       `НЕ задавай вопросы об уже пройденных слоях. Только этот шаг.\n` +
       (forcedNext === "transformation"
@@ -1012,7 +1102,7 @@ ${step.facilitator_hint ? `Подсказка: ${step.facilitator_hint}` : ""}`
     : "";
 
   const buildPrompt = (extraInstruction = "") =>
-    `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${primaryThreadGuard}${integrationLock}${forcedInstruction}${loopWarning}${extraInstruction}
+    `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${forcedInstruction}${loopWarning}${extraInstruction}
 
 Режим: ${currentMode}
 
