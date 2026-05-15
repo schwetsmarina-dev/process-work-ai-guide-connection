@@ -1092,14 +1092,40 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
     }
   }
 
-  // 4d. Channel contamination check: block sensory/symbolic channels not present in current session
+  // 4d. Channel contamination — HARD BLOCK: reject any response that introduces a sensory/symbolic
+  // channel not present anywhere in the user's messages for this session.
+  // Checks both trigger phrases AND bare channel words in the response.
   const SENSORY_CHANNELS = [
-    { phrase: "какой вкус", signal: ["вкус", "пробу", "съел", "ем ", "попробова", "ест "] },
-    { phrase: "запах",      signal: ["запах", "нюха", "пахнет"] },
-    { phrase: "текстур",    signal: ["текстур", "на ощупь", "шершав", "гладк", "мягк"] },
-    { phrase: "температур", signal: ["температур", "тепло", "холодн", "горяч", "прохладн"] },
-    { phrase: "в контакт",  signal: ["контакт", "дотронул", "касани", "прикосновени", "трогаю", "касаюсь"] },
-    { phrase: "что за цвет",signal: ["цвет", "краска", "оттенок"] },
+    {
+      name: "taste",
+      responsePhrases: ["вкус", "какой вкус", "попробуй", "пробуешь", "пробовать"],
+      userSignals: ["вкус", "пробу", "съел", "ем ", "попробова", "ест ", "пробовала", "пробовал", "попробовала"],
+    },
+    {
+      name: "smell",
+      responsePhrases: ["запах", "нюха", "аромат"],
+      userSignals: ["запах", "нюха", "пахнет", "аромат"],
+    },
+    {
+      name: "texture",
+      responsePhrases: ["текстур", "на ощупь", "шершав", "гладк"],
+      userSignals: ["текстур", "на ощупь", "шершав", "гладк"],
+    },
+    {
+      name: "temperature",
+      responsePhrases: ["температур", "горяч", "прохладн", "холодн"],
+      userSignals: ["температур", "тепло", "холодн", "горяч", "прохладн"],
+    },
+    {
+      name: "contact",
+      responsePhrases: ["в контакт", "при контакт", "момент контакт", "при касани", "прикосновени"],
+      userSignals: ["контакт", "дотронул", "касани", "прикосновени", "трогаю", "касаюсь", "дотронулась", "дотронулся"],
+    },
+    {
+      name: "color",
+      responsePhrases: ["что за цвет", "какой цвет", "цвет появля"],
+      userSignals: ["цвет", "краска", "оттенок"],
+    },
   ];
 
   const sessionUserText = conversationHistory
@@ -1108,13 +1134,18 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
     .join(" ");
 
   for (const channel of SENSORY_CHANNELS) {
-    if (lower.includes(channel.phrase)) {
-      const hasSignal = channel.signal.some((sig) => sessionUserText.includes(sig));
-      if (!hasSignal) {
+    // Check if ANY response phrase for this channel appears in the response
+    const triggeredPhrase = channel.responsePhrases.find((p) => lower.includes(p));
+    if (triggeredPhrase) {
+      const hasUserSignal = channel.userSignals.some((sig) => sessionUserText.includes(sig));
+      if (!hasUserSignal) {
+        console.warn(
+          `[CHANNEL_CONTAMINATION_BLOCKED] channel: "${channel.name}" source_phrase: "${triggeredPhrase}" response_rejected: true`
+        );
         return {
           isValid: false,
-          reason: `Channel contamination: introduced "${channel.phrase}" without any user signal for this channel in current session`,
-          correctedInstruction: `Do NOT introduce "${channel.phrase}" — the user never mentioned this sensory channel. Stay strictly with the user's own words and the current process map. Remove this channel entirely.`,
+          reason: `Channel contamination HARD BLOCK: introduced "${channel.name}" channel ("${triggeredPhrase}") but user NEVER mentioned this channel in this session`,
+          correctedInstruction: `HARD REJECT — remove ALL references to ${channel.name} (${triggeredPhrase}). The user never introduced this sensory channel. Stay strictly with the user's own words. Do not invent sensory channels.`,
         };
       }
     }

@@ -167,7 +167,13 @@ export default function SessionChat() {
 
       // Step found — create greeting, THEN mark init done
       console.log("[SESSION_INIT] step found:", step.step_key || step._stepKey, "session.id:", sessionId);
-      const greeting = `Давай начнём.\n\n${step.question}`;
+      // Dream mode: ALWAYS use the canonical dream invite as the opening question,
+      // regardless of what is stored in the DB step, to prevent mapping prefaces leaking in.
+      const isDream = modeId.toLowerCase().includes("dream");
+      const openingQuestion = isDream
+        ? "Расскажи мне свой сон так, как ты его помнишь. Какие моменты или чувства в нём самые заметные?"
+        : step.question;
+      const greeting = `Давай начнём.\n\n${openingQuestion}`;
       try {
         await createMessage({ session_id: sessionId, mode_id: modeId, step_number: stepNum, role: "assistant", content: greeting });
       } catch (createErr) {
@@ -207,7 +213,11 @@ export default function SessionChat() {
     fetchStep(modeId, stepNum).then(async (step) => {
       if (cancelled || !step) return;
       console.log("[SESSION_AUTORECOVERY] fetchStep succeeded — creating greeting, session.id:", sessionId);
-      const greeting = `Давай начнём.\n\n${step.question}`;
+      const isDreamRecovery = modeId.toLowerCase().includes("dream");
+      const recoveryQuestion = isDreamRecovery
+        ? "Расскажи мне свой сон так, как ты его помнишь. Какие моменты или чувства в нём самые заметные?"
+        : step.question;
+      const greeting = `Давай начнём.\n\n${recoveryQuestion}`;
       await createMessage({ session_id: sessionId, mode_id: modeId, step_number: stepNum, role: "assistant", content: greeting });
       if (cancelled) return;
       initDone.current = true;
