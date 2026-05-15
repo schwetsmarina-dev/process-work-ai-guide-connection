@@ -165,7 +165,29 @@ const SYSTEM_PROMPT = `Ты — процесс-ориентированный ф
 7. интеграция с жизнью (насколько этого сейчас хватает? где не хватает?)
 
 СОН (строгий порядок — нельзя пропускать шаги):
-0. КАРТИРОВАНИЕ: что в сне кажется знакомым, что — удивляющим или непривычным? Гипотеза первичного/вторичного. Вопрос ориентации.
+0. КАРТИРОВАНИЕ ПРОЦЕССА — ОБЯЗАТЕЛЬНЫЙ ПОЛНЫЙ ЭТАП (нельзя сокращать):
+   Ты должен выявить и назвать ВСЕ из следующих элементов карты перед переходом к слоям 1–6:
+   а) Первичный процесс (что знакомо, устойчиво, идентично для человека)
+   б) Вторичный/тревожащий процесс (что новое, напряжённое, непривычное)
+   в) Возможная полярность/напряжение между ними
+   г) Главная эмоциональная атмосфера
+   д) Важные фигуры поля (если есть)
+   е) Ещё не исследованный/зарождающийся импульс или качество
+
+   КАРТИРОВАНИЕ считается ЗАВЕРШЁННЫМ только когда ≥4 из 6 элементов карты обозначены.
+   ЗАПРЕЩЕНО переходить к слою 1 (атмосфера сна) пока карта не содержит ≥4 элементов.
+
+   ПОСЛЕ ПОЛНОГО КАРТИРОВАНИЯ задай вопрос ориентации:
+   «На что из этого тебе хочется посмотреть внимательнее?»
+   и ЖДИ ответа пользователя перед переходом к углублению.
+
+   ЕСЛИ ПОЛЬЗОВАТЕЛЬ СПРАШИВАЕТ «разве мы уже наметили карту?» или «а карта?» —
+   ВСЕГДА показывай текущий статус карты с конкретными элементами:
+   «Пока только частично. Сейчас уже начинают проявляться:
+   — [элементы карты из разговора]
+   На что из этого тебе хочется посмотреть внимательнее?»
+   НИКОГДА не перенаправляй обратно к телесным ощущениям в этот момент.
+
 1. описание / атмосфера сна
 2. эмоция / настроение
 3. взаимодействие (касание, исследование, контакт с образом)
@@ -316,6 +338,15 @@ const SYSTEM_PROMPT = `Ты — процесс-ориентированный ф
 ✗ Спрашивать «что он хочет сказать?» если послание уже получено
 ✗ Начинать новый цикл с начальных слоёв
 
+━━━ СОМАТИЧЕСКИЙ ЗАПРЕТ ДО ЗАВЕРШЕНИЯ КАРТИРОВАНИЯ (режим СОН) ━━━
+Пока карта процесса не содержит ≥4 элементов:
+✗ ЗАПРЕЩЕНО: «Где ты ощущаешь это в теле?»
+✗ ЗАПРЕЩЕНО: «Что ты чувствуешь телесно?»
+✗ ЗАПРЕЩЕНО: «Есть ли телесный отклик?»
+✗ ЗАПРЕЩЕНО: любые вопросы о локализации ощущений в теле
+✗ ЗАПРЕЩЕНО: стандартные коучинговые отражения без опоры на карту
+ВМЕСТО ЭТОГО: продолжай выявлять и называть элементы карты процесса.
+
 ━━━ ЗАПРЕЩЕНО В ОБЩЕМ ━━━
 ✗ Спрашивать о слое, который уже получил ответ
 ✗ Задавать тот же вопрос другими словами
@@ -349,6 +380,138 @@ const SYSTEM_PROMPT = `Ты — процесс-ориентированный ф
 ━━━ ТОНАЛЬНОСТЬ ━━━
 Тихая уверенность. Тепло без слащавости. Профессионализм без дистанции.
 Как мудрый, чуткий человек, который видит тебя — и ведёт вперёд, не кружит на месте.`;
+
+// ─── Dream Process Map tracker ───────────────────────────────────────────────
+// Extracts a structured process map from the full conversation history.
+// Returns an object with fields populated where the conversation reveals them.
+function buildDreamProcessMap(messages) {
+  const allText = messages.map((m) => m.content.toLowerCase()).join(" ");
+  const userText = messages.filter((m) => m.role === "user").map((m) => m.content.toLowerCase()).join(" ");
+  const assistantText = messages.filter((m) => m.role === "assistant").map((m) => m.content.toLowerCase()).join(" ");
+
+  const map = {
+    primary_process: null,       // знакомое, устойчивое, идентичное
+    secondary_process: null,     // новое, непривычное, напряжённое
+    edge: null,                  // граница/колебание между ними
+    field_figures: null,         // важные фигуры поля (мать, муж, начальник...)
+    channels: null,              // задействованные каналы (тело, образ, движение...)
+    emerging_quality: null,      // зарождающееся качество/новое
+    polarity: null,              // полярность/напряжение
+    atmosphere: null,            // эмоциональная атмосфера
+  };
+
+  // Detect primary process — what user identifies as familiar/stable
+  const primarySignals = [
+    ["зрелост", "зрелость"], ["ответственност", "ответственность"],
+    ["устойчивост", "устойчивость"], ["спокойстви", "спокойствие"],
+    ["контрол", "контроль"], ["порядок", "порядок"],
+    ["привычн", "привычное"], ["знаком", "знакомое"],
+    ["надёжн", "надёжность"], ["стабильн", "стабильность"],
+  ];
+  for (const [kw, label] of primarySignals) {
+    if (allText.includes(kw)) { map.primary_process = label; break; }
+  }
+
+  // Detect secondary process — what feels new, strange, suppressed
+  const secondarySignals = [
+    ["молчани", "молчание/подавление"], ["подавля", "подавление себя"],
+    ["невозможн", "невозможность проявиться"], ["скрыва", "скрывание"],
+    ["боюсь", "страх"], ["напряжени", "напряжение"],
+    ["необычн", "что-то необычное"], ["странн", "странный элемент"],
+    ["удивительн", "удивляющее"], ["непривычн", "непривычное"],
+    ["тревог", "тревога"], ["сдержива", "сдерживание"],
+  ];
+  for (const [kw, label] of secondarySignals) {
+    if (userText.includes(kw)) { map.secondary_process = label; break; }
+  }
+
+  // Detect edge (boundary/hesitation)
+  if (allText.includes("граница") || allText.includes("границ") || allText.includes("колебани") ||
+      allText.includes("не могу") || allText.includes("трудно") || allText.includes("сложно") ||
+      allText.includes("с одной стороны") || allText.includes("но с другой")) {
+    map.edge = "колебание между первичным и вторичным";
+  }
+
+  // Detect field figures (people/entities mentioned)
+  const figureSignals = ["мать", "мама", "папа", "отец", "муж", "жена", "партнёр", "начальник",
+    "друг", "подруга", "ребёнок", "дети", "коллег", "учитель", "босс", "родители"];
+  const foundFigures = figureSignals.filter((f) => userText.includes(f));
+  if (foundFigures.length > 0) map.field_figures = foundFigures.join(", ");
+
+  // Detect channels engaged
+  const channelSignals = [
+    ["в теле", "телесный"], ["ощущаю", "телесный"], ["чувствую в", "телесный"],
+    ["образ", "визуальный"], ["вижу", "визуальный"], ["цвет", "визуальный"],
+    ["движени", "моторный"], ["хочет двигаться", "моторный"],
+    ["голос", "аудиальный"], ["слышу", "аудиальный"], ["звук", "аудиальный"],
+    ["во сне", "сновидческий"], ["снилось", "сновидческий"],
+  ];
+  const foundChannels = new Set();
+  for (const [kw, channel] of channelSignals) {
+    if (allText.includes(kw)) foundChannels.add(channel);
+  }
+  if (foundChannels.size > 0) map.channels = [...foundChannels].join(", ");
+
+  // Detect emerging quality
+  const emergingSignals = [
+    ["занять своё место", "способность занять своё место"],
+    ["своё дело", "движение к своему делу"],
+    ["проявиться", "импульс проявиться"],
+    ["новое качество", "новое качество"],
+    ["что-то зарождается", "зарождающийся импульс"],
+    ["свобод", "свобода"], ["сил", "новая сила"],
+    ["целостност", "целостность"], ["зрелост", "зрелость"],
+    ["готовност", "готовность к новому"],
+  ];
+  for (const [kw, label] of emergingSignals) {
+    if (allText.includes(kw)) { map.emerging_quality = label; break; }
+  }
+
+  // Detect polarity
+  if (allText.includes("полярност") || allText.includes("противоречи") ||
+      allText.includes("с одной стороны") || allText.includes("противоположн") ||
+      (map.primary_process && map.secondary_process)) {
+    map.polarity = map.primary_process && map.secondary_process
+      ? `${map.primary_process} ↔ ${map.secondary_process}`
+      : "присутствует напряжение между полярностями";
+  }
+
+  // Detect atmosphere
+  const atmoSignals = [
+    ["тяжёл", "тяжёлая"], ["грустн", "грустная"], ["тревожн", "тревожная"],
+    ["светл", "светлая"], ["спокойн", "спокойная"], ["напряжённ", "напряжённая"],
+    ["радостн", "радостная"], ["тёпл", "тёплая"], ["холодн", "холодная"],
+    ["запутанн", "запутанная"], ["ясн", "ясная"],
+  ];
+  for (const [kw, label] of atmoSignals) {
+    if (userText.includes(kw)) { map.atmosphere = label; break; }
+  }
+
+  return map;
+}
+
+// Count how many map fields are populated
+function countMapFields(map) {
+  return Object.values(map).filter((v) => v !== null).length;
+}
+
+// Format map for injection into system prompt
+function formatProcessMapForPrompt(map, filledCount) {
+  const lines = [];
+  if (map.primary_process) lines.push(`— первичный процесс: ${map.primary_process}`);
+  if (map.secondary_process) lines.push(`— вторичный процесс: ${map.secondary_process}`);
+  if (map.polarity) lines.push(`— полярность/напряжение: ${map.polarity}`);
+  if (map.atmosphere) lines.push(`— эмоциональная атмосфера: ${map.atmosphere}`);
+  if (map.field_figures) lines.push(`— важные фигуры поля: ${map.field_figures}`);
+  if (map.emerging_quality) lines.push(`— зарождающееся/неизведанное качество: ${map.emerging_quality}`);
+  if (map.edge) lines.push(`— грань (edge): ${map.edge}`);
+  if (map.channels) lines.push(`— задействованные каналы: ${map.channels}`);
+
+  const missing = 6 - Math.min(filledCount, 6);
+  return lines.length > 0
+    ? lines.join("\n") + (missing > 0 ? `\n\n⚠ Карта ещё неполная — нужно ещё ~${missing} элемента.` : "\n\n✅ Карта достаточно полная.")
+    : "(карта пуста — материал ещё не собран)";
+}
 
 // ─── Layer detection & forced progression ────────────────────────────────────
 
@@ -603,10 +766,27 @@ const SAFE_FALLBACKS = {
   body: "Давай останемся рядом с самим ощущением. Что в нём сейчас самое заметное?",
   conflict: "Давай удержим обе стороны. Что становится яснее, если дать место каждой из них?",
   journaling: "Давай возьмём то, что уже проявилось, и свяжем это с жизнью. Где это сейчас особенно откликается?",
+  dream_mapping: "Давай продолжим намечать карту. Что в этом сне кажется более знакомым или устойчивым — а что удивляет или тянет, как будто что-то новое?",
 };
 
-function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage }) {
+function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete }) {
   const lower = responseText.toLowerCase();
+
+  // 0. Dream somatic gate: block body questions before mapping is complete
+  const modeKeyForGate = (currentMode || "").toLowerCase();
+  if (modeKeyForGate.includes("dream") && dreamMappingComplete === false) {
+    const somaticPhrases = ["где ты ощущаешь", "ощущаешь в теле", "что ты чувствуешь телесно",
+      "телесный отклик", "в теле", "в груди", "в животе", "в горле", "в плечах"];
+    for (const phrase of somaticPhrases) {
+      if (lower.includes(phrase)) {
+        return {
+          isValid: false,
+          reason: `Somatic gate violated: body question asked before process mapping is complete ("${phrase}")`,
+          correctedInstruction: "Process mapping is not yet complete. Do NOT ask body/somatic questions. Continue identifying: primary process, secondary process, polarity, field figures, emerging quality. Show the current map state if asked.",
+        };
+      }
+    }
+  }
 
   // 1. Global forbidden phrases check
   for (const phrase of FORBIDDEN_PHRASES) {
@@ -691,12 +871,13 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
   return { isValid: true, reason: "", correctedInstruction: "" };
 }
 
-function getSafeFallback(currentMode, forcedNextLayer, integrationLock) {
+function getSafeFallback(currentMode, forcedNextLayer, integrationLock, dreamMappingComplete) {
   const modeKey = (currentMode || "").toLowerCase();
   if (integrationLock) {
     if (modeKey.includes("conflict")) return SAFE_FALLBACKS.conflict_integration;
     return SAFE_FALLBACKS.integration;
   }
+  if (modeKey.includes("dream") && dreamMappingComplete === false) return SAFE_FALLBACKS.dream_mapping;
   if (forcedNextLayer === "transformation") return SAFE_FALLBACKS.transformation;
   if (modeKey.includes("body")) return SAFE_FALLBACKS.body;
   if (modeKey.includes("conflict")) return SAFE_FALLBACKS.conflict;
@@ -720,9 +901,15 @@ export async function getAIResponse(session, step, messages, userMessage) {
   const coveredLayers = detectCoveredLayers(messages);
   const isIntegrationStage = detectIntegrationStage(messages);
 
+  // Dream mode: build process map and check if it's complete enough to proceed
+  const isDreamMode = (currentMode || "").toLowerCase().includes("dream");
+  const dreamProcessMap = isDreamMode ? buildDreamProcessMap(messages) : null;
+  const dreamMapFilledCount = dreamProcessMap ? countMapFields(dreamProcessMap) : 0;
+  const dreamMappingComplete = !isDreamMode || dreamMapFilledCount >= 4;
+
   // Force process mapping if user has replied but mapping layer not yet covered
   const userMessageCount = messages.filter((m) => m.role === "user").length;
-  const mappingDone = coveredLayers.has("process_mapping");
+  const mappingDone = coveredLayers.has("process_mapping") && dreamMappingComplete;
   const needsMapping = userMessageCount >= 1 && !mappingDone && !isIntegrationStage;
 
   const forcedNext = isIntegrationStage
@@ -734,6 +921,21 @@ export async function getAIResponse(session, step, messages, userMessage) {
 
   const layerStatus = coveredLayers.size > 0
     ? `\n\n━━━ УЖЕ ПРОЙДЕННЫЕ СЛОИ (НЕ возвращайся к ним) ━━━\n${[...coveredLayers].map((l) => `✓ ${l}`).join("\n")}`
+    : "";
+
+  // Dream process map injection
+  const dreamMapContext = isDreamMode && dreamProcessMap
+    ? `\n\n━━━ ТЕКУЩАЯ КАРТА ПРОЦЕССА (СОН) — ОБНОВЛЯЙ В КАЖДОМ ОТВЕТЕ ━━━
+${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
+
+${!dreamMappingComplete
+  ? `🔴 КАРТИРОВАНИЕ НЕ ЗАВЕРШЕНО (заполнено ${dreamMapFilledCount}/6 полей)\n` +
+    `ЗАПРЕЩЕНО: переходить к телесному исследованию, атмосфере сна или любым слоям 1–6.\n` +
+    `ЗАПРЕЩЕНО: спрашивать «где ты ощущаешь это в теле?» или любые соматические вопросы.\n` +
+    `ОБЯЗАТЕЛЬНО: продолжай выявлять недостающие элементы карты.\n` +
+    `Если пользователь спрашивает «мы уже наметили карту?» — покажи текущую карту с конкретными элементами и спроси «На что из этого тебе хочется посмотреть внимательнее?»`
+  : `✅ КАРТИРОВАНИЕ ЗАВЕРШЕНО — можно переходить к углублению в выбранный элемент.`
+}`
     : "";
 
   // PRIMARY PROCESS THREAD: detect dominant emerging state and protect continuity
@@ -810,7 +1012,7 @@ ${step.facilitator_hint ? `Подсказка: ${step.facilitator_hint}` : ""}`
     : "";
 
   const buildPrompt = (extraInstruction = "") =>
-    `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${primaryThreadGuard}${integrationLock}${forcedInstruction}${loopWarning}${extraInstruction}
+    `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${primaryThreadGuard}${integrationLock}${forcedInstruction}${loopWarning}${extraInstruction}
 
 Режим: ${currentMode}
 
@@ -885,6 +1087,7 @@ ${userMessage}
     integrationLock: isIntegrationStage,
     conversationHistory: messages,
     lastUserMessage: userMessage,
+    dreamMappingComplete,
   };
 
   // ── Pass 1: initial generation ────────────────────────────────────────────
@@ -901,7 +1104,7 @@ ${userMessage}
     try {
       const safeResponse = await base44.integrations.Core.InvokeLLM({ prompt: minimalPrompt });
       console.log("[AI_RUNTIME] Safe-mode retry succeeded, response length:", safeResponse?.length);
-      return safeResponse || getSafeFallback(currentMode, forcedNext, isIntegrationStage);
+      return safeResponse || getSafeFallback(currentMode, forcedNext, isIntegrationStage, dreamMappingComplete);
     } catch (e2) {
       console.error("[AI_RUNTIME] Safe-mode retry ALSO FAILED:", e2?.message, String(e2));
       throw e;
@@ -924,7 +1127,7 @@ ${userMessage}
     console.log("[AI_RUNTIME] InvokeLLM pass 2 success, response length:", secondResponse?.length);
   } catch (e) {
     console.error("[AI_RUNTIME] InvokeLLM FAILED (pass 2):", e?.message, String(e));
-    return getSafeFallback(currentMode, forcedNext, isIntegrationStage);
+    return getSafeFallback(currentMode, forcedNext, isIntegrationStage, dreamMappingComplete);
   }
 
   const secondValidation = validateAssistantResponse({ responseText: secondResponse, ...validationParams });
@@ -935,7 +1138,7 @@ ${userMessage}
   }
 
   console.warn("[AI_RUNTIME] Pass 2 also failed validation:", secondValidation.reason);
-  const fallback = getSafeFallback(currentMode, forcedNext, isIntegrationStage);
+  const fallback = getSafeFallback(currentMode, forcedNext, isIntegrationStage, dreamMappingComplete);
   console.info("[AI_RUNTIME] Using safe fallback:", fallback);
   return fallback;
 }
