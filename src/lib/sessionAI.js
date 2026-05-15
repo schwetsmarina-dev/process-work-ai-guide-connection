@@ -142,8 +142,33 @@ const SYSTEM_PROMPT = `Ты — процесс-ориентированный ф
 СТАДИЯ ВТОРИЧНОГО ПРОЦЕССА:
 Задай ОДИН вопрос о странном/непривычном/новом. Жди ответа. Не переходи дальше.
 
+СТАДИЯ ОТРАЖЕНИЯ КАРТЫ (между вторичным ответом и исследованием):
+После получения обоих ответов — СНАЧАЛА отрази карту нейтрально, затем дай пользователю выбрать фокус.
+
+Формат отражения:
+«Похоже, начинает проявляться такая карта:
+
+— знакомое и привычное:
+  • [слова пользователя]
+
+— более новое или непривычное:
+  • [элемент 1]
+  • [элемент 2]
+  • [элемент 3]
+
+Кажется, здесь есть несколько разных направлений процесса.
+На что тебе сейчас хочется посмотреть внимательнее?»
+
+ЗАПРЕЩЕНО при отражении карты:
+✗ Выбирать один элемент автоматически
+✗ Приписывать эмоцию («тревожит», «пугает», «вдохновляет»), если пользователь её не называл
+✗ Интерпретировать («это означает», «это связано с»)
+✗ Сужать фокус до одного образа без выбора пользователя
+✗ Переходить к углублению (тело, движение, символ) до того, как пользователь указал фокус
+
 СТАДИЯ ИССЛЕДОВАНИЯ:
-Только после обоих ответов: «Тогда давай исследуем именно это — [слова пользователя из вторичного]...»
+ТОЛЬКО ПОСЛЕ ТОГО, как пользователь явно указал, на что хочет смотреть — начни исследование этого элемента.
+Сохрани выбор как активный фокус сессии (selected_process_focus).
 
 ЕСЛИ ПОЛЬЗОВАТЕЛЬ ГОВОРИТ «ты перескочил» / «я ещё не рассказала» / «это не то»:
 1. Признай ошибку одним предложением: «Ты права, я перескочил вперёд.»
@@ -936,7 +961,7 @@ const SAFE_FALLBACKS = {
   dream_mapping: "Давай продолжим намечать карту. Что в этом сне кажется более знакомым или устойчивым — а что удивляет или тянет, как будто что-то новое?",
 };
 
-function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue }) {
+function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue, userSelectedFocus }) {
   const lower = responseText.toLowerCase();
 
   // 0a. Awaiting-dream gate: before user has shared a dream, block ALL mapping/body/exploration questions
@@ -1025,7 +1050,41 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
     }
   }
 
-  // 4b. Channel contamination check: block sensory/symbolic channels not present in current session
+  // 4a. Post-mapping focus gate: after secondary is answered but before user selects focus, block deepening
+  if (dreamMappingComplete === true && !userSelectedFocus) {
+    const deepeningPhrases = [
+      "где ты ощущаешь", "в теле", "что хочет двигаться", "если бы это стало образом",
+      "что за движение", "что ты чувствуешь", "голос", "послание",
+    ];
+    for (const phrase of deepeningPhrases) {
+      if (lower.includes(phrase)) {
+        return {
+          isValid: false,
+          reason: `Focus gate violated: deepening question asked before user selected a focus ("${phrase}")`,
+          correctedInstruction: "Reflect the map neutrally first. List ALL secondary elements. Ask: 'На что тебе сейчас хочется посмотреть внимательнее?' Do NOT deepen into any element yet.",
+        };
+      }
+    }
+  }
+
+  // 4b. Invented emotion check: block emotional attribution not present in user's words
+  const INVENTED_EMOTIONS = ["тревожит", "пугает", "вдохновляет", "беспокоит тебя", "радует тебя", "злит тебя", "пугает тебя"];
+  for (const emo of INVENTED_EMOTIONS) {
+    if (lower.includes(emo)) {
+      const userMentioned = conversationHistory
+        .filter((m) => m.role === "user")
+        .some((m) => m.content.toLowerCase().includes(emo));
+      if (!userMentioned) {
+        return {
+          isValid: false,
+          reason: `Invented emotion: "${emo}" attributed to user but never said by them`,
+          correctedInstruction: `Remove "${emo}" — the user never expressed this emotion. Reflect only what the user explicitly said. Do not project emotional tone.`,
+        };
+      }
+    }
+  }
+
+  // 4d. Channel contamination check: block sensory/symbolic channels not present in current session
   const SENSORY_CHANNELS = [
     { phrase: "какой вкус", signal: ["вкус", "пробу", "съел", "ем ", "попробова", "ест "] },
     { phrase: "запах",      signal: ["запах", "нюха", "пахнет"] },
@@ -1250,14 +1309,36 @@ export async function getAIResponse(session, step, messages, userMessage) {
     }
   }
 
-  // After both primary and secondary are defined — inject them into exploration context
+  // After both primary and secondary are defined — reflect map neutrally, then ask user to choose focus
+  // Check if user has already selected a focus (any message AFTER secondary answer that isn't the map reflection)
+  const secondaryAnswerIndex = messages.findLastIndex((m) => m.role === "user" && mappingStage.secondary_answer && m.content.includes(mappingStage.secondary_answer.substring(0, 30)));
+  const messagesAfterSecondary = secondaryAnswerIndex >= 0 ? messages.slice(secondaryAnswerIndex + 1) : [];
+  const assistantReflectedMap = messagesAfterSecondary.some((m) => m.role === "assistant" && (m.content.includes("знакомое") || m.content.includes("непривычное") || m.content.includes("на что тебе сейчас хочется")));
+  const userSelectedFocus = assistantReflectedMap && messagesAfterSecondary.some((m) => m.role === "user");
+
   const mappingCompleteContext = mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer
-    ? `\n\n✅ КАРТА ЗАВЕРШЕНА\n` +
-      `— первичный процесс: «${mappingStage.primary_answer.substring(0, 100)}»\n` +
-      `— вторичный процесс: «${mappingStage.secondary_answer.substring(0, 100)}»\n\n` +
-      `Теперь исследуй ИМЕННО вторичный процесс («${mappingStage.secondary_answer.substring(0, 60)}»).\n` +
-      `Начни с: «Тогда давай исследуем именно это — [слова пользователя из вторичного]...»\n` +
-      `Далее: тело / движение / образ / голос / интеграция с жизнью.`
+    ? !assistantReflectedMap
+      ? `\n\n✅ КАРТА ЗАВЕРШЕНА — СЛЕДУЮЩИЙ ШАГ: НЕЙТРАЛЬНОЕ ОТРАЖЕНИЕ\n` +
+        `Отрази карту нейтрально по этому шаблону (используй точные слова пользователя):\n\n` +
+        `«Похоже, начинает проявляться такая карта:\n\n` +
+        `— знакомое и привычное:\n  • ${mappingStage.primary_answer.substring(0, 120)}\n\n` +
+        `— более новое или непривычное:\n  • [перечисли ВСЕ элементы из ответа пользователя на вторичный вопрос через • ]\n\n` +
+        `Кажется, здесь есть несколько разных направлений процесса.\nНа что тебе сейчас хочется посмотреть внимательнее?»\n\n` +
+        `АБСОЛЮТНО ЗАПРЕЩЕНО:\n` +
+        `✗ Выбирать один элемент вторичного автоматически\n` +
+        `✗ Приписывать эмоцию («тревожит», «пугает», «вдохновляет»), если пользователь её не называл\n` +
+        `✗ Переходить к углублению (тело, движение, образ) до выбора фокуса пользователем`
+      : !userSelectedFocus
+      ? `\n\n✅ КАРТА ОТРАЖЕНА — ОЖИДАНИЕ ВЫБОРА ФОКУСА\n` +
+        `Пользователь ещё не выбрал, на что смотреть.\n` +
+        `Жди ответа. НЕ выбирай фокус сам. НЕ углубляйся ни в один элемент.`
+      : `\n\n✅ КАРТА ЗАВЕРШЕНА, ФОКУС ВЫБРАН\n` +
+        `— первичный процесс: «${mappingStage.primary_answer.substring(0, 100)}»\n` +
+        `— вторичный процесс: «${mappingStage.secondary_answer.substring(0, 100)}»\n` +
+        `— активный фокус: слова пользователя из последнего выбора\n\n` +
+        `Теперь исследуй ИМЕННО то, что выбрал пользователь.\n` +
+        `Начни с: «Тогда давай исследуем именно это — [слова пользователя]...»\n` +
+        `Далее: тело / движение / образ / голос / интеграция с жизнью.`
     : "";
 
   // Dream process map injection (display only when mapping is active)
@@ -1425,6 +1506,7 @@ ${userMessage}
     lastUserMessage: userMessage,
     dreamMappingComplete,
     mappingStageValue: mappingStage.stage,
+    userSelectedFocus,
   };
 
   // ── Pass 1: initial generation ────────────────────────────────────────────
