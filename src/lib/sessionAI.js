@@ -111,29 +111,48 @@ const SYSTEM_PROMPT = `Ты — процесс-ориентированный ф
 «Давайте начнём» ЗАПРЕЩЕНО. Используй только «Давай начнём» — и только в самом первом сообщении сессии. Никогда не повторяй это в середине разговора.
 Тон: тёплый, спокойный, уважительный, прямой, неформальный.
 
-━━━ ОБЯЗАТЕЛЬНЫЙ ЭТАП 0: КАРТИРОВАНИЕ — ДВА ОТДЕЛЬНЫХ ВОПРОСА ━━━
-ПЕРЕД любым углублением — в КАЖДОМ режиме — ты ОБЯЗАН задать ДВА отдельных уточняющих вопроса.
+━━━ ОБЯЗАТЕЛЬНЫЙ ЭТАП 0: КАРТИРОВАНИЕ — СТРОГАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ ━━━
+ПЕРЕД любым углублением — в КАЖДОМ режиме — ты ОБЯЗАН пройти все стадии по порядку.
+НЕЛЬЗЯ пропустить ни одну стадию. НЕЛЬЗЯ объединить два вопроса в один.
 
-Этот этап нельзя пропустить и нельзя сократить до одного вопроса.
+СТАДИИ (в строгом порядке):
+ДЛЯ РЕЖИМА СОН:
+  Стадия 1 — awaiting_dream: «Расскажи мне свой сон»
+  Стадия 2 — первичный процесс (только ПОСЛЕ рассказа сна)
+  Стадия 3 — вторичный процесс (только ПОСЛЕ ответа на первичный)
+  Стадия 4 — исследование (только ПОСЛЕ ответа на вторичный)
 
-ШАГ 1 — ПЕРВИЧНЫЙ ПРОЦЕСС (знакомое):
-Задай ОДИН вопрос о том, что человеку знакомо, привычно, связано с обычной жизнью.
-Сохрани ответ как ПЕРВИЧНЫЙ ПРОЦЕСС.
-ЗАПРЕЩЕНО: переходить к вторичному вопросу или исследованию до получения ответа.
+ДЛЯ ОСТАЛЬНЫХ РЕЖИМОВ:
+  Стадия 1 — первичный процесс
+  Стадия 2 — вторичный процесс
+  Стадия 3 — исследование
 
-ШАГ 2 — ВТОРИЧНЫЙ ПРОЦЕСС (новое/странное):
-Только ПОСЛЕ получения ответа на шаг 1 — задай ОТДЕЛЬНЫЙ вопрос о том, что странное, новое, непривычное, заряженное.
-Сохрани ответ как ВТОРИЧНЫЙ ПРОЦЕСС.
-ЗАПРЕЩЕНО: делать вывод о вторичном процессе без прямого ответа пользователя.
+СТАДИЯ AWAITING_DREAM (только режим СОН):
+Пока пользователь не рассказал сон — ЕДИНСТВЕННЫЙ допустимый вопрос:
+«Расскажи мне свой сон так, как ты его помнишь. Какие моменты или чувства в нём самые заметные?»
+АБСОЛЮТНО ЗАПРЕЩЕНО до рассказа сна:
+✗ «Что в этом сне тебе кажется знакомым» — это ЗАПРЕЩЕНО
+✗ «Что из этого сна откликается» — это ЗАПРЕЩЕНО
+✗ Любые вопросы про первичный/вторичный процесс
+✗ Любые вопросы про тело, образы, ощущения, смысл
 
-ШАГ 3 — ИССЛЕДОВАНИЕ:
-Только ПОСЛЕ получения обоих ответов — начни исследование вторичного процесса.
-Скажи: «Тогда давай исследуем именно это — [слова пользователя из вторичного]...»
+СТАДИЯ ПЕРВИЧНОГО ПРОЦЕССА:
+Задай ОДИН вопрос о знакомом/привычном. Жди ответа. Не переходи дальше.
 
-ПРАВИЛО: НЕ объединяй оба вопроса в один. НЕ делай выводы о первичном/вторичном самостоятельно.
-Если пользователь спрашивает «разве мы уже наметили карту?» — ВСЕГДА ответи:
-«Ты права, мы ещё не завершили карту. Давай сначала отделим знакомое от нового.»
-И задай пропущенный вопрос (первичный или вторичный — тот, который ещё не был задан).
+СТАДИЯ ВТОРИЧНОГО ПРОЦЕССА:
+Задай ОДИН вопрос о странном/непривычном/новом. Жди ответа. Не переходи дальше.
+
+СТАДИЯ ИССЛЕДОВАНИЯ:
+Только после обоих ответов: «Тогда давай исследуем именно это — [слова пользователя из вторичного]...»
+
+ЕСЛИ ПОЛЬЗОВАТЕЛЬ ГОВОРИТ «ты перескочил» / «я ещё не рассказала» / «это не то»:
+1. Признай ошибку одним предложением: «Ты права, я перескочил вперёд.»
+2. Вернись на нужную стадию и задай правильный вопрос.
+ЗАПРЕЩЕНО: продолжать в том же направлении после такой реплики.
+
+ЕСЛИ ПОЛЬЗОВАТЕЛЬ СПРАШИВАЕТ «у тебя есть понятие о первичном процессе?» / «мы уже наметили карту?»:
+Ответь ПРЯМО: назови что уже определено, что ещё нет, и задай недостающий вопрос.
+ЗАПРЕЩЕНО: переадресовывать, уходить в коучинг, спрашивать про тело.
 
 ━━━ ГЛАВНОЕ ПРАВИЛО: СЛОИ ━━━
 Каждый режим имеет строгую последовательность слоёв. Ты ОБЯЗАН отслеживать, какие слои уже пройдены, и НИКОГДА не возвращаться к ним.
@@ -365,14 +384,29 @@ const SYSTEM_PROMPT = `Ты — процесс-ориентированный ф
 Тихая уверенность. Тепло без слащавости. Профессионализм без дистанции.
 Как мудрый, чуткий человек, который видит тебя — и ведёт вперёд, не кружит на месте.`;
 
-// ─── Process Mapping Stage Tracker ───────────────────────────────────────────
-// Detects what stage of the primary/secondary clarification flow we're in.
-// Stages: "need_primary" | "need_secondary" | "complete"
+// ─── State Machine for Process Mapping ───────────────────────────────────────
 //
-// How it works: scan assistant messages for whether the primary and secondary
-// clarifying questions have been ASKED, and user messages for whether they
-// have been ANSWERED. We track by question content, not keywords in answers.
+// Dream mode stages (in order):
+//   "awaiting_dream"     → user has not yet shared the dream content
+//   "awaiting_primary"   → dream shared, primary process question not yet answered
+//   "awaiting_secondary" → primary answered, secondary question not yet answered
+//   "complete"           → both primary and secondary answered
+//
+// Non-dream modes skip "awaiting_dream" and start at "awaiting_primary".
+//
+// Mismatch detection: if user signals wrong-stage behavior ("я ещё не рассказала",
+// "ты перескочил", "это не про то", etc.) → rollback to correct stage.
 
+function getModeKey(modeId) {
+  const lower = (modeId || "").toLowerCase();
+  if (lower.includes("dream")) return "dream";
+  if (lower.includes("body")) return "body";
+  if (lower.includes("conflict")) return "conflict";
+  if (lower.includes("journal")) return "journaling";
+  return null;
+}
+
+// Markers in ASSISTANT messages indicating a question was asked
 const PRIMARY_QUESTION_MARKERS = {
   dream:      ["откликается с твоей реальной жизнью", "привычными чувствами", "знакомыми ситуациями", "больше всего откликается"],
   body:       ["как ты обычно объясняешь", "понятно, знакомо", "связано с твоей обычной жизнью"],
@@ -387,48 +421,116 @@ const SECONDARY_QUESTION_MARKERS = {
   journaling: ["новым, странным, живым", "тревожащим, непривычным", "пока не до конца понятным"],
 };
 
-function getModeKey(modeId) {
-  const lower = (modeId || "").toLowerCase();
-  if (lower.includes("dream")) return "dream";
-  if (lower.includes("body")) return "body";
-  if (lower.includes("conflict")) return "conflict";
-  if (lower.includes("journal")) return "journaling";
-  return null;
+// Phrases the AI uses when asking for the dream narrative
+const DREAM_INVITE_MARKERS = [
+  "расскажи", "расскажи мне свой сон", "расскажи сон", "расскажи его",
+  "как ты его помнишь", "какие моменты", "что тебе запомнилось",
+];
+
+// Dream-content signals: user has actually shared dream narrative
+// (past-tense narration, mention of dream events/characters/places)
+const DREAM_CONTENT_SIGNALS = [
+  "снилось", "приснился", "во сне", "я видела", "я видел",
+  "был сон", "была во сне", "был во сне", "я шла", "я шёл",
+  "стояла", "стоял", "пришёл", "пришла", "увидела", "увидел",
+  "оказалась", "оказался", "появился", "появилась", "мне приснил",
+];
+
+// User correction/mismatch signals — indicate the AI jumped ahead prematurely
+const MISMATCH_SIGNALS = [
+  "я ещё не рассказала", "я ещё не рассказал", "я не рассказывала",
+  "ты перескочил", "ты перескочила", "откуда это", "это не то",
+  "это не про то", "я этого не говорила", "я этого не говорил",
+  "я не говорила про", "я не говорил про",
+  "что ещё за", "откуда ты взял", "откуда ты взяла",
+  "я не упоминала", "я не упоминал",
+  "ты путаешь", "не об этом", "не про это",
+  "вернись", "подожди", "стоп",
+];
+
+// Map-status query signals — user asking about map state (should get direct answer)
+const MAP_STATUS_SIGNALS = [
+  "у тебя уже есть", "ты уже знаешь", "есть ли у тебя", "что ты знаешь",
+  "первичный процесс", "вторичный процесс", "карта", "карту",
+  "разве мы уже", "мы наметили", "ты уже понял", "ты уже поняла",
+  "понятие о моём", "понятие о моем",
+];
+
+// Detect if the latest user message is a mismatch/correction signal
+function detectMismatch(userMessage) {
+  const lower = userMessage.toLowerCase();
+  return MISMATCH_SIGNALS.some((sig) => lower.includes(sig));
 }
 
-// Returns: { stage: "need_primary"|"need_secondary"|"complete", primary_answer: string|null, secondary_answer: string|null }
+// Detect if the latest user message is a map-status query
+function detectMapStatusQuery(userMessage) {
+  const lower = userMessage.toLowerCase();
+  return MAP_STATUS_SIGNALS.some((sig) => lower.includes(sig));
+}
+
+// Detect if user has shared dream content (not just meta-comment about the dream)
+function detectDreamContent(messages) {
+  const userMsgs = messages.filter((m) => m.role === "user");
+  // Skip the very first user message if it's very short (likely just "ok" or mode selection)
+  const substantialMsgs = userMsgs.filter((m) => m.content.trim().length > 30);
+  const combined = substantialMsgs.map((m) => m.content.toLowerCase()).join(" ");
+  return DREAM_CONTENT_SIGNALS.some((sig) => combined.includes(sig));
+}
+
+// Detect if the AI has already asked for the dream narrative
+function detectDreamInviteAsked(messages) {
+  return messages
+    .filter((m) => m.role === "assistant")
+    .some((m) => {
+      const lower = m.content.toLowerCase();
+      return DREAM_INVITE_MARKERS.some((marker) => lower.includes(marker));
+    });
+}
+
+// Full state machine: returns current stage + answers so far
+// Returns: {
+//   stage: "awaiting_dream" | "awaiting_primary" | "awaiting_secondary" | "complete",
+//   primary_answer: string|null,
+//   secondary_answer: string|null,
+//   dream_shared: boolean,
+// }
 function detectProcessMappingStage(messages, modeId) {
   const modeKey = getModeKey(modeId);
-  if (!modeKey) return { stage: "complete", primary_answer: null, secondary_answer: null };
+  if (!modeKey) return { stage: "complete", primary_answer: null, secondary_answer: null, dream_shared: true };
 
   const primaryMarkers = PRIMARY_QUESTION_MARKERS[modeKey] || [];
   const secondaryMarkers = SECONDARY_QUESTION_MARKERS[modeKey] || [];
 
-  let primaryQuestionAsked = false;
+  // --- Dream mode: check if dream has been shared first ---
+  const isDream = modeKey === "dream";
+  const dream_shared = isDream ? detectDreamContent(messages) : true;
+
+  if (isDream && !dream_shared) {
+    return { stage: "awaiting_dream", primary_answer: null, secondary_answer: null, dream_shared: false };
+  }
+
+  // --- Scan for primary question asked + answered ---
   let primaryQuestionIndex = -1;
-  let secondaryQuestionAsked = false;
   let secondaryQuestionIndex = -1;
 
-  // Scan assistant messages for which questions have been asked
   messages.forEach((m, i) => {
     if (m.role !== "assistant") return;
     const lower = m.content.toLowerCase();
-    if (!primaryQuestionAsked && primaryMarkers.some((marker) => lower.includes(marker))) {
-      primaryQuestionAsked = true;
+    if (primaryQuestionIndex === -1 && primaryMarkers.some((marker) => lower.includes(marker))) {
       primaryQuestionIndex = i;
     }
-    if (!secondaryQuestionAsked && secondaryMarkers.some((marker) => lower.includes(marker))) {
-      secondaryQuestionAsked = true;
+    if (secondaryQuestionIndex === -1 && secondaryMarkers.some((marker) => lower.includes(marker))) {
       secondaryQuestionIndex = i;
     }
   });
 
-  // Find user answers: first user message AFTER the question was asked
+  const primaryQuestionAsked = primaryQuestionIndex !== -1;
+  const secondaryQuestionAsked = secondaryQuestionIndex !== -1;
+
   let primary_answer = null;
   let secondary_answer = null;
 
   if (primaryQuestionAsked) {
-    // Find first user message after primaryQuestionIndex
     const afterPrimary = messages.slice(primaryQuestionIndex + 1).find((m) => m.role === "user");
     if (afterPrimary) primary_answer = afterPrimary.content;
   }
@@ -438,14 +540,13 @@ function detectProcessMappingStage(messages, modeId) {
     if (afterSecondary) secondary_answer = afterSecondary.content;
   }
 
-  // Determine stage
   if (!primaryQuestionAsked || !primary_answer) {
-    return { stage: "need_primary", primary_answer, secondary_answer };
+    return { stage: "awaiting_primary", primary_answer, secondary_answer, dream_shared };
   }
   if (!secondaryQuestionAsked || !secondary_answer) {
-    return { stage: "need_secondary", primary_answer, secondary_answer };
+    return { stage: "awaiting_secondary", primary_answer, secondary_answer, dream_shared };
   }
-  return { stage: "complete", primary_answer, secondary_answer };
+  return { stage: "complete", primary_answer, secondary_answer, dream_shared };
 }
 
 // ─── Process Map (legacy — kept for dream map context display) ────────────────
@@ -801,6 +902,10 @@ const INTEGRATION_INVALID_PHRASES = [
 ];
 
 const SAFE_FALLBACKS = {
+  awaiting_dream: "Расскажи мне свой сон так, как ты его помнишь. Какие моменты или чувства в нём самые заметные?",
+  awaiting_primary: "Если смотреть на этот сон целиком — что в нём больше всего откликается с твоей реальной жизнью, привычными чувствами или знакомыми состояниями?",
+  awaiting_secondary: "А что в этом сне кажется тебе самым непривычным, странным, новым или не совсем похожим на тебя?",
+  mismatch_dream: "Ты права, я перескочил вперёд. Сначала важно услышать сам сон целиком. Расскажи его так, как он тебе запомнился.",
   transformation: "Давай останемся именно в моменте контакта. Что происходит, когда ты пробуешь это — какой вкус, ощущение или изменение появляется?",
   integration: "Похоже, здесь уже открылось важное состояние. Насколько оно есть в твоей жизни сейчас, а где его пока не хватает?",
   conflict_integration: "Похоже, внутри появляется больше спокойствия и опоры. Как это влияет на твоё ощущение — что становится более честным по отношению к себе?",
@@ -810,10 +915,31 @@ const SAFE_FALLBACKS = {
   dream_mapping: "Давай продолжим намечать карту. Что в этом сне кажется более знакомым или устойчивым — а что удивляет или тянет, как будто что-то новое?",
 };
 
-function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete }) {
+function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue }) {
   const lower = responseText.toLowerCase();
 
-  // 0. Somatic gate: block body questions before primary+secondary are both clarified
+  // 0a. Awaiting-dream gate: before user has shared a dream, block ALL mapping/body/exploration questions
+  if (mappingStageValue === "awaiting_dream") {
+    const prematurePhrases = [
+      "что в этом сне тебе кажется знакомым", "что из этого сна больше всего откликается",
+      "что в этом сне кажется", "что в этом сне",
+      "первичный процесс", "вторичный процесс",
+      "где ты ощущаешь", "в теле", "в груди", "в животе",
+      "что ты чувствуешь", "что ощущаешь", "какой образ",
+      "что хочет сказать", "что это значит",
+    ];
+    for (const phrase of prematurePhrases) {
+      if (lower.includes(phrase)) {
+        return {
+          isValid: false,
+          reason: `Awaiting-dream gate violated: mapping/exploration question asked before dream was shared ("${phrase}")`,
+          correctedInstruction: "The user has NOT shared their dream yet. The ONLY valid response is to invite the dream narrative: 'Расскажи мне свой сон так, как ты его помнишь. Какие моменты или чувства в нём самые заметные?' Do not ask anything else.",
+        };
+      }
+    }
+  }
+
+  // 0b. Somatic gate: block body questions before primary+secondary are both clarified
   if (dreamMappingComplete === false) {
     const somaticPhrases = ["где ты ощущаешь", "ощущаешь в теле", "что ты чувствуешь телесно",
       "телесный отклик", "в теле", "в груди", "в животе", "в горле", "в плечах"];
@@ -911,13 +1037,22 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
   return { isValid: true, reason: "", correctedInstruction: "" };
 }
 
-function getSafeFallback(currentMode, forcedNextLayer, integrationLock, dreamMappingComplete) {
+function getSafeFallback(currentMode, forcedNextLayer, integrationLock, mappingStage, isMismatch) {
   const modeKey = (currentMode || "").toLowerCase();
   if (integrationLock) {
     if (modeKey.includes("conflict")) return SAFE_FALLBACKS.conflict_integration;
     return SAFE_FALLBACKS.integration;
   }
-  if (modeKey.includes("dream") && dreamMappingComplete === false) return SAFE_FALLBACKS.dream_mapping;
+  // Mismatch: rollback to correct stage
+  if (isMismatch && mappingStage) {
+    if (mappingStage.stage === "awaiting_dream") return SAFE_FALLBACKS.mismatch_dream;
+    if (mappingStage.stage === "awaiting_primary") return SAFE_FALLBACKS.awaiting_primary;
+    if (mappingStage.stage === "awaiting_secondary") return SAFE_FALLBACKS.awaiting_secondary;
+  }
+  // Pre-mapping stages
+  if (mappingStage?.stage === "awaiting_dream") return SAFE_FALLBACKS.awaiting_dream;
+  if (mappingStage?.stage === "awaiting_primary") return SAFE_FALLBACKS.awaiting_primary;
+  if (mappingStage?.stage === "awaiting_secondary") return SAFE_FALLBACKS.awaiting_secondary;
   if (forcedNextLayer === "transformation") return SAFE_FALLBACKS.transformation;
   if (modeKey.includes("body")) return SAFE_FALLBACKS.body;
   if (modeKey.includes("conflict")) return SAFE_FALLBACKS.conflict;
@@ -937,33 +1072,34 @@ export async function getAIResponse(session, step, messages, userMessage) {
     .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
     .join("\n");
 
-  // Detect covered layers, forced next step, loop state, and integration stage
+  // Detect covered layers, loop state, and integration stage
   const coveredLayers = detectCoveredLayers(messages);
   const isIntegrationStage = detectIntegrationStage(messages);
 
-  // Detect primary/secondary clarification stage (all modes)
+  // Full state machine for process mapping
   const mappingStage = detectProcessMappingStage(messages, currentMode);
   const mappingStageComplete = mappingStage.stage === "complete";
-
-  // Dream mode: build process map for display purposes
   const isDreamMode = (currentMode || "").toLowerCase().includes("dream");
+
+  // Dream process map (for display context only)
   const dreamProcessMap = isDreamMode ? buildDreamProcessMap(messages) : null;
   const dreamMapFilledCount = dreamProcessMap ? countMapFields(dreamProcessMap) : 0;
-  // Mapping is complete when both primary and secondary have been explicitly answered
   const dreamMappingComplete = mappingStageComplete;
 
-  // Force process mapping if user has replied but mapping stage not yet complete
-  const userMessageCount = messages.filter((m) => m.role === "user").length;
-  const needsMapping = userMessageCount >= 1 && !mappingStageComplete && !isIntegrationStage;
+  // Detect user mismatch/correction signal → need to rollback stage
+  const isMismatch = detectMismatch(userMessage);
+  // Detect map-status query → AI must answer directly, not redirect
+  const isMapStatusQuery = detectMapStatusQuery(userMessage);
 
-  // When mapping stage is incomplete, layer chain should not run — mappingStageInstruction handles it
+  // Force process mapping if mapping stage not yet complete
+  const needsMapping = !mappingStageComplete && !isIntegrationStage;
+
+  // Layer chain only runs after mapping is complete
   const forcedNext = isIntegrationStage
     ? null
     : needsMapping
-    ? null   // mappingStageInstruction injects the right clarifying question directly
-    : mappingStageComplete
-    ? getForcedNextLayer(currentMode, coveredLayers)
-    : null;
+    ? null   // mappingStageInstruction handles this
+    : getForcedNextLayer(currentMode, coveredLayers);
   const isLooping = detectLoopInLastExchanges(messages);
 
   const layerStatus = coveredLayers.size > 0
@@ -986,24 +1122,82 @@ export async function getAIResponse(session, step, messages, userMessage) {
   };
 
   let mappingStageInstruction = "";
-  if (!mappingStageComplete && !isIntegrationStage && modeKey) {
-    if (mappingStage.stage === "need_primary") {
-      mappingStageInstruction = `\n\n🔴 ОБЯЗАТЕЛЬНЫЙ СЛЕДУЮЩИЙ ШАГ — КАРТИРОВАНИЕ: ПЕРВИЧНЫЙ ПРОЦЕСС\n` +
-        `Ты ОБЯЗАН задать один уточняющий вопрос для определения первичного процесса (знакомого/устойчивого).\n` +
-        `Задай ИМЕННО ЭТОТ вопрос (можно немного перефразировать, сохранив смысл):\n` +
+
+  // ── MISMATCH ROLLBACK: user says AI jumped ahead ──────────────────────────
+  if (isMismatch) {
+    // Determine what stage we should actually be in based on what IS confirmed
+    const rollbackStage = mappingStage.stage;
+    let rollbackInstruction = "";
+    if (rollbackStage === "awaiting_dream") {
+      rollbackInstruction = `СТАДИЯ: awaiting_dream. Пользователь ещё не рассказал сон.\n` +
+        `Ты должен ответить: «Ты права, я перескочил вперёд. Сначала важно услышать сам сон целиком. Расскажи его так, как он тебе запомнился.»\n` +
+        `ЗАПРЕЩЕНО: продолжать с того места, где был. ЗАПРЕЩЕНО: упоминать вкус, контакт, образы, тело.`;
+    } else if (rollbackStage === "awaiting_primary") {
+      rollbackInstruction = `СТАДИЯ: awaiting_primary. Сон рассказан, но первичный процесс ещё не определён.\n` +
+        `Ты должен ответить: «Ты права, я поспешил. Давай сначала разберёмся с тем, что в этом сне для тебя знакомо.»\n` +
+        `Затем задай: «${PRIMARY_QUESTIONS[modeKey]}»`;
+    } else if (rollbackStage === "awaiting_secondary") {
+      rollbackInstruction = `СТАДИЯ: awaiting_secondary. Первичный определён, но вторичный ещё не определён.\n` +
+        `Ты должен ответить: «Ты права, я забежал вперёд. Мы ещё не разобрали, что здесь новое или непривычное.»\n` +
+        `Затем задай: «${SECONDARY_QUESTIONS[modeKey]}»`;
+    }
+    if (rollbackInstruction) {
+      mappingStageInstruction = `\n\n🔴 МИСМАТЧ — ПОЛЬЗОВАТЕЛЬ УКАЗАЛ, ЧТО АИ ОШИБСЯ\n` +
+        `${rollbackInstruction}\n` +
+        `ЗАПРЕЩЕНО: продолжать предыдущее направление. ЗАПРЕЩЕНО: задавать вопросы о теле, образах, смысле.\n` +
+        `ОБЯЗАТЕЛЬНО: сначала признай ошибку одним предложением, затем задай нужный вопрос.`;
+    }
+  }
+
+  // ── MAP STATUS QUERY: user asks about map state → answer directly ─────────
+  else if (isMapStatusQuery && !mappingStageComplete) {
+    const knownPrimary = mappingStage.primary_answer
+      ? `Первичный процесс: «${mappingStage.primary_answer.substring(0, 80)}».`
+      : "Первичный процесс пока не определён.";
+    const knownSecondary = mappingStage.secondary_answer
+      ? `Вторичный процесс: «${mappingStage.secondary_answer.substring(0, 80)}».`
+      : "Вторичный процесс пока не определён.";
+    const nextQ = mappingStage.stage === "awaiting_primary" || mappingStage.stage === "awaiting_dream"
+      ? PRIMARY_QUESTIONS[modeKey]
+      : SECONDARY_QUESTIONS[modeKey];
+    mappingStageInstruction = `\n\n🔵 ПОЛЬЗОВАТЕЛЬ СПРАШИВАЕТ О СОСТОЯНИИ КАРТЫ — ОТВЕТЬ ПРЯМО\n` +
+      `Скажи: «Пока только предварительно.\n${knownPrimary}\n${knownSecondary}\n` +
+      `Чтобы завершить карту, мне нужен ответ на один вопрос:»\n` +
+      `Затем задай: «${nextQ}»\n` +
+      `ЗАПРЕЩЕНО: переадресовывать, уходить в коучинг, задавать вопросы о теле или образах.`;
+  }
+
+  // ── NORMAL STAGE PROGRESSION ──────────────────────────────────────────────
+  else if (!mappingStageComplete && !isIntegrationStage && modeKey) {
+    if (mappingStage.stage === "awaiting_dream") {
+      mappingStageInstruction = `\n\n🔴 СТАДИЯ: ОЖИДАНИЕ СНОВИДЕНИЯ\n` +
+        `Пользователь ещё НЕ рассказал свой сон. Это первый и единственный шаг сейчас.\n` +
+        `Задай ТОЛЬКО этот вопрос (без добавлений):\n` +
+        `«Расскажи мне свой сон так, как ты его помнишь. Какие моменты или чувства в нём самые заметные?»\n\n` +
+        `АБСОЛЮТНО ЗАПРЕЩЕНО до получения рассказа о сне:\n` +
+        `✗ Вопросы про первичный/вторичный процесс\n` +
+        `✗ Вопросы про тело, ощущения, импульсы\n` +
+        `✗ Вопросы про образы или символы\n` +
+        `✗ Любые уточнения, рефлексии, интерпретации\n` +
+        `✗ Фразы типа «что в этом сне тебе кажется знакомым» — это ЗАПРЕЩЕНО до рассказа сна.`;
+    } else if (mappingStage.stage === "awaiting_primary") {
+      mappingStageInstruction = `\n\n🔴 СТАДИЯ: ПЕРВИЧНЫЙ ПРОЦЕСС\n` +
+        `Сон рассказан. Теперь задай ОДИН вопрос для определения первичного процесса (знакомого/устойчивого).\n` +
+        `Задай ИМЕННО ЭТОТ вопрос:\n` +
         `«${PRIMARY_QUESTIONS[modeKey]}»\n\n` +
-        `ЗАПРЕЩЕНО: задавать вопрос про вторичный процесс, про тело, про образы, про смысл.\n` +
-        `ЗАПРЕЩЕНО: переходить к исследованию пока этот вопрос не задан и ответ не получен.\n` +
-        `Если пользователь спрашивает «разве мы уже наметили карту?» — ответь: «Ты права, мы ещё не завершили карту. Давай сначала отделим знакомое от нового.» — и затем задай этот вопрос.`;
-    } else if (mappingStage.stage === "need_secondary") {
-      mappingStageInstruction = `\n\n🔴 ОБЯЗАТЕЛЬНЫЙ СЛЕДУЮЩИЙ ШАГ — КАРТИРОВАНИЕ: ВТОРИЧНЫЙ ПРОЦЕСС\n` +
-        `Первичный процесс уже определён (ответ пользователя: «${(mappingStage.primary_answer || "").substring(0, 100)}»).\n` +
-        `Теперь ты ОБЯЗАН задать отдельный уточняющий вопрос для определения вторичного процесса (нового/странного/непривычного).\n` +
-        `Задай ИМЕННО ЭТОТ вопрос (можно немного перефразировать, сохранив смысл):\n` +
+        `ЗАПРЕЩЕНО до получения ответа:\n` +
+        `✗ Вопрос про вторичный процесс\n` +
+        `✗ Вопросы про тело, образы, смысл\n` +
+        `✗ Любое исследование или углубление`;
+    } else if (mappingStage.stage === "awaiting_secondary") {
+      mappingStageInstruction = `\n\n🔴 СТАДИЯ: ВТОРИЧНЫЙ ПРОЦЕСС\n` +
+        `Первичный процесс определён (ответ: «${(mappingStage.primary_answer || "").substring(0, 100)}»).\n` +
+        `Задай ОДИН отдельный вопрос для определения вторичного процесса:\n` +
         `«${SECONDARY_QUESTIONS[modeKey]}»\n\n` +
-        `ЗАПРЕЩЕНО: переходить к телу, образам, смыслу или исследованию вторичного процесса пока ответ на этот вопрос не получен.\n` +
-        `ЗАПРЕЩЕНО: делать вывод о вторичном процессе самостоятельно без явного ответа пользователя.\n` +
-        `Если пользователь спрашивает «разве мы уже наметили карту?» — ответь: «Ты права, мы ещё не завершили карту. Нам осталось определить, что здесь кажется новым или непривычным.» — и задай этот вопрос.`;
+        `ЗАПРЕЩЕНО до получения ответа:\n` +
+        `✗ Переход к телу, образам, смыслу\n` +
+        `✗ Вывод о вторичном процессе самостоятельно\n` +
+        `✗ Любое исследование или углубление`;
     }
   }
 
@@ -1018,7 +1212,7 @@ export async function getAIResponse(session, step, messages, userMessage) {
     : "";
 
   // Dream process map injection (display only when mapping is active)
-  const dreamMapContext = isDreamMode && dreamProcessMap && !mappingStageComplete
+  const dreamMapContext = isDreamMode && dreamProcessMap && !mappingStageComplete && mappingStage.stage !== "awaiting_dream"
     ? `\n\n━━━ ТЕКУЩАЯ КАРТА ПРОЦЕССА (СОН) — СТАТУС ━━━
 ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
 
@@ -1126,6 +1320,9 @@ ${userMessage}
   console.log("[AI_RUNTIME] Pre-call diagnostics:", {
     mode: currentMode,
     currentStep: step?.step_number ?? "?",
+    mappingStage: mappingStage.stage,
+    isMismatch,
+    isMapStatusQuery,
     systemPromptLen: SYSTEM_PROMPT.length,
     historyMessages: recent.length,
     userMessageLen: userMessage.length,
@@ -1164,7 +1361,7 @@ ${userMessage}
       console.log("[AI_RUNTIME] Calling InvokeLLM with trimmed prompt, est tokens:", Math.ceil(trimmedPrompt.length / 4));
       const r = await base44.integrations.Core.InvokeLLM({ prompt: trimmedPrompt });
       console.log("[AI_RUNTIME] InvokeLLM success (trimmed), response length:", r?.length);
-      return r || getSafeFallback(currentMode, forcedNext, isIntegrationStage);
+      return r || getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch);
     } catch (e) {
       console.error("[AI_RUNTIME] InvokeLLM FAILED (trimmed):", e?.message, e?.status, e?.code, String(e));
       throw e;
@@ -1178,6 +1375,7 @@ ${userMessage}
     conversationHistory: messages,
     lastUserMessage: userMessage,
     dreamMappingComplete,
+    mappingStageValue: mappingStage.stage,
   };
 
   // ── Pass 1: initial generation ────────────────────────────────────────────
@@ -1194,7 +1392,7 @@ ${userMessage}
     try {
       const safeResponse = await base44.integrations.Core.InvokeLLM({ prompt: minimalPrompt });
       console.log("[AI_RUNTIME] Safe-mode retry succeeded, response length:", safeResponse?.length);
-      return safeResponse || getSafeFallback(currentMode, forcedNext, isIntegrationStage, dreamMappingComplete);
+      return safeResponse || getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch);
     } catch (e2) {
       console.error("[AI_RUNTIME] Safe-mode retry ALSO FAILED:", e2?.message, String(e2));
       throw e;
@@ -1217,7 +1415,7 @@ ${userMessage}
     console.log("[AI_RUNTIME] InvokeLLM pass 2 success, response length:", secondResponse?.length);
   } catch (e) {
     console.error("[AI_RUNTIME] InvokeLLM FAILED (pass 2):", e?.message, String(e));
-    return getSafeFallback(currentMode, forcedNext, isIntegrationStage, dreamMappingComplete);
+    return getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch);
   }
 
   const secondValidation = validateAssistantResponse({ responseText: secondResponse, ...validationParams });
@@ -1228,7 +1426,7 @@ ${userMessage}
   }
 
   console.warn("[AI_RUNTIME] Pass 2 also failed validation:", secondValidation.reason);
-  const fallback = getSafeFallback(currentMode, forcedNext, isIntegrationStage, dreamMappingComplete);
+  const fallback = getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch);
   console.info("[AI_RUNTIME] Using safe fallback:", fallback);
   return fallback;
 }
