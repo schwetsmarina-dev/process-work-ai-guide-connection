@@ -517,9 +517,10 @@ const DREAM_CONTENT_SIGNALS = [
   // Dream cluster / recurring / series
   "снятся сны", "мне снятся", "последнее время снятся", "часто снятся",
   "повторяющийся сон", "снятся похожие сны", "серия снов", "несколько снов",
-  "снился сон",
+  "снился сон", "снятся разные сны", "снились сны", "снились разные",
   // Dream fragment / theme using "сон про / о / с"
   "сон про ", "сон о ", "сны про ", "сны о ", "сны, связанные",
+  "снятся сны, связанные", "сны об ",
   "сон был про", "сон с ",
   // Dream emotions / atmosphere ("в этих снах я чувствую", etc.)
   "в этих снах", "в этом сне", "из снов", "из этих снов",
@@ -578,32 +579,65 @@ function detectMapStatusQuery(userMessage) {
 }
 
 // Detect if user has shared dream content (full narrative, fragment, theme, cluster, or dream emotion)
+// Returns { hasDreamContent: boolean, reason: string, matchedSignal: string|null }
 function detectDreamContent(messages) {
   const userMsgs = messages.filter((m) => m.role === "user");
   // Scan ALL user messages — clusters/themes are often given in the very first message
   const combined = userMsgs.map((m) => m.content.toLowerCase()).join(" ");
 
-  const matched = DREAM_CONTENT_SIGNALS.find((sig) => combined.includes(sig));
+  // ── categorised signal groups (for reason tagging) ───────────────────────
+  const FULL_NARRATIVE = [
+    "снилось","приснился","приснилась","приснилось","мне приснил",
+    "во сне","был сон","была во сне","был во сне","я шла","я шёл",
+    "стояла","стоял","пришёл","пришла","увидела","увидел",
+    "оказалась","оказался","появился","появилась",
+  ];
+  const CLUSTER = [
+    "снятся сны","мне снятся","последнее время снятся","часто снятся",
+    "повторяющийся сон","снятся похожие сны","серия снов","несколько снов",
+    "снился сон",
+    // extra cluster forms
+    "снятся разные сны", "снились сны", "снились разные",
+  ];
+  const THEME = [
+    "сон про ", "сон о ", "сны про ", "сны о ",
+    "сны, связанные", "снятся сны, связанные",
+    "сон был про", "сон с ",
+    // "сны о чём-то", "сны об" etc.
+    "сны об ",
+  ];
+  const EMOTION_IN_DREAM = [
+    "в этих снах", "в этом сне", "из снов", "из этих снов",
+    "во снах", "эти сны",
+  ];
 
-  // ── [DREAM_STAGE_DEBUG] ──────────────────────────────────────────────────
-  const FULL_NARRATIVE = ["снилось","приснился","приснилась","приснилось","мне приснил","во сне","был сон","была во сне","был во сне","я шла","я шёл","стояла","стоял","пришёл","пришла","увидела","увидел","оказалась","оказался","появился","появилась"];
-  const CLUSTER = ["снятся сны","мне снятся","последнее время снятся","часто снятся","повторяющийся сон","снятся похожие сны","серия снов","несколько снов","снился сон"];
-  const THEME = ["сон про ","сон о ","сны про ","сны о ","сны, связанные","сон был про","сон с "];
+  const allGroups = [
+    { reason: "full_narrative", signals: FULL_NARRATIVE },
+    { reason: "dream_cluster",  signals: CLUSTER },
+    { reason: "dream_theme",    signals: THEME },
+    { reason: "dream_emotion",  signals: EMOTION_IN_DREAM },
+  ];
+
+  let matchedSignal = null;
   let reason = "none";
-  if (matched) {
-    if (FULL_NARRATIVE.includes(matched)) reason = "full_narrative";
-    else if (CLUSTER.includes(matched)) reason = "dream_cluster";
-    else if (THEME.includes(matched)) reason = "dream_theme";
-    else reason = "dream_emotion";
+
+  for (const group of allGroups) {
+    const hit = group.signals.find((sig) => combined.includes(sig));
+    if (hit) {
+      matchedSignal = hit;
+      reason = group.reason;
+      break;
+    }
   }
+
   console.log("[DREAM_STAGE_DEBUG]", {
-    dreamMaterialDetected: !!matched,
+    dreamMaterialDetected: !!matchedSignal,
     reason,
     totalUserMessages: userMsgs.length,
-    matchedSignal: matched || null,
+    matchedSignal: matchedSignal || null,
   });
 
-  return !!matched;
+  return { hasDreamContent: !!matchedSignal, reason, matchedSignal };
 }
 
 // Detect if the AI has already asked for the dream narrative
@@ -632,7 +666,8 @@ function detectProcessMappingStage(messages, modeId) {
 
   // --- Dream mode: check if dream has been shared first ---
   const isDream = modeKey === "dream";
-  const dream_shared = isDream ? detectDreamContent(messages) : true;
+  const dreamResult = isDream ? detectDreamContent(messages) : { hasDreamContent: true, reason: "n/a", matchedSignal: null };
+  const dream_shared = dreamResult.hasDreamContent;
 
   if (isDream && !dream_shared) {
     return { stage: "awaiting_dream", primary_answer: null, secondary_answer: null, dream_shared: false };
@@ -1359,19 +1394,24 @@ export async function getAIResponse(session, step, messages, userMessage) {
   if (isDreamAlreadyTold) {
     // User is frustrated that the dream invite was repeated when they already gave material.
     // Acknowledge and move directly to primary_process question.
-    const dreamSummaryHint = messages
+    // Use full content of all previous user messages (up to 400 chars total) so the LLM
+    // can cite the actual dream material by name.
+    const priorUserMessages = messages
       .filter((m) => m.role === "user")
-      .map((m) => m.content.substring(0, 80))
+      .map((m) => m.content)
       .join(" | ");
+    const dreamSummaryHint = priorUserMessages.substring(0, 400);
     mappingStageInstruction = `\n\n🟠 ПЕТЛЯ DREAM INVITE — ПОЛЬЗОВАТЕЛЬ УЖЕ ДАЛ МАТЕРИАЛ\n` +
       `Пользователь указал, что уже рассказала сновидение / тему сна.\n` +
       `ЗАПРЕЩЕНО: повторять вопрос «Расскажи мне свой сон...»\n` +
       `ОБЯЗАТЕЛЬНО:\n` +
-      `1. Признай одним предложением: «Да, ты уже дала материал» — и кратко перечисли что именно (используй точные слова из сообщений пользователя).\n` +
+      `1. Признай одним предложением, перечислив КОНКРЕТНО что было сказано:\n` +
+      `«Да, ты уже дала материал: [перечисли точные образы/темы из слов пользователя].»\n` +
       `2. Немедленно задай вопрос первичного процесса:\n` +
-      `«${PRIMARY_QUESTIONS[modeKey] || "Что из принесённого материала больше всего откликается с твоей реальной жизнью, привычными чувствами или знакомыми ситуациями?"}»\n` +
-      `Доступный материал пользователя: ${dreamSummaryHint.substring(0, 200)}\n` +
-      `ЗАПРЕЩЕНО: спрашивать про тело, образы, смысл до ответа на первичный вопрос.`;
+      `«${PRIMARY_QUESTIONS[modeKey] || "Что из этого больше всего откликается с твоей реальной жизнью, привычными чувствами или знакомыми ситуациями?"}»\n` +
+      `\nМатериал пользователя (используй точные слова отсюда):\n"${dreamSummaryHint}"\n` +
+      `ЗАПРЕЩЕНО: спрашивать про тело, образы, смысл до ответа на первичный вопрос.\n` +
+      `ЗАПРЕЩЕНО: повторять «расскажи» или «расскажи мне свой сон».`;
   }
 
   // ── MISMATCH ROLLBACK: user says AI jumped ahead ──────────────────────────
@@ -1657,7 +1697,9 @@ ${userMessage}
     conversationHistory: messages,
     lastUserMessage: userMessage,
     dreamMappingComplete,
-    mappingStageValue: mappingStage.stage,
+    // If user already told us the dream but we're in a loop, treat as awaiting_primary
+    // so the awaiting-dream gate doesn't block the correct primary question response.
+    mappingStageValue: isDreamAlreadyTold ? "awaiting_primary" : mappingStage.stage,
     userSelectedFocus,
   };
 
