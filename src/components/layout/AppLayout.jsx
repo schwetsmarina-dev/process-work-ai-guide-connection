@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import {
@@ -7,7 +7,6 @@ import {
   BarChart3,
   Settings,
   Menu,
-  X,
   LogOut,
   Sparkles,
   Upload,
@@ -18,17 +17,21 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { queryClientInstance } from "@/lib/query-client";
 
-const navItems = [
+const regularNavItems = [
   { path: "/dashboard", label: "Главная", icon: LayoutDashboard },
   { path: "/history", label: "История", icon: History },
   { path: "/insights-library", label: "Библиотека инсайтов", icon: BookOpen },
   { path: "/insights", label: "Аналитика", icon: BarChart3 },
   { path: "/settings", label: "Настройки", icon: Settings },
+];
+
+const adminNavItems = [
   { path: "/admin/import", label: "Импорт данных", icon: Upload },
   { path: "/admin/status", label: "Статус данных", icon: ShieldAlert },
 ];
 
-function NavContent({ currentPath, onNavigate }) {
+function NavContent({ currentPath, onNavigate, isAdmin }) {
+  const items = isAdmin ? [...regularNavItems, ...adminNavItems] : regularNavItems;
   return (
     <div className="flex flex-col h-full">
       <div className="p-6 border-b border-border">
@@ -41,7 +44,7 @@ function NavContent({ currentPath, onNavigate }) {
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const isActive = currentPath === item.path;
           return (
             <Link
@@ -77,12 +80,21 @@ function NavContent({ currentPath, onNavigate }) {
 export default function AppLayout() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    base44.auth.me().then((user) => {
+      const admin = user?.role === "admin" || user?.email === "processworkmarina@gmail.com";
+      console.log("[ADMIN_ACCESS]", { email: user?.email, role: user?.role, isAdmin: admin });
+      setIsAdmin(admin);
+    }).catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen flex">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-64 border-r border-border bg-card flex-col fixed h-full">
-        <NavContent currentPath={location.pathname} onNavigate={() => {}} />
+        <NavContent currentPath={location.pathname} onNavigate={() => {}} isAdmin={isAdmin} />
       </aside>
 
       {/* Mobile header */}
@@ -101,7 +113,7 @@ export default function AppLayout() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
-              <NavContent currentPath={location.pathname} onNavigate={() => setOpen(false)} />
+              <NavContent currentPath={location.pathname} onNavigate={() => setOpen(false)} isAdmin={isAdmin} />
             </SheetContent>
           </Sheet>
         </div>

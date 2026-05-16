@@ -1,4 +1,6 @@
+import React from "react"
 import { Toaster } from "@/components/ui/toaster"
+import { base44 } from "@/api/base44Client"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
@@ -19,6 +21,27 @@ import AdminDataStatus from './pages/AdminDataStatus';
 import InsightLibrary from './pages/InsightLibrary';
 import InsightAgent from './pages/InsightAgent';
 import RequireAuth from './components/layout/RequireAuth';
+
+function ProtectedAdminRoute({ children }) {
+  const [status, setStatus] = React.useState("loading");
+
+  React.useEffect(() => {
+    base44.auth.me().then((user) => {
+      const admin = user?.role === "admin" || user?.email === "processworkmarina@gmail.com";
+      setStatus(admin ? "ok" : "denied");
+    }).catch(() => setStatus("denied"));
+  }, []);
+
+  if (status === "loading") return null;
+  if (status === "denied") {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Доступ запрещён</p>
+      </div>
+    );
+  }
+  return children;
+}
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
@@ -59,8 +82,8 @@ const AuthenticatedApp = () => {
         <Route path="/session/:id/summary" element={<SessionSummary />} />
 
         {/* Admin */}
-        <Route path="/admin/import" element={<AdminImport />} />
-        <Route path="/admin/status" element={<AdminDataStatus />} />
+        <Route path="/admin/import" element={<ProtectedAdminRoute><AdminImport /></ProtectedAdminRoute>} />
+        <Route path="/admin/status" element={<ProtectedAdminRoute><AdminDataStatus /></ProtectedAdminRoute>} />
         <Route path="/insights-library" element={<InsightLibrary />} />
         <Route path="/insight-agent" element={<InsightAgent />} />
       </Route>
