@@ -475,6 +475,41 @@ const SYSTEM_PROMPT = `Ты — процесс-ориентированный ф
 интеграция → будущий сдвиг → завершение
 эмоция → образ или движение (НЕ интерпретация)
 
+━━━ ДЕТЕКТОР ЗАВЕРШЕНИЯ ПРОЦЕССА ━━━
+Если пользователь выразил стабильное завершённое состояние:
+— устойчивость, ясность, силу, целостность, ответственность за себя, направление в жизни, завершённый инсайт —
+
+ОСТАНОВИСЬ. НЕ продолжай углубление.
+
+Признаки завершения:
+• «теперь я понимаю...» / «мне стало ясно...»
+• «я чувствую себя целостно / устойчиво / сильной»
+• «я знаю, что делать»
+• «я могу себя защитить» / «я беру ответственность»
+• «это важно для моих проектов»
+• «я готова к...» / «я двигаюсь вперёд»
+
+ПОСЛЕ ОБНАРУЖЕНИЯ ЗАВЕРШЕНИЯ:
+1. Кратко отрази завершённый процесс: что было в начале и куда пришло.
+2. Признай сдвиг: «Похоже, этот процесс привёл тебя к...»
+3. Задай МАКСИМУМ ОДИН мягкий закрывающий вопрос:
+   — «С чем тебе хочется выйти из этой сессии?»
+   — «Хочешь ли ты сохранить что-то особенно важное из этого процесса?»
+4. Затем мягко веди к завершению сессии.
+
+ЗАПРЕЩЕНО после обнаружения завершения:
+✗ Задавать ещё один исследовательский вопрос
+✗ Спрашивать «что происходит дальше?»
+✗ Переоткрывать уже интегрированный материал
+✗ Задавать символические, телесные или конфликтные вопросы
+✗ Продолжать углубление после стабильного, наполненного состояния
+
+Пример правильного завершения:
+«Похоже, путь этого сна привёл тебя к состоянию внутренней силы и ответственности за себя.
+В начале были образы [конкретные слова пользователя].
+А сейчас они связываются с ощущением [конкретные слова пользователя].
+И кажется, это состояние уже начинает становиться частью тебя.»
+
 ━━━ НА ФИНАЛЬНОМ ЭТАПЕ ЗАПРЕЩЕНО ━━━
 ✗ Возвращаться к образу сна / телесному ощущению / взаимодействию
 ✗ Спрашивать «что он хочет сказать?» если послание уже получено
@@ -568,29 +603,6 @@ const SECONDARY_QUESTION_MARKERS = {
 const DREAM_INVITE_MARKERS = [
   "расскажи", "расскажи мне свой сон", "расскажи сон", "расскажи его",
   "как ты его помнишь", "какие моменты", "что тебе запомнилось",
-];
-
-// Dream-content signals: covers full narratives, fragments, recurring themes,
-// dream clusters/series, symbolic images, and dream-related emotions.
-// ALL forms count — "сон про", "снятся сны", "в этих снах", etc.
-const DREAM_CONTENT_SIGNALS = [
-  // Full narrative / past-tense dream events
-  "снилось", "приснился", "приснилась", "приснилось", "мне приснил",
-  "во сне", "я видела", "я видел",
-  "был сон", "была во сне", "был во сне", "я шла", "я шёл",
-  "стояла", "стоял", "пришёл", "пришла", "увидела", "увидел",
-  "оказалась", "оказался", "появился", "появилась",
-  // Dream cluster / recurring / series
-  "снятся сны", "мне снятся", "последнее время снятся", "часто снятся",
-  "повторяющийся сон", "снятся похожие сны", "серия снов", "несколько снов",
-  "снился сон", "снятся разные сны", "снились сны", "снились разные",
-  // Dream fragment / theme using "сон про / о / с"
-  "сон про ", "сон о ", "сны про ", "сны о ", "сны, связанные",
-  "снятся сны, связанные", "сны об ",
-  "сон был про", "сон с ",
-  // Dream emotions / atmosphere ("в этих снах я чувствую", etc.)
-  "в этих снах", "в этом сне", "из снов", "из этих снов",
-  "во снах", "эти сны",
 ];
 
 // User "already told" loop signals — user is correcting a repeated dream invite
@@ -704,16 +716,6 @@ function detectDreamContent(messages) {
   });
 
   return { hasDreamContent: !!matchedSignal, reason, matchedSignal };
-}
-
-// Detect if the AI has already asked for the dream narrative
-function detectDreamInviteAsked(messages) {
-  return messages
-    .filter((m) => m.role === "assistant")
-    .some((m) => {
-      const lower = m.content.toLowerCase();
-      return DREAM_INVITE_MARKERS.some((marker) => lower.includes(marker));
-    });
 }
 
 // Full state machine: returns current stage + answers so far
@@ -1052,6 +1054,46 @@ function detectIntegrationStage(messages) {
   return userMessages.some((msg) => signals.some((kw) => msg.includes(kw)));
 }
 
+// Completion / closure signals — process has naturally completed
+const COMPLETION_SIGNALS = [
+  // Clear insight / understanding
+  "теперь я понимаю", "мне стало ясно", "я поняла", "я понял", "стало понятно",
+  "я вижу теперь", "теперь вижу", "мне ясно",
+  // Stable empowered state
+  "я чувствую силу", "я чувствую себя сильной", "я чувствую себя сильным",
+  "я чувствую себя устойчиво", "я чувствую устойчивость",
+  "я чувствую себя большой", "несокрушимой", "несокрушимым",
+  "я чувствую себя целостно", "ощущение целостности", "я целостна", "я целостен",
+  "я чувствую спокойствие", "мне спокойно", "я спокойна", "я спокоен",
+  // Self-protection / boundaries / agency
+  "я могу себя защитить", "я защищаю себя", "я умею защищать себя",
+  "я беру ответственность", "я отвечаю за себя",
+  "я забочусь о себе", "я хочу заботиться о себе", "забочусь о себе",
+  // Future orientation already formed
+  "я знаю, что делать", "я знаю что делать", "я понимаю что делать",
+  "это важно для моих проектов", "это связано с моими проектами",
+  "я готова к", "я готов к", "я двигаюсь вперёд",
+  "я выхожу из этого", "я хочу применить это",
+  // Natural ending / sufficiency
+  "этого достаточно", "мне этого хватает", "я получила что хотела",
+  "я получил что хотел", "сессия завершена для меня",
+];
+
+// Detects if the process has reached a natural completion/closure state
+// Returns { isComplete: boolean, closureState: string }
+function detectCompletionState(messages) {
+  const userMessages = messages.filter((m) => m.role === "user");
+  // Only check recent messages — completion must be fresh (last 3 user messages)
+  const recentUserMessages = userMessages.slice(-3).map((m) => m.content.toLowerCase());
+  const combined = recentUserMessages.join(" ");
+
+  const matchedSignal = COMPLETION_SIGNALS.find((sig) => combined.includes(sig));
+  if (matchedSignal) {
+    return { isComplete: true, closureState: "integrated_empowered_state", matchedSignal };
+  }
+  return { isComplete: false, closureState: null, matchedSignal: null };
+}
+
 function detectCoveredLayers(messages) {
   const userMessages = messages
     .filter((m) => m.role === "user")
@@ -1150,7 +1192,9 @@ const SAFE_FALLBACKS = {
   dream_mapping: "Давай продолжим намечать карту. Что в этом сне кажется более знакомым или устойчивым — а что удивляет или тянет, как будто что-то новое?",
 };
 
-function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue, userSelectedFocus }) {
+function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue, userSelectedFocus, completionDetected }, validationContext) {
+  // Allow validationContext to be passed inline or derived from named param
+  if (!validationContext) validationContext = { completionDetected };
   const lower = responseText.toLowerCase();
 
   // 0a. Awaiting-dream gate: before user has shared a dream, block ALL mapping/body/exploration questions
@@ -1272,6 +1316,24 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
           isValid: false,
           reason: `Integration intrusion BLOCKED: life-integration question asked before focus selection and exploration ("${phrase}")`,
           correctedInstruction: "HARD REJECT — integration layer is NOT available yet. User has not selected an energy focus. Reflect ALL secondary elements neutrally (list them), then ask energy-selection: 'Что из этого цепляет тебя сильнее всего?' Do NOT ask about life, future, or real-world connection yet.",
+        };
+      }
+    }
+  }
+
+  // 4b-pre. Closure validation: reject continued deepening after completion signal
+  if (validationContext?.completionDetected) {
+    const deepeningAfterClosure = [
+      "что происходит дальше", "что дальше", "что ты чувствуешь теперь",
+      "давай исследуем", "тогда давай", "остановимся на", "посмотрим на",
+      "что за движение", "если бы это стало образом",
+    ];
+    for (const phrase of deepeningAfterClosure) {
+      if (lower.includes(phrase)) {
+        return {
+          isValid: false,
+          reason: `Deepening after closure BLOCKED: assistant asked exploratory question after completion state ("${phrase}")`,
+          correctedInstruction: "Completion state detected. Do NOT ask another exploratory question. Reflect the completed journey, acknowledge the shift, ask at most ONE gentle closing question, then guide toward session end.",
         };
       }
     }
@@ -1423,9 +1485,10 @@ export async function getAIResponse(session, step, messages, userMessage) {
     .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
     .join("\n");
 
-  // Detect covered layers, loop state, and integration stage
+  // Detect covered layers, loop state, integration stage, and completion/closure
   const coveredLayers = detectCoveredLayers(messages);
   const isIntegrationStage = detectIntegrationStage(messages);
+  const completionDetection = detectCompletionState(messages);
 
   // Full state machine for process mapping
   const mappingStage = detectProcessMappingStage(messages, currentMode);
@@ -1669,8 +1732,16 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
       `Используй конкретные слова пользователя (спокойствие, взаимность, облегчение, ясность и т.д.).`
     : "";
 
-  // Only inject layer instructions if mapping stage is complete (or not applicable)
-  const forcedInstruction = !isIntegrationStage && mappingStageComplete && forcedNext && NEXT_LAYER_INSTRUCTIONS[forcedNext]
+  // CLOSURE LOCK: if completion state detected, log and guide toward closure
+  if (completionDetection.isComplete) {
+    console.log("[CLOSURE_DETECTED]", { closureState: completionDetection.closureState, matchedSignal: completionDetection.matchedSignal, furtherDeepeningBlocked: true });
+  }
+  const closureInstruction = completionDetection.isComplete
+    ? `\n\n🔚 ЗАВЕРШЕНИЕ ОБНАРУЖЕНО — сигнал: «${completionDetection.matchedSignal}». Отрази путь (начало→сейчас), признай сдвиг, задай МАКСИМУМ ОДИН мягкий закрывающий вопрос («С чем хочется выйти?» или «Что важно сохранить?»), затем завершай. ЗАПРЕЩЕНО: ещё один исследовательский вопрос, «что дальше?», повторное открытие материала.`
+    : "";
+
+  // Only inject layer instructions when no closure and mapping is complete
+  const forcedInstruction = !isIntegrationStage && !completionDetection.isComplete && mappingStageComplete && forcedNext && NEXT_LAYER_INSTRUCTIONS[forcedNext]
     ? `\n\n🔴 ОБЯЗАТЕЛЬНЫЙ СЛЕДУЮЩИЙ ШАГ: ${NEXT_LAYER_INSTRUCTIONS[forcedNext]}\n` +
       `НЕ задавай вопросы об уже пройденных слоях. Только этот шаг.\n` +
       (forcedNext === "transformation"
@@ -1703,7 +1774,7 @@ ${step.facilitator_hint ? `Подсказка: ${step.facilitator_hint}` : ""}`
     : "";
 
   const buildPrompt = (extraInstruction = "") =>
-    `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${forcedInstruction}${loopWarning}${extraInstruction}
+    `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${extraInstruction}
 
 Режим: ${currentMode}
 
@@ -1791,10 +1862,9 @@ ${userMessage}
     conversationHistory: messages,
     lastUserMessage: userMessage,
     dreamMappingComplete,
-    // If user already told us the dream but we're in a loop, treat as awaiting_primary
-    // so the awaiting-dream gate doesn't block the correct primary question response.
     mappingStageValue: isDreamAlreadyTold ? "awaiting_primary" : mappingStage.stage,
     userSelectedFocus,
+    completionDetected: completionDetection.isComplete,
   };
 
   // ── Pass 1: initial generation ────────────────────────────────────────────
