@@ -75,7 +75,7 @@ export default function AdminDataStatus() {
 
   const { data: terms = [], isLoading: termsLoading } = useQuery({
     queryKey: ["admin-terms"],
-    queryFn: () => base44.entities.Term.list("created_date", 10),
+    queryFn: () => base44.entities.Term.list("created_date", 500),
   });
 
   const isLoading = modesLoading || stepsLoading || termsLoading;
@@ -477,7 +477,7 @@ export default function AdminDataStatus() {
           {/* Terms status */}
           {terms.length === 0
             ? <Warning text="Таблица TERMS пуста. AI не будет использовать концепции Process Work." />
-            : <Ok text={`TERMS: ${terms.length}+ терминов доступно.`} />
+            : <Ok text={`TERMS: ${terms.length} терминов доступно.`} />
           }
 
           {/* Modes status */}
