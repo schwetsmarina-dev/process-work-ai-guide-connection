@@ -1311,9 +1311,13 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
   // 4b-pre. Closure validation: reject continued deepening after completion signal
   if (validationContext?.completionDetected) {
     const deepeningAfterClosure = [
-      // Recursive excavation
-      "что происходит дальше", "что дальше", "что ещё",
-      "что глубже", "что под этим", "давай глубже", "пойдём глубже",
+      // Recursive excavation / "what next" probes
+      "что начинает происходить дальше", "что происходит дальше", "что дальше",
+      "что ещё", "что глубже", "что под этим", "давай глубже", "пойдём глубже",
+      "что начинает разворачиваться", "что ещё хочет проявиться", "куда это ведёт",
+      // "Stay in this state" + question = continuing excavation
+      "если ты остаёшься в этом ощущении", "если оставаться в этом состоянии",
+      "если оставаться в этом ощущении", "если ты остаёшься в этом состоянии",
       // Re-opening layers
       "давай исследуем", "тогда давай исследуем", "остановимся на", "посмотрим на",
       "что за движение", "если бы это стало образом",
@@ -1326,10 +1330,11 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
     ];
     for (const phrase of deepeningAfterClosure) {
       if (lower.includes(phrase)) {
+        console.warn(`[CLOSURE_QUESTION_BLOCKED] matchedForbiddenPhrase: "${phrase}"`);
         return {
           isValid: false,
           reason: `Deepening after closure BLOCKED: assistant continued excavation after completion state ("${phrase}")`,
-          correctedInstruction: "CLOSURE DETECTED. Do NOT ask another exploratory question or open new layers. Reflect the completed journey arc (beginning→now), acknowledge the shift, then ask at most ONE of these gentle closing questions: 'С чем тебе хочется выйти?' / 'Что важно сохранить?' / 'Что хочется взять с собой?'. Then guide toward session end.",
+          correctedInstruction: "CLOSURE DETECTED. Do NOT ask another exploratory question or open new layers. Reflect the completed journey arc using the user's exact words, acknowledge the shift, then ask at most ONE of these gentle closing questions: 'Что тебе хочется взять с собой из этой сессии?' / 'Что важно сохранить?' / 'С чем тебе хочется выйти?'. Example: 'Похоже, этот процесс уже привёл тебя к важному состоянию. Это можно сейчас не раскрывать дальше, а сохранить как опору. Что тебе хочется взять с собой из этой сессии?'",
         };
       }
     }
