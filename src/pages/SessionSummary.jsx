@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { listMessages } from "@/lib/messageApi";
 import { Heart, Moon, GitBranch, PenLine, ArrowLeft, Sparkles, Tag, Zap, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -44,10 +45,15 @@ export default function SessionSummary() {
     enabled: !!sessionId && !!currentUser?.email,
   });
 
-  const { data: messages = [] } = useQuery({
-    queryKey: ["messages", sessionId, currentUser?.email],
-    queryFn: () => base44.entities.Message.filter({ session_id: sessionId, created_by: currentUser.email }, "created_date"),
-    enabled: !!sessionId && !!currentUser?.email && !accessDenied,
+  const queryClient = useQueryClient();
+
+  const { data: messages = [], isError: messagesError, refetch: refetchMessages } = useQuery({
+    queryKey: ["messages", sessionId],
+    queryFn: async () => {
+      const msgs = await listMessages(sessionId);
+      return Array.isArray(msgs) ? msgs : [];
+    },
+    enabled: !!sessionId && !accessDenied && !!session,
   });
 
   useEffect(() => {
@@ -191,9 +197,25 @@ export default function SessionSummary() {
         )}
       </div>
 
+      {/* Messages load error */}
+      {messagesError && (
+        <div className="mt-6 p-4 rounded-xl border border-destructive/30 bg-destructive/5 flex items-center justify-between">
+          <p className="text-sm text-destructive">Не удалось загрузить сообщения сессии</p>
+          <Button size="sm" variant="outline" onClick={() => refetchMessages()}>Повторить</Button>
+        </div>
+      )}
+
       {/* Full session report */}
       {messages.length > 0 && (
         <FullSessionReport session={session} messages={messages} />
+      )}
+
+      {/* Regenerate summary if fallback */}
+      {!messagesError && messages.length > 0 && session.summary === "Сессия завершена. Резюме недоступно." && (
+        <div className="mt-4 p-4 rounded-xl border border-amber-200 bg-amber-50 text-sm text-amber-800">
+          Резюме не было создано автоматически.{" "}
+          <span className="text-xs text-muted-foreground">Используйте кнопку ниже для генерации отчёта.</span>
+        </div>
       )}
 
       {/* Insight suggestions */}

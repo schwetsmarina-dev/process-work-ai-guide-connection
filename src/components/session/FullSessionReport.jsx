@@ -116,14 +116,18 @@ export default function FullSessionReport({ session, messages }) {
     doc.save(filename);
   };
 
+  const [generateError, setGenerateError] = useState(null);
+
   const generate = async () => {
     setLoading(true);
+    setGenerateError(null);
     const conversation = messages
       .filter((m) => m.role !== "system")
       .slice(-20)
       .map((m) => `${m.role === "user" ? "П" : "А"}: ${m.content}`)
       .join("\n");
 
+    try {
     const result = await base44.integrations.Core.InvokeLLM({
       prompt: `Ты — опытный Process Work фасилитатор. Проанализируй завершённую сессию и создай структурированный отчёт.
 
@@ -172,8 +176,13 @@ ${conversation}
       }
     });
 
-    setReport(result);
-    setLoading(false);
+      setReport(result);
+    } catch (err) {
+      console.error("[FullSessionReport] generate failed:", err);
+      setGenerateError("Не удалось сгенерировать отчёт. Попробуйте ещё раз.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -193,6 +202,13 @@ ${conversation}
         <div className="flex items-center justify-center gap-3 py-6 text-muted-foreground text-sm">
           <Loader2 className="w-4 h-4 animate-spin" />
           Анализируем сессию…
+        </div>
+      )}
+
+      {generateError && !loading && (
+        <div className="p-4 rounded-xl border border-destructive/30 bg-destructive/5 flex items-center justify-between">
+          <p className="text-sm text-destructive">{generateError}</p>
+          <Button size="sm" variant="outline" onClick={generate}>Повторить</Button>
         </div>
       )}
 
