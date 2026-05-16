@@ -192,6 +192,38 @@ const SYSTEM_PROMPT = `Ты — процесс-ориентированный ф
 СТАДИЯ ИССЛЕДОВАНИЯ:
 ТОЛЬКО ПОСЛЕ ТОГО, как пользователь явно указал элемент с наибольшей энергией или притяжением — сохрани его как selected_process_focus и начни исследование именно этого элемента.
 
+━━━ СТРОГИЙ ЗАПРЕТ РАННЕЙ ИНТЕГРАЦИИ ━━━
+Интеграция с жизнью — это ФИНАЛЬНЫЙ слой (шаг 6). Она доступна ТОЛЬКО после:
+1. Оба процесса определены (первичный + вторичный)
+2. Пользователь выбрал фокус энергии
+3. Прошло глубокое исследование выбранного элемента
+
+ЗАПРЕЩЕНО задавать интеграционные вопросы ДО завершения исследования:
+✗ «Насколько это есть в твоей жизни?»
+✗ «Где этого не хватает?»
+✗ «Как это связано с реальной жизнью?»
+✗ «Что это говорит о твоей жизни?»
+✗ «Как могла бы измениться твоя жизнь?»
+
+Пример нарушения:
+Пользователь: «Беременность и зелёные фрукты — это что-то странное»
+ЗАПРЕЩЕНО отвечать: «Насколько это есть в твоей жизни?»
+ПРАВИЛЬНО: сначала отразить оба элемента, затем задать вопрос выбора энергии.
+
+━━━ БЛОКИРОВКА ПАМЯТИ ЗАВЕРШЁННЫХ СТАДИЙ ━━━
+Если пользователь уже ответил на вопрос (первичный или вторичный процесс):
+— НИКОГДА не повторяй этот вопрос снова, даже в другой формулировке.
+— Если пользователь говорит «я уже ответила», «это уже было», «я уже описала»:
+  1. Признай одним предложением: «Да, ты уже это назвала.»
+  2. Кратко воспроизведи ответ: «Ты назвала [точные слова пользователя].»
+  3. Немедленно перейди к следующему шагу.
+  ЗАПРЕЩЕНО: задавать тот же вопрос снова.
+
+Пример:
+Пользователь: «Беременность и зелёные фрукты — это странное»
+Позже: «Я уже это описала»
+ПРАВИЛЬНЫЙ ответ: «Да, ты уже назвала непривычные элементы: беременность и зелёные фрукты. Что из этого сейчас кажется более живым или заряженным?»
+
 ЕСЛИ ПОЛЬЗОВАТЕЛЬ ГОВОРИТ «ты перескочил» / «я ещё не рассказала» / «это не то»:
 1. Признай ошибку одним предложением: «Ты права, я перескочил вперёд.»
 2. Вернись на нужную стадию и задай правильный вопрос.
@@ -1189,7 +1221,7 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
     }
   }
 
-  // 4a. Post-mapping focus gate: after secondary is answered but before user selects energy focus, block deepening
+  // 4a. Post-mapping focus gate: after secondary is answered but before user selects energy focus, block deepening AND integration intrusion
   if (dreamMappingComplete === true && !userSelectedFocus) {
     const deepeningPhrases = [
       "где ты ощущаешь", "в теле", "что хочет двигаться", "если бы это стало образом",
@@ -1198,10 +1230,30 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
     ];
     for (const phrase of deepeningPhrases) {
       if (lower.includes(phrase)) {
+        console.warn(`[NARROWING_BLOCKED] reason: deepening_before_focus_selection triggered_phrase: "${phrase}"`);
         return {
           isValid: false,
           reason: `Focus gate violated: deepening or narrowing question asked before user identified highest-energy element ("${phrase}")`,
           correctedInstruction: "Do NOT deepen into any element yet. Reflect ALL secondary elements neutrally, then ask an energy-selection question: 'Что из этого цепляет тебя сильнее всего?' or 'Где больше энергии?' Wait for the user to identify the most charged element before proceeding.",
+        };
+      }
+    }
+
+    // Integration intrusion gate: block life-integration questions before exploration has started
+    const integrationIntrusionPhrases = [
+      "насколько это есть в твоей жизни", "насколько это состояние",
+      "где этого не хватает", "где сейчас его не хватает",
+      "как это связано с реальной жизнью", "как могла бы измениться",
+      "что стало бы по-другому", "в реальной жизни", "в твоей жизни",
+      "где в жизни это", "как это откликается в жизни",
+    ];
+    for (const phrase of integrationIntrusionPhrases) {
+      if (lower.includes(phrase)) {
+        console.warn(`[PROCESS_STAGE_LOCK] primaryCompleted: true secondaryCompleted: true energySelectionCompleted: false blocked_phrase: "${phrase}"`);
+        return {
+          isValid: false,
+          reason: `Integration intrusion BLOCKED: life-integration question asked before focus selection and exploration ("${phrase}")`,
+          correctedInstruction: "HARD REJECT — integration layer is NOT available yet. User has not selected an energy focus. Reflect ALL secondary elements neutrally (list them), then ask energy-selection: 'Что из этого цепляет тебя сильнее всего?' Do NOT ask about life, future, or real-world connection yet.",
         };
       }
     }
@@ -1671,6 +1723,14 @@ ${userMessage}
     isLooping,
     primaryThread,
     hasSecondaryMaterial,
+  });
+
+  console.log("[PROCESS_STAGE_LOCK]", {
+    primaryCompleted: !!mappingStage.primary_answer,
+    secondaryCompleted: !!mappingStage.secondary_answer,
+    energySelectionCompleted: userSelectedFocus,
+    mappingStageComplete,
+    assistantReflectedMap,
   });
 
   if (estimatedTokens > 6000) {
