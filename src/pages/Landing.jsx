@@ -45,44 +45,34 @@ export default function Landing() {
     <div className="min-h-screen bg-background">
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
-        <div className="max-w-5xl mx-auto px-6 pt-16 pb-20 md:pt-28 md:pb-32 text-center relative">
+        {/* layered gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-50 via-background to-background pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_20%,hsl(var(--primary)/0.08),transparent)] pointer-events-none" />
+
+        <div className="relative max-w-5xl mx-auto px-4 pt-12 pb-10 md:pt-20 md:pb-16 flex flex-col items-center">
+          {/* Image hero — the image IS the headline */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, ease: "easeOut" }}
+            className="w-full max-w-3xl relative"
+          >
+            {/* soft glow behind image */}
+            <div className="absolute inset-0 blur-3xl opacity-20 bg-primary/40 rounded-3xl scale-95" />
+            <img
+              src="https://media.base44.com/images/public/69ecbcec1c0f2de14e2fbc75/9fb59054b_.png"
+              alt="Process Work AI Guide"
+              className="relative w-full h-auto rounded-2xl shadow-2xl shadow-primary/10"
+              style={{ objectFit: "contain" }}
+            />
+          </motion.div>
+
+          {/* CTA button — kept exactly as before */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8">
-              <Sparkles className="w-4 h-4" />
-              Инструмент для самоисследования
-            </div>
-          </motion.div>
-
-          <motion.h1
-            className="font-serif text-4xl md:text-6xl lg:text-7xl font-semibold tracking-tight leading-tight mb-6"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
-          >
-            Process Work
-            <br />
-            <span className="text-primary">AI Guide</span>
-          </motion.h1>
-
-          <motion.p
-            className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-          >
-            Исследуйте внутренний мир через тело, сны, конфликты и рефлексию.
-            Безопасный AI-проводник, вдохновлённый процессуальной психологией.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.3 }}
+            transition={{ duration: 0.7, delay: 0.45 }}
+            className="mt-10"
           >
             <Button
               size="lg"
@@ -94,6 +84,9 @@ export default function Landing() {
             </Button>
           </motion.div>
         </div>
+
+        {/* smooth fade into modes section */}
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-b from-transparent to-background pointer-events-none" />
       </section>
 
       {/* Modes */}
