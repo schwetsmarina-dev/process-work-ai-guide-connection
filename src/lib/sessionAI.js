@@ -568,6 +568,31 @@ function detectCoveredLayers(messages) {
   return covered;
 }
 
+// ─── Resistance / Edge detection ────────────────────────────────────────────
+const RESISTANCE_SIGNALS = [
+  "не хочу", "не могу", "не знаю", "не готова", "не готов",
+  "не получается", "не могу туда идти", "не хочу туда",
+  "слишком тяжело", "слишком сложно", "невыносимо",
+  "я устала", "устала", "устал", "хватит", "стоп",
+  "давай закончим", "не хочу продолжать",
+  "я повторяюсь", "ты повторяешь", "я уже ответила", "я уже сказала",
+  "я вынуждена повторять",
+  "ничего", "нет", "не знаю",
+];
+
+function detectResistanceCount(messages) {
+  const recentUser = messages.filter((m) => m.role === "user").slice(-6);
+  let count = 0;
+  for (const msg of recentUser) {
+    const lower = msg.content.toLowerCase().trim();
+    const hasSignal = RESISTANCE_SIGNALS.some((sig) => lower.includes(sig));
+    // Short stuck answers (<=15 chars, no question mark) also count
+    const isShortStuck = lower.length <= 15 && !lower.includes("?");
+    if (hasSignal || isShortStuck) count++;
+  }
+  return count;
+}
+
 function getForcedNextLayer(modeId, coveredLayers) {
   const modeKey = modeId?.toLowerCase().replace(/[^a-z]/g, "") || "";
   const chainKey = Object.keys(FORWARD_CHAIN).find((k) => modeKey.includes(k)) || null;
@@ -632,13 +657,15 @@ const INTEGRATION_INVALID_PHRASES = [
   "что хочет сказать часть", "голос части",
 ];
 
+const EDGE_LIMIT_FALLBACK = "Похоже, сейчас важнее не идти глубже, а заметить сам момент остановки. Давай не будем тащить процесс через силу — сам факт остановки тоже может быть частью процесса. Что для тебя было самым важным в этой сессии?";
+
 const SAFE_FALLBACKS = {
   awaiting_dream: "Расскажи мне свой сон так, как ты его помнишь. Какие моменты или чувства в нём самые заметные?",
   awaiting_primary: "Если смотреть на этот сон целиком — что в нём больше всего откликается с твоей реальной жизнью, привычными чувствами или знакомыми состояниями?",
   awaiting_secondary: "А что в этом сне кажется тебе самым непривычным, странным, новым или не совсем похожим на тебя?",
   mismatch_dream: "Ты права, я перескочил вперёд. Сначала важно услышать сам сон целиком. Расскажи его так, как он тебе запомнился.",
   transformation: "Давай останемся именно в моменте действия. Что происходит прямо сейчас — есть ли что-то неожиданное или меняющееся?",
-  immersion: "Если ты продолжаешь находиться в этом — как меняется твоё состояние? Что происходит с тобой прямо сейчас?",
+  immersion: "Давай не будем идти глубже автоматически. Что сейчас помогает тебе оставаться в контакте с собой?",
   integration: "Похоже, здесь уже открылось важное состояние. Насколько оно есть в твоей жизни сейчас, а где его пока не хватает?",
   conflict_integration: "Похоже, внутри появляется больше спокойствия и опоры. Как это влияет на твоё ощущение — что становится более честным по отношению к себе?",
   body: "Давай останемся рядом с самим ощущением. Что в нём сейчас самое заметное?",
@@ -647,9 +674,33 @@ const SAFE_FALLBACKS = {
   dream_mapping: "Давай продолжим намечать карту. Что в этом сне кажется более знакомым или устойчивым — а что удивляет или тянет, как будто что-то новое?",
 };
 
-function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue, userSelectedFocus, completionDetected, coveredLayers }, validationContext) {
+function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue, userSelectedFocus, completionDetected, coveredLayers, resistanceCount }, validationContext) {
   if (!validationContext) validationContext = { completionDetected };
   const lower = responseText.toLowerCase();
+
+  // 0. EDGE LIMIT check — must run before all other checks
+  if ((resistanceCount || 0) >= 3) {
+    const DEEPENING_PHRASES = [
+      "что происходит", "что начинает происходит", "как меняется",
+      "что становится сильнее", "если усилить", "если продолжать находиться",
+      "что раскрывается", "куда это ведёт", "что хочет проявиться",
+      "давай исследуем", "пойдём глубже",
+      "позволь себе", "попробуй остаться", "погрузись",
+    ];
+    const hit = DEEPENING_PHRASES.find((p) => lower.includes(p));
+    if (hit) {
+      console.warn("[EDGE_LIMIT_REACHED]", { resistanceCount, processStopped: true, closureStarted: true, triggeredPhrase: hit });
+      return {
+        isValid: false,
+        reason: `EDGE_LIMIT_REACHED: deepening phrase "${hit}" after ${resistanceCount} resistance signals`,
+        correctedInstruction:
+          "EDGE LIMIT REACHED. Stop deepening. Respect the user's edge. " +
+          "Acknowledge it warmly: 'Похоже, сейчас это место становится слишком трудным.' or 'Давай не будем тащить процесс через силу.' " +
+          "Then ask ONE memory-knot question only: 'Что для тебя было самым важным в этой сессии?' or 'Какой инсайт тебе хочется сохранить?' or 'Что сейчас кажется самым ценным?'",
+      };
+    }
+  }
+
 
   // 0a. Awaiting-dream gate
   if (mappingStageValue === "awaiting_dream") {
@@ -1000,7 +1051,23 @@ export async function getAIResponse(session, step, messages, userMessage) {
 
   const coveredLayers = detectCoveredLayers(messages);
   const isIntegrationStage = detectIntegrationStage(messages);
+  const resistanceCount = detectResistanceCount(messages);
   const completionDetection = detectCompletionState(messages);
+
+  if (resistanceCount >= 3) {
+    console.warn("[EDGE_LIMIT_REACHED]", { resistanceCount, processStopped: true, closureStarted: true });
+  }
+
+  const edgeLimitInstruction = resistanceCount >= 3
+    ? `\n\n⚠️ EDGE LIMIT REACHED (${resistanceCount} resistance signals detected)\n` +
+      `STOP ALL DEEPENING. Do NOT ask immersion/amplification/exploration questions.\n` +
+      `REQUIRED: Acknowledge the edge respectfully. Say one of:\n` +
+      `'Похоже, сейчас это место становится слишком трудным для дальнейшего углубления.' / \n` +
+      `'Давай не будем тащить процесс через силу.' / \n` +
+      `'Похоже, часть тебя пока не готова двигаться дальше — и это тоже важно.'\n` +
+      `Then ask ONLY ONE memory-knot question:\n` +
+      `'Что для тебя было самым важным в этой сессии?' or 'Какой инсайт тебе хочется сохранить?' or 'Что сейчас кажется самым ценным?'`
+    : "";
 
   const mappingStage = detectProcessMappingStage(messages, currentMode);
   const mappingStageComplete = mappingStage.stage === "complete";
@@ -1254,7 +1321,7 @@ ${step.facilitator_hint ? `Подсказка: ${step.facilitator_hint}` : ""}`
     : "";
 
   const buildPrompt = (extraInstruction = "") =>
-    `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${extraInstruction}
+    `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${edgeLimitInstruction}${extraInstruction}
 
 Режим: ${currentMode}
 
@@ -1340,6 +1407,7 @@ ${userMessage}
     userSelectedFocus,
     completionDetected: completionDetection.isComplete,
     coveredLayers,
+    resistanceCount,
   };
 
   // ── Pass 1: initial generation ────────────────────────────────────────────
