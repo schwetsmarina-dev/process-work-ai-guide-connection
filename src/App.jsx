@@ -75,17 +75,15 @@ const AuthenticatedApp = () => {
           <Route path="/history" element={<History />} />
           <Route path="/insights" element={<Insights />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/insights-library" element={<InsightLibrary />} />
+          <Route path="/insight-agent" element={<InsightAgent />} />
+          <Route path="/admin/import" element={<ProtectedAdminRoute><AdminImport /></ProtectedAdminRoute>} />
+          <Route path="/admin/status" element={<ProtectedAdminRoute><AdminDataStatus /></ProtectedAdminRoute>} />
         </Route>
 
         {/* Session pages (full screen, no sidebar) */}
         <Route path="/session/:id" element={<SessionChat />} />
         <Route path="/session/:id/summary" element={<SessionSummary />} />
-
-        {/* Admin */}
-        <Route path="/admin/import" element={<ProtectedAdminRoute><AdminImport /></ProtectedAdminRoute>} />
-        <Route path="/admin/status" element={<ProtectedAdminRoute><AdminDataStatus /></ProtectedAdminRoute>} />
-        <Route path="/insights-library" element={<InsightLibrary />} />
-        <Route path="/insight-agent" element={<InsightAgent />} />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />
