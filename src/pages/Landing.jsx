@@ -52,9 +52,9 @@ export default function Landing() {
         <div className="relative max-w-5xl mx-auto px-4 pt-12 pb-10 md:pt-20 md:pb-16 flex flex-col items-center">
           {/* Image hero — the image IS the headline */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, ease: "easeOut" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.4, ease: "easeIn" }}
             className="w-full max-w-3xl relative"
           >
             {/* soft glow behind image */}
