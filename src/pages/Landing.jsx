@@ -60,7 +60,7 @@ export default function Landing() {
             {/* soft glow behind image */}
             <div className="absolute inset-0 blur-3xl opacity-20 bg-primary/40 rounded-3xl scale-95" />
             <img
-              src="https://media.base44.com/images/public/69ecbcec1c0f2de14e2fbc75/9fb59054b_.png"
+              src="https://media.base44.com/images/public/69ecbcec1c0f2de14e2fbc75/850646afd_.png"
               alt="Process Work AI Guide"
               className="relative w-full h-auto rounded-2xl shadow-2xl shadow-primary/10"
               style={{ objectFit: "contain" }}
