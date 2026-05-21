@@ -27,7 +27,7 @@ function ProtectedAdminRoute({ children }) {
 
   React.useEffect(() => {
     base44.auth.me().then((user) => {
-      const admin = user?.role === "admin" || user?.email === "processworkmarina@gmail.com";
+      const admin = user?.role === "admin" || user?.email === "schwets.marina@gmail.com";
       setStatus(admin ? "ok" : "denied");
     }).catch(() => setStatus("denied"));
   }, []);

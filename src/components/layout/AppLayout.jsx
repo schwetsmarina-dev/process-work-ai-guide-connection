@@ -84,7 +84,7 @@ export default function AppLayout() {
 
   useEffect(() => {
     base44.auth.me().then((user) => {
-      const admin = user?.role === "admin" || user?.email === "processworkmarina@gmail.com";
+      const admin = user?.role === "admin" || user?.email === "schwets.marina@gmail.com";
       console.log("[ADMIN_ACCESS]", { email: user?.email, role: user?.role, isAdmin: admin });
       setIsAdmin(admin);
     }).catch(() => {});
