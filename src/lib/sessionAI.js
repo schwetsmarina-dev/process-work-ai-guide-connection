@@ -681,7 +681,7 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
   // 0. EDGE LIMIT check — must run before all other checks
   if ((resistanceCount || 0) >= 3) {
     const DEEPENING_PHRASES = [
-      "что происходит", "что начинает происходит", "как меняется",
+      "что происходит", "что начинает происходит", "что начинает происходить", "как меняется",
       "что становится сильнее", "если усилить", "если продолжать находиться",
       "что раскрывается", "куда это ведёт", "что хочет проявиться",
       "давай исследуем", "пойдём глубже",
