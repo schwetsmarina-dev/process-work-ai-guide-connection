@@ -747,7 +747,7 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
       return {
         isValid: false,
         reason: `Transformation layer violated: jumped to meaning/message too early`,
-        correctedInstruction: "Stay strictly in transformation layer. Ask only about sensory experience during contact. Do not ask about meaning, message, life connection, image or metaphor.",
+        correctedInstruction: "Stay strictly in transformation layer. Ask only what happens in the user's exact action/experience. Do not introduce contact, touch, taste, sensory channels, message, meaning or interpretation unless the user explicitly introduced them.",
       };
     }
   }
