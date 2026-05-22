@@ -668,8 +668,8 @@ const SAFE_FALLBACKS = {
   immersion: "Давай не будем идти глубже автоматически. Что сейчас помогает тебе оставаться в контакте с собой?",
   integration: "Похоже, здесь уже открылось важное состояние. Насколько оно есть в твоей жизни сейчас, а где его пока не хватает?",
   conflict_integration: "Похоже, внутри появляется больше спокойствия и опоры. Как это влияет на твоё ощущение — что становится более честным по отношению к себе?",
-  body: "Давай останемся рядом с самим ощущением. Что в нём сейчас самое заметное?",
-  conflict: "Давай удержим обе стороны. Что становится яснее, если дать место каждой из них?",
+  body: "Если не отталкивать это ощущение и дать ему проявиться чуть больше — что начинает происходить?",
+  conflict: "Если дать место обеим сторонам одновременно — что становится заметнее?",
   journaling: "Давай возьмём то, что уже проявилось, и свяжем это с жизнью. Где это сейчас особенно откликается?",
   dream_mapping: "Давай продолжим намечать карту. Что в этом сне кажется более знакомым или устойчивым — а что удивляет или тянет, как будто что-то новое?",
 };
@@ -677,6 +677,28 @@ const SAFE_FALLBACKS = {
 function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue, userSelectedFocus, completionDetected, coveredLayers, resistanceCount }, validationContext) {
   if (!validationContext) validationContext = { completionDetected };
   const lower = responseText.toLowerCase();
+
+  // 0. RUSSIAN PROCESS LANGUAGE check — must run first
+  const UNNATURAL_RUSSIAN_PATTERNS = [
+    "рядом с этим", "рядом с состоянием", "рядом с чувством",
+    "рядом со страхом", "рядом с ужасом", "рядом с переживанием",
+    "находишься рядом", "останься рядом", "побудь рядом",
+  ];
+  const unnaturalHit = UNNATURAL_RUSSIAN_PATTERNS.find((p) => lower.includes(p));
+  if (unnaturalHit) {
+    console.warn("[RUSSIAN_PROCESS_LANGUAGE_BLOCKED]", { triggeredPhrase: unnaturalHit });
+    return {
+      isValid: false,
+      reason: `Unnatural Russian facilitation phrase: "${unnaturalHit}"`,
+      correctedInstruction:
+        "Do NOT use Russian phrasing with 'рядом с состоянием/чувством'. " +
+        "Use natural immersion phrasing: " +
+        "'если ты продолжаешь чувствовать...' / " +
+        "'если это состояние разворачивается дальше...' / " +
+        "'если не отталкивать это чувство...' / " +
+        "'если позволить этому происходить...'",
+    };
+  }
 
   // 0. EDGE LIMIT check — must run before all other checks
   if ((resistanceCount || 0) >= 3) {
