@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import UpgradeModal from "@/components/UpgradeModal";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,8 +19,25 @@ export default function FullSessionReport({ session, messages }) {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(true);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-  const downloadPDF = () => {
+  const downloadPDF = async () => {
+    // Check PDF limit before generating
+    try {
+      const limitRes = await base44.functions.invoke('checkUsageLimit', { type: 'pdf' });
+      const limitData = limitRes.data;
+      if (!limitData.allowed) {
+        console.log('[LIMIT_REACHED]', { type: 'pdf', used: limitData.used, limit: limitData.limit, allowed: false });
+        setShowUpgradeModal(true);
+        return;
+      }
+    } catch (e) {
+      console.warn('[SUBSCRIPTION_CHECK] pdf limit check failed, allowing:', e.message);
+    }
+    // Increment PDF usage (fire-and-forget)
+    base44.functions.invoke('incrementUsage', { type: 'pdf' }).catch((e) =>
+      console.warn('[USAGE_INCREMENT] pdf increment failed:', e.message)
+    );
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
     const margin = 18;
@@ -187,6 +205,7 @@ ${conversation}
 
   return (
     <div className="mt-6">
+      <UpgradeModal open={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
       {!report && !loading && (
         <Button
           variant="outline"

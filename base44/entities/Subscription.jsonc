@@ -1,0 +1,99 @@
+{
+  "name": "Subscription",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "User email linked to this subscription"
+    },
+    "plan_type": {
+      "type": "string",
+      "enum": [
+        "FREE",
+        "PRO"
+      ],
+      "default": "FREE"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ACTIVE",
+        "CANCELLED",
+        "EXPIRED"
+      ],
+      "default": "ACTIVE"
+    },
+    "sessions_limit": {
+      "type": "number",
+      "default": 5
+    },
+    "messages_limit": {
+      "type": "number",
+      "default": 200
+    },
+    "pdf_limit": {
+      "type": "number",
+      "default": 2
+    },
+    "sessions_used": {
+      "type": "number",
+      "default": 0
+    },
+    "messages_used": {
+      "type": "number",
+      "default": 0
+    },
+    "pdf_used": {
+      "type": "number",
+      "default": 0
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_email",
+    "plan_type"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "data.user_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

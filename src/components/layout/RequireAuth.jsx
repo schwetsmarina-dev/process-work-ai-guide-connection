@@ -3,6 +3,30 @@ import { Outlet } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 
+async function ensureSubscription(email) {
+  const subs = await base44.entities.Subscription.filter({ user_email: email });
+  if (subs.length === 0) {
+    const now = new Date();
+    const end = new Date(now);
+    end.setMonth(end.getMonth() + 1);
+    await base44.entities.Subscription.create({
+      user_email: email,
+      plan_type: "FREE",
+      status: "ACTIVE",
+      sessions_limit: 5,
+      messages_limit: 200,
+      pdf_limit: 2,
+      sessions_used: 0,
+      messages_used: 0,
+      pdf_used: 0,
+      period_start: now.toISOString(),
+      period_end: end.toISOString(),
+      created_at: now.toISOString(),
+    });
+    console.log('[SUBSCRIPTION_CHECK]', { user: email, action: 'free_plan_created' });
+  }
+}
+
 async function ensureAppUser(user) {
   // If user context is missing (403 path), try fetching directly
   let resolvedUser = user;
@@ -33,6 +57,10 @@ async function ensureAppUser(user) {
       last_seen_at: new Date().toISOString(),
     });
   }
+  // Ensure FREE subscription exists
+  await ensureSubscription(resolvedUser.email).catch((e) =>
+    console.warn('ensureSubscription failed:', e.message)
+  );
 }
 
 export default function RequireAuth() {
