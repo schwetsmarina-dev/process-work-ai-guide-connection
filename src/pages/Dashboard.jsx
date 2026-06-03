@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import UpgradeModal from "@/components/UpgradeModal";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -11,7 +10,6 @@ import ModeCardDB from "@/components/dashboard/ModeCardDB";
 export default function Dashboard() {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then((u) => {
@@ -80,19 +78,6 @@ export default function Dashboard() {
       return;
     }
 
-    // Check session limit before creating
-    try {
-      const limitRes = await base44.functions.invoke('checkUsageLimit', { type: 'sessions' });
-      const limitData = limitRes.data;
-      if (!limitData.allowed) {
-        console.log('[LIMIT_REACHED]', { user: currentUser?.email, type: 'sessions', used: limitData.used, limit: limitData.limit, allowed: false });
-        setShowUpgradeModal(true);
-        return;
-      }
-    } catch (e) {
-      console.warn('[SUBSCRIPTION_CHECK] limit check failed, allowing:', e.message);
-    }
-
     const session = await base44.entities.Session.create({
       user_id: currentUser?.id,
       mode_id: modeId,
@@ -110,19 +95,12 @@ export default function Dashboard() {
       "user:", currentUser?.email
     );
 
-    // Increment session usage after successful creation
-    base44.functions.invoke('incrementUsage', { type: 'sessions' }).catch((e) =>
-      console.warn('[USAGE_INCREMENT] sessions increment failed:', e.message)
-    );
-
     navigate(`/session/${session.id}`);
   };
 
   const isLoading = modesLoading || sessionsLoading;
 
   return (
-    <>
-    <UpgradeModal open={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
     <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
       <div className="mb-10">
         <h1 className="font-serif text-3xl md:text-4xl font-semibold mb-2">
@@ -194,6 +172,5 @@ export default function Dashboard() {
         </div>
       ) : null}
     </div>
-    </>
   );
 }

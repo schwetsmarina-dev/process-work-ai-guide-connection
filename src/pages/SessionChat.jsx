@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, AlertTriangle, RefreshCw, ShieldAlert } from "lucide-react";
-import UpgradeModal from "@/components/UpgradeModal";
 import { Button } from "@/components/ui/button";
 import {
   checkCrisis,
@@ -48,7 +47,6 @@ export default function SessionChat() {
   const [userLoading, setUserLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
   const [isAdminView, setIsAdminView] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   // Optimistic messages shown while backend confirms
   const [optimisticMessages, setOptimisticMessages] = useState([]);
   const messagesEndRef = useRef(null);
@@ -245,19 +243,6 @@ export default function SessionChat() {
     setSendError(false);
     setSendErrorMessage(null);
 
-    // Check message limit before sending
-    try {
-      const limitRes = await base44.functions.invoke('checkUsageLimit', { type: 'messages' });
-      const limitData = limitRes.data;
-      if (!limitData.allowed) {
-        console.log('[LIMIT_REACHED]', { user: currentUser?.email, type: 'messages', used: limitData.used, limit: limitData.limit, allowed: false });
-        setShowUpgradeModal(true);
-        return;
-      }
-    } catch (e) {
-      console.warn('[SUBSCRIPTION_CHECK] message limit check failed, allowing:', e.message);
-    }
-
     const modeId = String(session.mode_id || session.mode || "").trim();
     const currentStep = session.current_step || 1;
 
@@ -277,10 +262,6 @@ export default function SessionChat() {
       // Save user message to backend
       await createMessage({ session_id: sessionId, mode_id: modeId, step_number: currentStep, role: "user", content: text });
       console.log("[CHAT_FLOW] 2. user message saved");
-      // Increment message usage (fire-and-forget)
-      base44.functions.invoke('incrementUsage', { type: 'messages' }).catch((e) =>
-        console.warn('[USAGE_INCREMENT] messages increment failed:', e.message)
-      );
 
       // Clear optimistic after save
       setOptimisticMessages([]);
@@ -522,8 +503,6 @@ export default function SessionChat() {
   }
 
   return (
-    <>
-    <UpgradeModal open={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
     <div className="flex flex-col h-screen">
       {/* ████ PERMANENT BUILD PROBE — remove after diagnosis ████ */}
       <div style={{ background: "#7c3aed", color: "#fff", fontFamily: "monospace", fontSize: "11px", padding: "4px 12px", letterSpacing: "0.05em", zIndex: 9999 }}>
@@ -647,6 +626,5 @@ export default function SessionChat() {
         </>
       )}
     </div>
-    </>
   );
 }
