@@ -69,13 +69,11 @@
     "mode"
   ],
   "rls": {
-    "create": {
-      "data.user_id": "{{user.id}}"
-    },
+    "create": {},
     "read": {
       "$or": [
         {
-          "data.user_id": "{{user.id}}"
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
@@ -87,7 +85,7 @@
     "update": {
       "$or": [
         {
-          "data.user_id": "{{user.id}}"
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
@@ -99,7 +97,7 @@
     "delete": {
       "$or": [
         {
-          "data.user_id": "{{user.id}}"
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {

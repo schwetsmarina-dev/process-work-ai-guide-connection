@@ -6,10 +6,12 @@ import { Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import RecentSessionCard from "@/components/dashboard/RecentSessionCard";
 import ModeCardDB from "@/components/dashboard/ModeCardDB";
+import { normalizeLang, t } from "@/lib/i18n";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
+  const lang = normalizeLang(currentUser?.language);
 
   useEffect(() => {
     base44.auth.me().then((u) => {
@@ -104,10 +106,10 @@ export default function Dashboard() {
     <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
       <div className="mb-10">
         <h1 className="font-serif text-3xl md:text-4xl font-semibold mb-2">
-          Добро пожаловать
+          {t("welcome", lang)}
         </h1>
         <p className="text-muted-foreground">
-          Выберите направление для самоисследования
+          {t("choose_direction", lang)}
         </p>
       </div>
 
@@ -116,13 +118,13 @@ export default function Dashboard() {
         <div className="mb-8 p-5 rounded-2xl border-2 border-primary/20 bg-primary/5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-primary mb-1">Незавершённая сессия</p>
+              <p className="text-sm font-medium text-primary mb-1">{t("unfinished_session", lang)}</p>
               <p className="text-sm text-muted-foreground">
                 {activeSession.mode_id || activeSession.mode}
               </p>
             </div>
             <Button onClick={() => navigate(`/session/${activeSession.id}`)}>
-              Продолжить
+              {t("continue", lang)}
             </Button>
           </div>
         </div>
@@ -137,9 +139,9 @@ export default function Dashboard() {
         <div className="flex items-start gap-3 p-5 rounded-2xl border border-amber-200 bg-amber-50 mb-8">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <p className="font-medium text-amber-800 text-sm">Режимы не настроены</p>
+            <p className="font-medium text-amber-800 text-sm">{t("modes_not_configured", lang)}</p>
             <p className="text-amber-700 text-xs mt-1">
-              Загрузите данные в таблицу MODES через страницу «Импорт данных».
+              {t("modes_not_configured_text", lang)}
             </p>
           </div>
         </div>
@@ -159,9 +161,9 @@ export default function Dashboard() {
       ) : recentSessions.length > 0 ? (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-serif text-xl font-semibold">Недавние сессии</h2>
+            <h2 className="font-serif text-xl font-semibold">{t("recent_sessions", lang)}</h2>
             <Button variant="ghost" size="sm" onClick={() => navigate("/history")}>
-              Все сессии
+              {t("all_sessions", lang)}
             </Button>
           </div>
           <div className="space-y-2">

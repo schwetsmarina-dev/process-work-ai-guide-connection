@@ -1060,8 +1060,23 @@ function getSafeFallback(currentMode, forcedNextLayer, integrationLock, mappingS
   return SAFE_FALLBACKS.integration;
 }
 
-export async function getAIResponse(session, step, messages, userMessage) {
+function buildLanguageOverride(language) {
+  const lang = language === "es" ? "es" : "ru";
+  if (lang === "es") {
+    return `\n\n━━━ LANGUAGE OVERRIDE ━━━\n` +
+      `language = es → Responde ÚNICAMENTE en español natural y cálido.\n` +
+      `Nunca mezcles idiomas. Nunca respondas en ruso ni en inglés (salvo que el usuario lo pida explícitamente).\n` +
+      `Mantén EXACTAMENTE la misma estructura de Process Work (proceso primario, proceso secundario, selección de energía, exploración, integración, cierre). Solo cambia el idioma de comunicación, NUNCA la lógica de la sesión.\n` +
+      `Trata al usuario de "tú" (informal, cálido).`;
+  }
+  return `\n\n━━━ LANGUAGE OVERRIDE ━━━\n` +
+    `language = ru → Отвечай ТОЛЬКО на русском языке.\n` +
+    `Никогда не смешивай языки. Никогда не отвечай на испанском или английском (если пользователь явно не попросит).`;
+}
+
+export async function getAIResponse(session, step, messages, userMessage, language = "ru") {
   const currentMode = session.mode_id || session.mode;
+  const languageOverride = buildLanguageOverride(language);
 
   const recent = messages.slice(-8).map((m) => ({
     ...m,
@@ -1343,7 +1358,7 @@ ${step.facilitator_hint ? `Подсказка: ${step.facilitator_hint}` : ""}`
     : "";
 
   const buildPrompt = (extraInstruction = "") =>
-    `${SYSTEM_PROMPT}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${edgeLimitInstruction}${extraInstruction}
+    `${SYSTEM_PROMPT}${languageOverride}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${edgeLimitInstruction}${extraInstruction}
 
 Режим: ${currentMode}
 
@@ -1398,7 +1413,7 @@ ${userMessage}
     const trimmedHistory = trimmed
       .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
       .join("\n");
-    const trimmedPrompt = `${SYSTEM_PROMPT}${stepContext}${layerStatus}${integrationLock}${forcedInstruction}${loopWarning}
+    const trimmedPrompt = `${SYSTEM_PROMPT}${languageOverride}${stepContext}${layerStatus}${integrationLock}${forcedInstruction}${loopWarning}
 
 Режим: ${currentMode}
 

@@ -309,7 +309,7 @@ export default function SessionChat() {
       // Get AI response
       let rawResponse;
       try {
-        rawResponse = await getAIResponse(session, step, updatedMessages, text);
+        rawResponse = await getAIResponse(session, step, updatedMessages, text, currentUser?.language || "ru");
         console.log("[CHAT_FLOW] 4. AI response generated, length:", rawResponse?.length);
       } catch (aiErr) {
         console.error("[CHAT_FLOW] AI generation failed:", aiErr);
