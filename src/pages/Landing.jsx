@@ -185,7 +185,7 @@ export default function Landing() {
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
         <p>© {new Date().getFullYear()} Process Work AI Guide</p>
         <p className="mt-2 font-mono text-xs text-amber-600 bg-amber-50 inline-block px-3 py-1 rounded-full border border-amber-200">
-          BUILD CHECK: 2026-05-14 fetchStep import fixed
+LANDING BUILD: language switcher active v2
         </p>
       </footer>
     </div>
