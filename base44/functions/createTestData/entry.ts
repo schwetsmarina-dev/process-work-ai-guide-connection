@@ -116,32 +116,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3. User memory
-    const memories = [
-      { memory_key: "primary_theme", memory_value: "трансформация и движение", importance: "high" },
-      { memory_key: "recurring_signal", memory_value: "напряжение в плечах и груди", importance: "high" },
-      { memory_key: "edge_pattern", memory_value: "страх потерять стабильность при желании перемен", importance: "high" },
-      { memory_key: "dream_figure", memory_value: "внутренний проводник", importance: "medium" },
-      { memory_key: "progress", memory_value: "учится слышать вторичный процесс через тело", importance: "medium" },
-    ];
-    for (const mem of memories) {
-      await db.UserMemory.create({
-        user_id: userId,
-        memory_type: "insight",
-        memory_key: mem.memory_key,
-        memory_value: mem.memory_value,
-        importance: mem.importance,
-        is_active: true,
-        created_at: now,
-        updated_at: now,
-      });
-    }
-
     return Response.json({
       status: 'created',
       user_id: userId,
       sessions: createdSessions,
-      memories: memories.length,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
