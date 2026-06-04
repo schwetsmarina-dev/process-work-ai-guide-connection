@@ -6,6 +6,7 @@ import { Loader2, FileText, Zap, GitBranch, ListChecks, ChevronDown, ChevronUp, 
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { jsPDF } from "jspdf";
+import { downloadSummaryTxt } from "@/lib/downloadSummary";
 
 const MODE_LABELS_RU = {
   body: "Работа с телом",
@@ -311,10 +312,19 @@ ${conversation}
                     variant="default"
                     size="sm"
                     className="flex-1 rounded-xl"
+                    onClick={() => downloadSummaryTxt(session)}
+                  >
+                    <Download className="w-3.5 h-3.5 mr-1.5" />
+                    Скачать (TXT)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 rounded-xl"
                     onClick={downloadPDF}
                   >
                     <Download className="w-3.5 h-3.5 mr-1.5" />
-                    Скачать отчёт (PDF)
+                    PDF (англ. шрифт)
                   </Button>
                   <Button
                     variant="ghost"
