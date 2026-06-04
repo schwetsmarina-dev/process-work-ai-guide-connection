@@ -78,6 +78,7 @@ const RAW_MAP = {
   "Жизненный миф": "life_myth",
   "Заигрывания / Флирты": "flirts",
   "Энергия U и X": "energy_u_x",
+  "Полярность": "polarity",
 };
 
 // Aliases: some term_id values carry an English suffix in parentheses or a
@@ -93,6 +94,12 @@ const ALIAS = {
   "слепой доступ (empty access)": "Слепой доступ",
   "сновидение / процесс сновидения (dreaming)": "Сновидение / Процесс сновидения",
   "старейшинство (eldership)": "Старейшинство",
+  "двойная связь (double bind)": "Двойная связь",
+  "интеграция (integration)": "Интеграция",
+  "телесный сигнал (body signal)": "Телесный сигнал",
+  "кинестетический канал": "Кинестетический / Проприоцептивный канал",
+  "проприоцептивный канал": "Кинестетический / Проприоцептивный канал",
+  "заигрывания": "Заигрывания / Флирты",
 };
 
 function norm(s) {
@@ -116,7 +123,6 @@ const STEP_KEY_MAP = {
   vtorichnyi_protsess: "secondary_process",
   krai: "edge",
   kanal: "channel",
-  signal: "signal",
   telesnyi_signal: "body_signal",
   snovidenie_protsess_snovideniya: "dreaming",
   snovidenie: "dreaming",
@@ -139,6 +145,24 @@ const STEP_KEY_MAP = {
   pole: "field",
   protsess: "process",
   protsessualnaya_rabota: "process_work",
+  propriotseptivnyi_kanal: "proprioceptive_channel",
+  proprioceptivnyi_kanal: "proprioceptive_channel",
+  kinesteticheskii_kanal: "proprioceptive_channel",
+  snovidyashchee_telo: "dreambody",
+  osoznannost_osoznavaemost: "awareness",
+  vektornaya_rabota: "vector_work",
+  szhiganie_drov: "burning_wood",
+  vizualnyi_kanal: "visual_channel",
+  audialnyi_kanal: "auditory_channel",
+  zaigryvaniya_flirty: "flirts",
+  zaigryvaniya: "flirts",
+  flirty: "flirts",
+  sushchnostnyi_uroven: "essence_level",
+  simptom: "symptom",
+  sozdatel_simptoma: "symptom_maker",
+  sozdatel_snovideniya: "dream_maker",
+  metanavyki: "metaskills",
+  metanavyk: "metaskills",
 };
 
 function remapStepKeys(value) {
@@ -149,13 +173,21 @@ function remapStepKeys(value) {
     if (STEP_KEY_MAP[p]) { changed = true; return STEP_KEY_MAP[p]; }
     return p;
   });
+  // Only report a real change — ignore pure separator normalization
   return { value: mapped.join("; "), changed };
+}
+
+function hasTransliteratedKeys(value) {
+  if (!value) return false;
+  const parts = value.split(/[;,]/).map((p) => p.trim()).filter(Boolean);
+  return parts.some((p) => STEP_KEY_MAP[p]);
 }
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   const body = await req.json().catch(() => ({}));
   const dryRun = body?.dryRun !== false; // default to dry run for safety
+  const phase = body?.phase || "terms"; // "terms" | "steps"
   const user = await base44.auth.me();
   if (user?.role !== 'admin') {
     return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
@@ -167,55 +199,56 @@ Deno.serve(async (req) => {
     modeSteps: { total: 0, updated: 0, changes: [] },
   };
 
-  // ─── A. Assign latin_key to all terms ──────────────────────────────────────
-  const terms = await base44.asServiceRole.entities.Term.list("term_id", 1000);
-  report.terms.total = terms.length;
+  // ─── A. Assign latin_key to all terms (phase "terms") ──────────────────────
+  // Idempotent: skips terms that already have the correct latin_key.
+  if (phase === "terms") {
+    const terms = await base44.asServiceRole.entities.Term.list("term_id", 1000);
+    report.terms.total = terms.length;
 
-  // Group by latin_key to detect duplicates
-  const byKey = {};
-  for (const t of terms) {
-    const latinKey = resolveLatinKey(t.term_id);
-    if (!latinKey) {
-      report.terms.unmatched.push(t.term_id);
-      continue;
-    }
-    (byKey[latinKey] ||= []).push(t);
-  }
-
-  // Helper: pick the record with the longest short_definition (best definition)
-  const bestOf = (records) =>
-    [...records].sort(
-      (a, b) => (b.short_definition?.length || 0) - (a.short_definition?.length || 0)
-    )[0];
-
-  for (const [latinKey, records] of Object.entries(byKey)) {
-    const keep = bestOf(records);
-    const dups = records.filter((r) => r.id !== keep.id);
-
-    // Set latin_key on the kept record
-    report.terms.keyed++;
-    if (!dryRun) {
-      await base44.asServiceRole.entities.Term.update(keep.id, { latin_key: latinKey });
+    const byKey = {};
+    for (const t of terms) {
+      const latinKey = resolveLatinKey(t.term_id);
+      if (!latinKey) {
+        report.terms.unmatched.push(t.term_id);
+        continue;
+      }
+      (byKey[latinKey] ||= []).push(t);
     }
 
-    // Delete duplicates
-    for (const d of dups) {
-      report.terms.duplicatesDeleted.push({ latin_key: latinKey, deleted_term_id: d.term_id, deleted_id: d.id, kept_id: keep.id });
-      if (!dryRun) {
-        await base44.asServiceRole.entities.Term.delete(d.id);
+    const bestOf = (records) =>
+      [...records].sort(
+        (a, b) => (b.short_definition?.length || 0) - (a.short_definition?.length || 0)
+      )[0];
+
+    for (const [latinKey, records] of Object.entries(byKey)) {
+      const keep = bestOf(records);
+      const dups = records.filter((r) => r.id !== keep.id);
+
+      report.terms.keyed++;
+      if (!dryRun && keep.latin_key !== latinKey) {
+        await base44.asServiceRole.entities.Term.update(keep.id, { latin_key: latinKey });
+      }
+
+      for (const d of dups) {
+        report.terms.duplicatesDeleted.push({ latin_key: latinKey, deleted_term_id: d.term_id });
+        if (!dryRun) {
+          await base44.asServiceRole.entities.Term.delete(d.id);
+        }
       }
     }
   }
 
-  // ─── B. Remap ModeStep.related_term_ids ────────────────────────────────────
-  const steps = await base44.asServiceRole.entities.ModeStep.list("step_number", 1000);
-  report.modeSteps.total = steps.length;
+  // ─── B. Remap ModeStep.related_term_ids (phase "steps") ────────────────────
+  if (phase === "steps") {
+    const steps = await base44.asServiceRole.entities.ModeStep.list("step_number", 1000);
+    report.modeSteps.total = steps.length;
 
-  for (const s of steps) {
-    const { value, changed } = remapStepKeys(s.related_term_ids);
-    if (changed) {
+    for (const s of steps) {
+      // Only touch rows that still contain transliterated keys
+      if (!hasTransliteratedKeys(s.related_term_ids)) continue;
+      const { value } = remapStepKeys(s.related_term_ids);
       report.modeSteps.updated++;
-      report.modeSteps.changes.push({ step_key: s.step_key, from: s.related_term_ids, to: value });
+      report.modeSteps.changes.push({ step_key: s.step_key, to: value });
       if (!dryRun) {
         await base44.asServiceRole.entities.ModeStep.update(s.id, { related_term_ids: value });
       }
