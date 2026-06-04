@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { queryClientInstance } from "@/lib/query-client";
+import Onboarding from "@/components/onboarding/Onboarding";
 
 const regularNavItems = [
   { path: "/dashboard", label: "Главная", icon: LayoutDashboard },
@@ -81,14 +82,37 @@ export default function AppLayout() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [appUser, setAppUser] = useState(null);
+  const [userChecked, setUserChecked] = useState(false);
 
   useEffect(() => {
-    base44.auth.me().then((user) => {
+    base44.auth.me().then(async (user) => {
       const admin = user?.role === "admin" || user?.email === "schwets.marina@gmail.com";
       console.log("[ADMIN_ACCESS]", { email: user?.email, role: user?.role, isAdmin: admin });
       setIsAdmin(admin);
-    }).catch(() => {});
+      setCurrentUser(user);
+      try {
+        const rows = await base44.entities.AppUser.filter({ email: user?.email });
+        setAppUser(rows[0] || null);
+      } catch (e) {
+        console.warn("[AppLayout] AppUser load failed:", e?.message);
+      } finally {
+        setUserChecked(true);
+      }
+    }).catch(() => setUserChecked(true));
   }, []);
+
+  // Show onboarding full-screen for first-time users
+  if (userChecked && appUser && !appUser.onboarding_completed) {
+    return (
+      <Onboarding
+        appUser={appUser}
+        currentUser={currentUser}
+        onComplete={() => setAppUser((prev) => ({ ...prev, onboarding_completed: true }))}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex">

@@ -79,6 +79,28 @@ const translations = {
     summary_fallback_hint: "Используйте кнопку ниже для генерации отчёта.",
     insight_library: "Библиотека инсайтов",
     new_session: "Новая сессия",
+    // Onboarding
+    onb_back: "Назад",
+    onb_step1_title: "Добро пожаловать в Process Work AI",
+    onb_step1_text:
+      "Это пространство для исследования себя через процессуально-ориентированный подход Арнольда Минделла. Здесь нет правильных и неправильных ответов — только твой процесс.",
+    onb_step1_button: "Начать",
+    onb_step2_title: "Как это работает",
+    onb_step2_text:
+      "ИИ-фасилитатор будет задавать вопросы и следовать за твоим процессом. Ты можешь остановиться в любой момент. Это не замена живому терапевту.",
+    onb_step2_button: "Понятно",
+    onb_step3_title: "С чего хочешь начать?",
+    onb_step3_button: "Выбрать",
+    onb_step4_title: "Несколько слов о конфиденциальности",
+    onb_step4_text:
+      "Твои ответы сохраняются только для улучшения твоего персонального опыта. Мы не передаём данные третьим лицам. Ты можешь удалить все данные в любой момент в настройках.",
+    onb_step4_check1: "Я понимаю, что это не психотерапия и не замена профессиональной помощи",
+    onb_step4_check2: "Я согласен(а) на хранение моих ответов для персонализации опыта",
+    onb_step4_button: "Продолжить",
+    onb_step5_title: "Всё готово",
+    onb_step5_text:
+      "Твоё первое путешествие начинается. Следуй за тем, что привлекает внимание — это и есть твой процесс.",
+    onb_step5_button: "Начать сессию",
   },
   es: {
     // Settings
@@ -150,6 +172,28 @@ const translations = {
     summary_fallback_hint: "Usa el botón de abajo para generar el informe.",
     insight_library: "Biblioteca de insights",
     new_session: "Nueva sesión",
+    // Onboarding
+    onb_back: "Volver",
+    onb_step1_title: "Bienvenida a Process Work AI",
+    onb_step1_text:
+      "Este es un espacio para explorarte a ti misma a través del enfoque orientado al proceso de Arnold Mindell. Aquí no hay respuestas correctas ni incorrectas — solo tu proceso.",
+    onb_step1_button: "Empezar",
+    onb_step2_title: "Cómo funciona",
+    onb_step2_text:
+      "El facilitador de IA hará preguntas y seguirá tu proceso. Puedes detenerte en cualquier momento. No sustituye a un terapeuta humano.",
+    onb_step2_button: "Entendido",
+    onb_step3_title: "¿Por dónde quieres empezar?",
+    onb_step3_button: "Elegir",
+    onb_step4_title: "Unas palabras sobre la privacidad",
+    onb_step4_text:
+      "Tus respuestas se guardan solo para mejorar tu experiencia personal. No compartimos datos con terceros. Puedes eliminar todos tus datos en cualquier momento en los ajustes.",
+    onb_step4_check1: "Entiendo que esto no es psicoterapia ni un sustituto de la ayuda profesional",
+    onb_step4_check2: "Acepto el almacenamiento de mis respuestas para personalizar la experiencia",
+    onb_step4_button: "Continuar",
+    onb_step5_title: "Todo listo",
+    onb_step5_text:
+      "Tu primer viaje comienza. Sigue aquello que llama tu atención — eso es tu proceso.",
+    onb_step5_button: "Iniciar sesión",
   },
 };
 
