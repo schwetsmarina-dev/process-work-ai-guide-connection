@@ -1,0 +1,52 @@
+{
+  "name": "SessionFeedback",
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Reference to Session"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user giving feedback"
+    },
+    "mode_id": {
+      "type": "string",
+      "description": "Mode of the session"
+    },
+    "language": {
+      "type": "string",
+      "description": "Language at time of feedback"
+    },
+    "rating": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "How useful the session was (1-5)"
+    },
+    "useful": {
+      "type": "string",
+      "description": "What was most useful"
+    },
+    "confusing": {
+      "type": "string",
+      "description": "What was confusing or uncomfortable"
+    },
+    "would_use_again": {
+      "type": "boolean",
+      "description": "Whether the user would try another session"
+    },
+    "comment": {
+      "type": "string",
+      "description": "Free comment"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "session_id",
+    "user_email"
+  ]
+}

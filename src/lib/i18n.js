@@ -54,6 +54,18 @@ const translations = {
     important: "Важно",
     landing_disclaimer_text:
       "Этот инструмент предназначен для самоисследования и саморефлексии. Он не заменяет профессиональную психологическую помощь, терапию, диагностику или лечение. Если вам нужна помощь — обратитесь к специалисту.",
+    // Session feedback
+    feedback_title: "Поделись отзывом",
+    feedback_rating: "Насколько полезной была эта сессия?",
+    feedback_useful: "Что было самым полезным?",
+    feedback_confusing: "Что было непонятным или неудобным?",
+    feedback_would_use_again: "Ты бы попробовала ещё одну сессию?",
+    feedback_yes: "Да",
+    feedback_no: "Нет",
+    feedback_comment: "Комментарий",
+    feedback_submit: "Отправить отзыв",
+    feedback_success: "Спасибо, отзыв сохранён",
+    feedback_already: "Спасибо, отзыв уже сохранён.",
   },
   es: {
     // Settings
@@ -100,6 +112,18 @@ const translations = {
     important: "Importante",
     landing_disclaimer_text:
       "Esta herramienta está diseñada para la autoexploración y la autorreflexión. No sustituye la ayuda psicológica profesional, la terapia, el diagnóstico ni el tratamiento. Si necesitas ayuda, consulta con un profesional.",
+    // Session feedback
+    feedback_title: "Comparte tu feedback",
+    feedback_rating: "¿Qué tan útil fue esta sesión?",
+    feedback_useful: "¿Qué fue lo más útil?",
+    feedback_confusing: "¿Qué fue confuso o incómodo?",
+    feedback_would_use_again: "¿Probarías otra sesión?",
+    feedback_yes: "Sí",
+    feedback_no: "No",
+    feedback_comment: "Comentario",
+    feedback_submit: "Enviar feedback",
+    feedback_success: "Gracias, feedback guardado",
+    feedback_already: "Gracias, tu feedback ya fue guardado.",
   },
 };
 

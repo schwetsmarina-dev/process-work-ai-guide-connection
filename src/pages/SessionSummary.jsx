@@ -13,6 +13,8 @@ import { motion } from "framer-motion";
 import SessionInsightSuggestions from "@/components/session/SessionInsightSuggestions";
 import { extractInsightsFromSession } from "@/lib/insightAI";
 import FullSessionReport from "@/components/session/FullSessionReport";
+import SessionFeedbackForm from "@/components/session/SessionFeedbackForm";
+import { normalizeLang } from "@/lib/i18n";
 
 const iconMap = { Heart, Moon, GitBranch, PenLine };
 
@@ -22,13 +24,18 @@ export default function SessionSummary() {
   const sessionId = pathParts[2];
   const [insightSuggestions, setInsightSuggestions] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [appUser, setAppUser] = useState(null);
   const [accessDenied, setAccessDenied] = useState(false);
+  const language = normalizeLang(appUser?.language || "ru");
 
   useEffect(() => {
-    base44.auth.me().then((u) => {
+    (async () => {
+      const u = await base44.auth.me();
       console.log("CURRENT USER:", u?.id, u?.email);
       setCurrentUser(u);
-    });
+      const rows = await base44.entities.AppUser.filter({ email: u?.email });
+      setAppUser(rows[0] || null);
+    })();
   }, []);
 
   const { data: session, isLoading } = useQuery({
@@ -216,6 +223,11 @@ export default function SessionSummary() {
           Резюме не было создано автоматически.{" "}
           <span className="text-xs text-muted-foreground">Используйте кнопку ниже для генерации отчёта.</span>
         </div>
+      )}
+
+      {/* Feedback (beta) — only for completed sessions owned by the user */}
+      {session.status === "completed" && currentUser && session.created_by === currentUser.email && (
+        <SessionFeedbackForm session={session} user={currentUser} language={language} />
       )}
 
       {/* Insight suggestions */}
