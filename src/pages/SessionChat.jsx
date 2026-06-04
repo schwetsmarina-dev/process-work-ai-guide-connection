@@ -12,6 +12,12 @@ import {
   generateSessionSummary,
 } from "@/lib/sessionAI";
 import { createMessage, listMessages } from "@/lib/messageApi";
+import {
+  loadUserMemories,
+  formatMemoriesForPrompt,
+  extractMemoriesFromSession,
+  saveUserMemories,
+} from "@/lib/userMemory";
 import SessionHeader from "@/components/session/SessionHeader";
 import ChatMessage from "@/components/session/ChatMessage";
 import ChatInput from "@/components/session/ChatInput";
@@ -314,10 +320,14 @@ export default function SessionChat() {
       console.log("[CHAT_FLOW] 3. AI generation started");
       const updatedMessages = await listMessages(sessionId);
 
+      // Load user memory and format it for the prompt
+      const memories = await loadUserMemories(currentUser?.id);
+      const memoriesBlock = formatMemoriesForPrompt(memories);
+
       // Get AI response
       let rawResponse;
       try {
-        rawResponse = await getAIResponse(session, step, updatedMessages, text, language);
+        rawResponse = await getAIResponse(session, step, updatedMessages, text, language, memoriesBlock);
         console.log("[CHAT_FLOW] 4. AI response generated, length:", rawResponse?.length);
       } catch (aiErr) {
         console.error("[CHAT_FLOW] AI generation failed:", aiErr);
@@ -423,20 +433,18 @@ export default function SessionChat() {
           signals: summaryData.signals || [],
           next_step_suggestion: summaryData.next_step_suggestion || "",
         });
-        if (summaryData.memories?.length > 0) {
-          await base44.entities.UserMemory.bulkCreate(
-            summaryData.memories.map((m) => ({
-              memory_key: m.key,
-              memory_value: m.value,
-              memory_type: m.category,
-              importance: m.importance,
-              source_session_id: sessionId,
-              source_mode_id: session.mode_id,
-              is_active: true,
-              created_at: new Date().toISOString(),
-            }))
-          );
-        }
+      }
+
+      // ── Analyze session & persist memory (update, dedupe, cap at 20) ──────
+      try {
+        const memoryItems = await extractMemoriesFromSession(sessionMessages);
+        await saveUserMemories(currentUser?.id, memoryItems, {
+          sessionId,
+          modeId: session.mode_id,
+        });
+        console.log("[SessionFlow] memory saved:", memoryItems.length, "types");
+      } catch (memErr) {
+        console.error("[SessionFlow] memory save failed:", memErr?.message);
       }
     } catch (e) {
       console.error("[SessionFlow] finalization error:", e.message);

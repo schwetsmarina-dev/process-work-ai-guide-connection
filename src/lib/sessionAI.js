@@ -1074,7 +1074,7 @@ function buildLanguageOverride(language) {
     `Никогда не смешивай языки. Никогда не отвечай на испанском или английском (если пользователь явно не попросит).`;
 }
 
-export async function getAIResponse(session, step, messages, userMessage, language = "ru") {
+export async function getAIResponse(session, step, messages, userMessage, language = "ru", memoriesBlock = "") {
   const currentMode = session.mode_id || session.mode;
   const languageOverride = buildLanguageOverride(language);
 
@@ -1358,7 +1358,7 @@ ${step.facilitator_hint ? `Подсказка: ${step.facilitator_hint}` : ""}`
     : "";
 
   const buildPrompt = (extraInstruction = "") =>
-    `${SYSTEM_PROMPT}${languageOverride}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${edgeLimitInstruction}${extraInstruction}
+    `${SYSTEM_PROMPT}${languageOverride}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${edgeLimitInstruction}${extraInstruction}
 
 Режим: ${currentMode}
 
@@ -1413,7 +1413,7 @@ ${userMessage}
     const trimmedHistory = trimmed
       .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
       .join("\n");
-    const trimmedPrompt = `${SYSTEM_PROMPT}${languageOverride}${stepContext}${layerStatus}${integrationLock}${forcedInstruction}${loopWarning}
+    const trimmedPrompt = `${SYSTEM_PROMPT}${languageOverride}${memoriesBlock}${stepContext}${layerStatus}${integrationLock}${forcedInstruction}${loopWarning}
 
 Режим: ${currentMode}
 
