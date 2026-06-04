@@ -36,6 +36,11 @@ const translations = {
       "Загрузите данные в таблицу MODES через страницу «Импорт данных».",
     recent_sessions: "Недавние сессии",
     all_sessions: "Все сессии",
+    // Session
+    greeting_start: "Давай начнём.",
+    dream_opening:
+      "Расскажи мне свой сон так, как ты его помнишь. Какие моменты или чувства в нём самые заметные?",
+    ai_error_fallback: "Сейчас произошла ошибка генерации ответа. Попробуй ещё раз.",
   },
   es: {
     // Settings
@@ -64,6 +69,11 @@ const translations = {
       "Carga los datos en la tabla MODES desde la página «Importar datos».",
     recent_sessions: "Sesiones recientes",
     all_sessions: "Todas las sesiones",
+    // Session
+    greeting_start: "Empecemos.",
+    dream_opening:
+      "Cuéntame tu sueño tal como lo recuerdas. ¿Qué momentos o sensaciones son los más importantes?",
+    ai_error_fallback: "Ahora ha ocurrido un error al generar la respuesta. Inténtalo de nuevo.",
   },
 };
 

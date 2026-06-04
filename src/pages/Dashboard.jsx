@@ -11,13 +11,17 @@ import { normalizeLang, t } from "@/lib/i18n";
 export default function Dashboard() {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
-  const lang = normalizeLang(currentUser?.language);
+  const [appUser, setAppUser] = useState(null);
+  const lang = normalizeLang(appUser?.language || "ru");
 
   useEffect(() => {
-    base44.auth.me().then((u) => {
+    (async () => {
+      const u = await base44.auth.me();
       console.log("CURRENT USER:", u?.id, u?.email);
       setCurrentUser(u);
-    });
+      const rows = await base44.entities.AppUser.filter({ email: u?.email });
+      setAppUser(rows[0] || null);
+    })();
   }, []);
 
   // Load active modes from DB

@@ -9,16 +9,26 @@ import LanguageSelector from "@/components/settings/LanguageSelector";
 
 export default function Settings() {
   const [user, setUser] = useState(null);
+  const [appUser, setAppUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lang, setLang] = useState("ru");
 
   useEffect(() => {
-    base44.auth.me().then((u) => {
+    (async () => {
+      const u = await base44.auth.me();
       setUser(u);
-      setLang(normalizeLang(u?.language));
+      const rows = await base44.entities.AppUser.filter({ email: u?.email });
+      const au = rows[0] || null;
+      setAppUser(au);
+      setLang(normalizeLang(au?.language || "ru"));
       setLoading(false);
-    });
+    })();
   }, []);
+
+  const handleLangChange = (value) => {
+    setLang(value);
+    setAppUser((prev) => (prev ? { ...prev, language: value } : prev));
+  };
 
   if (loading) return null;
 
@@ -45,7 +55,7 @@ export default function Settings() {
           </div>
         </Card>
 
-        <LanguageSelector lang={lang} onChange={setLang} />
+        <LanguageSelector authUser={user} appUser={appUser} lang={lang} onChange={handleLangChange} />
 
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">

@@ -16,6 +16,7 @@ import SessionHeader from "@/components/session/SessionHeader";
 import ChatMessage from "@/components/session/ChatMessage";
 import ChatInput from "@/components/session/ChatInput";
 import StepErrorDebug from "@/components/session/StepErrorDebug";
+import { normalizeLang, t } from "@/lib/i18n";
 
 // Parse [SHIFT_SUGGEST:mode] tag from AI response
 function parseShiftSuggestion(text) {
@@ -44,7 +45,9 @@ export default function SessionChat() {
   const [shiftSuggestion, setShiftSuggestion] = useState(null);
   const [totalSteps, setTotalSteps] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
+  const [appUser, setAppUser] = useState(null);
   const [userLoading, setUserLoading] = useState(true);
+  const language = normalizeLang(appUser?.language || "ru");
   const [accessDenied, setAccessDenied] = useState(false);
   const [isAdminView, setIsAdminView] = useState(false);
   // Optimistic messages shown while backend confirms
@@ -62,14 +65,19 @@ export default function SessionChat() {
 
   // ── Load current user first ───────────────────────────────────────────────
   useEffect(() => {
-    base44.auth.me().then((u) => {
-      console.log("[SessionChat] currentUser loaded:", u?.email, "role:", u?.role);
-      setCurrentUser(u);
-      setUserLoading(false);
-    }).catch((err) => {
-      console.error("[SessionChat] auth.me() failed:", err);
-      setUserLoading(false);
-    });
+    (async () => {
+      try {
+        const u = await base44.auth.me();
+        console.log("[SessionChat] currentUser loaded:", u?.email, "role:", u?.role);
+        setCurrentUser(u);
+        const rows = await base44.entities.AppUser.filter({ email: u?.email });
+        setAppUser(rows[0] || null);
+      } catch (err) {
+        console.error("[SessionChat] auth.me() failed:", err);
+      } finally {
+        setUserLoading(false);
+      }
+    })();
   }, []);
 
   // ── Session ──────────────────────────────────────────────────────────────
@@ -171,9 +179,9 @@ export default function SessionChat() {
       // regardless of what is stored in the DB step, to prevent mapping prefaces leaking in.
       const isDream = modeId.toLowerCase().includes("dream");
       const openingQuestion = isDream
-        ? "Расскажи мне свой сон так, как ты его помнишь. Какие моменты или чувства в нём самые заметные?"
+        ? t("dream_opening", language)
         : step.question;
-      const greeting = `Давай начнём.\n\n${openingQuestion}`;
+      const greeting = `${t("greeting_start", language)}\n\n${openingQuestion}`;
       try {
         await createMessage({ session_id: sessionId, mode_id: modeId, step_number: stepNum, role: "assistant", content: greeting });
       } catch (createErr) {
@@ -215,9 +223,9 @@ export default function SessionChat() {
       console.log("[SESSION_AUTORECOVERY] fetchStep succeeded — creating greeting, session.id:", sessionId);
       const isDreamRecovery = modeId.toLowerCase().includes("dream");
       const recoveryQuestion = isDreamRecovery
-        ? "Расскажи мне свой сон так, как ты его помнишь. Какие моменты или чувства в нём самые заметные?"
+        ? t("dream_opening", language)
         : step.question;
-      const greeting = `Давай начнём.\n\n${recoveryQuestion}`;
+      const greeting = `${t("greeting_start", language)}\n\n${recoveryQuestion}`;
       await createMessage({ session_id: sessionId, mode_id: modeId, step_number: stepNum, role: "assistant", content: greeting });
       if (cancelled) return;
       initDone.current = true;
@@ -309,11 +317,11 @@ export default function SessionChat() {
       // Get AI response
       let rawResponse;
       try {
-        rawResponse = await getAIResponse(session, step, updatedMessages, text, currentUser?.language || "ru");
+        rawResponse = await getAIResponse(session, step, updatedMessages, text, language);
         console.log("[CHAT_FLOW] 4. AI response generated, length:", rawResponse?.length);
       } catch (aiErr) {
         console.error("[CHAT_FLOW] AI generation failed:", aiErr);
-        rawResponse = "Сейчас произошла ошибка генерации ответа. Попробуй ещё раз.";
+        rawResponse = t("ai_error_fallback", language);
         setSendErrorMessage(`Ошибка AI: ${aiErr?.message || String(aiErr)}`);
       }
 

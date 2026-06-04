@@ -9,14 +9,31 @@ const OPTIONS = [
   { value: "es", labelKey: "language_spanish" },
 ];
 
-export default function LanguageSelector({ lang, onChange }) {
+export default function LanguageSelector({ authUser, appUser, lang, onChange }) {
   const [saving, setSaving] = useState(false);
   const current = normalizeLang(lang);
 
   const handleSelect = async (value) => {
     if (value === current || saving) return;
     setSaving(true);
-    await base44.auth.updateMe({ language: value });
+
+    if (appUser?.id) {
+      await base44.entities.AppUser.update(appUser.id, { language: value });
+    } else {
+      const now = new Date().toISOString();
+      await base44.entities.AppUser.create({
+        email: authUser?.email,
+        name: authUser?.full_name,
+        language: value,
+        plan: "free",
+        onboarding_completed: false,
+        consent_given: false,
+        created_at: now,
+        last_seen_at: now,
+      });
+    }
+
+    console.log("[LANGUAGE_UPDATED]", { email: authUser?.email, language: value });
     onChange?.(value);
     setSaving(false);
   };
