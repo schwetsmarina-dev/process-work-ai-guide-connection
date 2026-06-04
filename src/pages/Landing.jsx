@@ -3,33 +3,10 @@ import { base44 } from "@/api/base44Client";
 import { Sparkles, Heart, Moon, GitBranch, PenLine, ArrowRight, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { normalizeLang } from "@/lib/i18n";
+import { normalizeLang, t } from "@/lib/i18n";
 
 const heroRu = "https://media.base44.com/images/public/69ecbcec1c0f2de14e2fbc75/850646afd_.png";
 const heroEs = "https://media.base44.com/images/public/69ecbcec1c0f2de14e2fbc75/d2cdae3ac_hero-es.png";
-
-const modes = [
-  {
-    icon: Heart,
-    title: "Сигнал тела",
-    desc: "Исследуйте телесные ощущения и скрытые послания",
-  },
-  {
-    icon: Moon,
-    title: "Работа со сном",
-    desc: "Раскройте символы и образы ваших снов",
-  },
-  {
-    icon: GitBranch,
-    title: "Внутренний конфликт",
-    desc: "Услышьте обе стороны внутреннего противоречия",
-  },
-  {
-    icon: PenLine,
-    title: "Дневник",
-    desc: "Свободная рефлексия, следуя за сильнейшим сигналом",
-  },
-];
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -57,6 +34,13 @@ export default function Landing() {
   }, []);
 
   const heroImage = lang === "es" ? heroEs : heroRu;
+
+  const modes = [
+    { icon: Heart, title: t("landing_body_title", lang), desc: t("landing_body_desc", lang) },
+    { icon: Moon, title: t("landing_dream_title", lang), desc: t("landing_dream_desc", lang) },
+    { icon: GitBranch, title: t("landing_conflict_title", lang), desc: t("landing_conflict_desc", lang) },
+    { icon: PenLine, title: t("landing_journaling_title", lang), desc: t("landing_journaling_desc", lang) },
+  ];
 
   const handleStart = () => {
     base44.auth.redirectToLogin("/dashboard");
@@ -100,7 +84,7 @@ export default function Landing() {
               onClick={handleStart}
               className="text-base px-8 py-6 rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
             >
-              Начать сессию
+              {t("start_session", lang)}
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </motion.div>
@@ -145,12 +129,9 @@ export default function Landing() {
         >
           <Shield className="w-6 h-6 text-primary mt-0.5 shrink-0" />
           <div>
-            <h4 className="font-semibold mb-1">Важно</h4>
+            <h4 className="font-semibold mb-1">{t("important", lang)}</h4>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Этот инструмент предназначен для самоисследования и саморефлексии.
-              Он не заменяет профессиональную психологическую помощь, терапию,
-              диагностику или лечение. Если вам нужна помощь — обратитесь к
-              специалисту.
+              {t("landing_disclaimer_text", lang)}
             </p>
           </div>
         </motion.div>

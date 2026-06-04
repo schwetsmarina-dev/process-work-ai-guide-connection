@@ -41,6 +41,19 @@ const translations = {
     dream_opening:
       "Расскажи мне свой сон так, как ты его помнишь. Какие моменты или чувства в нём самые заметные?",
     ai_error_fallback: "Сейчас произошла ошибка генерации ответа. Попробуй ещё раз.",
+    // Landing
+    start_session: "Начать сессию",
+    landing_body_title: "Сигнал тела",
+    landing_body_desc: "Исследуйте телесные ощущения и скрытые послания",
+    landing_dream_title: "Работа со сном",
+    landing_dream_desc: "Раскройте символы и образы ваших снов",
+    landing_conflict_title: "Внутренний конфликт",
+    landing_conflict_desc: "Услышьте обе стороны внутреннего противоречия",
+    landing_journaling_title: "Дневник",
+    landing_journaling_desc: "Свободная рефлексия, следуя за сильнейшим сигналом",
+    important: "Важно",
+    landing_disclaimer_text:
+      "Этот инструмент предназначен для самоисследования и саморефлексии. Он не заменяет профессиональную психологическую помощь, терапию, диагностику или лечение. Если вам нужна помощь — обратитесь к специалисту.",
   },
   es: {
     // Settings
@@ -74,6 +87,19 @@ const translations = {
     dream_opening:
       "Cuéntame tu sueño tal como lo recuerdas. ¿Qué momentos o sensaciones son los más importantes?",
     ai_error_fallback: "Ahora ha ocurrido un error al generar la respuesta. Inténtalo de nuevo.",
+    // Landing
+    start_session: "Iniciar sesión",
+    landing_body_title: "Señal corporal",
+    landing_body_desc: "Explora sensaciones corporales y mensajes internos",
+    landing_dream_title: "Trabajo con sueños",
+    landing_dream_desc: "Explora símbolos e imágenes de tus sueños",
+    landing_conflict_title: "Conflicto interno",
+    landing_conflict_desc: "Escucha las dos partes de una contradicción interna",
+    landing_journaling_title: "Diario reflexivo",
+    landing_journaling_desc: "Reflexión libre siguiendo la señal más viva",
+    important: "Importante",
+    landing_disclaimer_text:
+      "Esta herramienta está diseñada para la autoexploración y la autorreflexión. No sustituye la ayuda psicológica profesional, la terapia, el diagnóstico ni el tratamiento. Si necesitas ayuda, consulta con un profesional.",
   },
 };
 
