@@ -66,6 +66,19 @@ const translations = {
     feedback_submit: "Отправить отзыв",
     feedback_success: "Спасибо, отзыв сохранён",
     feedback_already: "Спасибо, отзыв уже сохранён.",
+    // Session summary
+    back: "Назад",
+    summary: "Резюме",
+    summary_missing: "Резюме не создано",
+    themes: "Темы",
+    noticed_signals: "Замеченные сигналы",
+    next_step: "Следующий шаг",
+    messages_load_error: "Не удалось загрузить сообщения сессии",
+    retry: "Повторить",
+    summary_fallback_notice: "Резюме не было создано автоматически.",
+    summary_fallback_hint: "Используйте кнопку ниже для генерации отчёта.",
+    insight_library: "Библиотека инсайтов",
+    new_session: "Новая сессия",
   },
   es: {
     // Settings
@@ -124,10 +137,40 @@ const translations = {
     feedback_submit: "Enviar feedback",
     feedback_success: "Gracias, feedback guardado",
     feedback_already: "Gracias, tu feedback ya fue guardado.",
+    // Session summary
+    back: "Volver",
+    summary: "Resumen",
+    summary_missing: "El resumen no se ha creado",
+    themes: "Temas",
+    noticed_signals: "Señales observadas",
+    next_step: "Siguiente paso",
+    messages_load_error: "No se pudieron cargar los mensajes de la sesión",
+    retry: "Reintentar",
+    summary_fallback_notice: "El resumen no se creó automáticamente.",
+    summary_fallback_hint: "Usa el botón de abajo para generar el informe.",
+    insight_library: "Biblioteca de insights",
+    new_session: "Nueva sesión",
   },
 };
 
 export function t(key, lang) {
   const l = normalizeLang(lang);
   return translations[l][key] ?? translations[DEFAULT_LANGUAGE][key] ?? key;
+}
+
+const STORAGE_KEY = "pw_language";
+
+export function getStoredLanguage() {
+  if (typeof localStorage !== "undefined") {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (SUPPORTED_LANGUAGES.includes(stored)) return stored;
+  }
+  if (typeof navigator !== "undefined" && navigator.language?.startsWith("es")) return "es";
+  return DEFAULT_LANGUAGE;
+}
+
+export function setStoredLanguage(lang) {
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(STORAGE_KEY, normalizeLang(lang));
+  }
 }

@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Sparkles, Heart, Moon, GitBranch, PenLine, ArrowRight, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { normalizeLang, t } from "@/lib/i18n";
+import { normalizeLang, t, getStoredLanguage, setStoredLanguage } from "@/lib/i18n";
 
 const heroRu = "https://media.base44.com/images/public/69ecbcec1c0f2de14e2fbc75/850646afd_.png";
 const heroEs = "https://media.base44.com/images/public/69ecbcec1c0f2de14e2fbc75/d2cdae3ac_hero-es.png";
@@ -18,7 +18,7 @@ const fadeUp = {
 };
 
 export default function Landing() {
-  const [lang, setLang] = useState("ru");
+  const [lang, setLang] = useState(getStoredLanguage());
 
   useEffect(() => {
     (async () => {
@@ -26,12 +26,40 @@ export default function Landing() {
         const u = await base44.auth.me();
         if (!u?.email) return;
         const rows = await base44.entities.AppUser.filter({ email: u.email });
-        setLang(normalizeLang(rows[0]?.language || "ru"));
+        const appUser = rows[0];
+        if (appUser?.language) {
+          // AppUser language is the source of truth once it exists
+          setLang(normalizeLang(appUser.language));
+        } else {
+          // First login: sync stored visitor language onto AppUser
+          const stored = getStoredLanguage();
+          if (appUser?.id) {
+            await base44.entities.AppUser.update(appUser.id, { language: stored });
+          } else {
+            const now = new Date().toISOString();
+            await base44.entities.AppUser.create({
+              email: u.email,
+              name: u.full_name,
+              language: stored,
+              plan: "free",
+              onboarding_completed: false,
+              consent_given: false,
+              created_at: now,
+              last_seen_at: now,
+            });
+          }
+          setLang(stored);
+        }
       } catch {
-        setLang("ru");
+        setLang(getStoredLanguage());
       }
     })();
   }, []);
+
+  const handleLangSwitch = (value) => {
+    setLang(value);
+    setStoredLanguage(value);
+  };
 
   const heroImage = lang === "es" ? heroEs : heroRu;
 
@@ -47,7 +75,23 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      {/* Language switcher — visible to everyone */}
+      <div className="absolute top-4 right-4 z-20 flex items-center rounded-full border border-border bg-card/80 backdrop-blur-sm overflow-hidden text-xs font-medium">
+        <button
+          onClick={() => handleLangSwitch("ru")}
+          className={`px-3 py-1.5 transition-colors ${lang === "ru" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          RU
+        </button>
+        <button
+          onClick={() => handleLangSwitch("es")}
+          className={`px-3 py-1.5 transition-colors ${lang === "es" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          ES
+        </button>
+      </div>
+
       {/* Hero */}
       <section className="relative overflow-hidden">
         {/* layered gradient background */}

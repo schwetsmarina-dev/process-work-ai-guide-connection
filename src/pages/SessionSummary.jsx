@@ -14,7 +14,7 @@ import SessionInsightSuggestions from "@/components/session/SessionInsightSugges
 import { extractInsightsFromSession } from "@/lib/insightAI";
 import FullSessionReport from "@/components/session/FullSessionReport";
 import SessionFeedbackForm from "@/components/session/SessionFeedbackForm";
-import { normalizeLang } from "@/lib/i18n";
+import { normalizeLang, t } from "@/lib/i18n";
 
 const iconMap = { Heart, Moon, GitBranch, PenLine };
 
@@ -98,7 +98,7 @@ export default function SessionSummary() {
         className="mb-6 text-muted-foreground"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Назад
+        {t("back", language)}
       </Button>
 
       <motion.div
@@ -129,10 +129,10 @@ export default function SessionSummary() {
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="w-4 h-4 text-primary" />
-              <h3 className="font-semibold text-sm">Резюме</h3>
+              <h3 className="font-semibold text-sm">{t("summary", language)}</h3>
             </div>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              {session.summary || "Резюме не создано"}
+              {session.summary || t("summary_missing", language)}
             </p>
           </Card>
         </motion.div>
@@ -147,7 +147,7 @@ export default function SessionSummary() {
             <Card className="p-6">
               <div className="flex items-center gap-2 mb-3">
                 <Tag className="w-4 h-4 text-primary" />
-                <h3 className="font-semibold text-sm">Темы</h3>
+                <h3 className="font-semibold text-sm">{t("themes", language)}</h3>
               </div>
               <div className="flex flex-wrap gap-2">
                 {session.themes.map((theme, i) => (
@@ -170,7 +170,7 @@ export default function SessionSummary() {
             <Card className="p-6">
               <div className="flex items-center gap-2 mb-3">
                 <Zap className="w-4 h-4 text-primary" />
-                <h3 className="font-semibold text-sm">Замеченные сигналы</h3>
+                <h3 className="font-semibold text-sm">{t("noticed_signals", language)}</h3>
               </div>
               <ul className="space-y-2">
                 {session.signals.map((signal, i) => (
@@ -194,7 +194,7 @@ export default function SessionSummary() {
             <Card className="p-6 border-primary/20 bg-primary/5">
               <div className="flex items-center gap-2 mb-3">
                 <ArrowRight className="w-4 h-4 text-primary" />
-                <h3 className="font-semibold text-sm">Следующий шаг</h3>
+                <h3 className="font-semibold text-sm">{t("next_step", language)}</h3>
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground">
                 {session.next_step_suggestion}
@@ -207,8 +207,8 @@ export default function SessionSummary() {
       {/* Messages load error */}
       {messagesError && (
         <div className="mt-6 p-4 rounded-xl border border-destructive/30 bg-destructive/5 flex items-center justify-between">
-          <p className="text-sm text-destructive">Не удалось загрузить сообщения сессии</p>
-          <Button size="sm" variant="outline" onClick={() => refetchMessages()}>Повторить</Button>
+          <p className="text-sm text-destructive">{t("messages_load_error", language)}</p>
+          <Button size="sm" variant="outline" onClick={() => refetchMessages()}>{t("retry", language)}</Button>
         </div>
       )}
 
@@ -220,8 +220,8 @@ export default function SessionSummary() {
       {/* Regenerate summary if fallback */}
       {!messagesError && messages.length > 0 && session.summary === "Сессия завершена. Резюме недоступно." && (
         <div className="mt-4 p-4 rounded-xl border border-amber-200 bg-amber-50 text-sm text-amber-800">
-          Резюме не было создано автоматически.{" "}
-          <span className="text-xs text-muted-foreground">Используйте кнопку ниже для генерации отчёта.</span>
+          {t("summary_fallback_notice", language)}{" "}
+          <span className="text-xs text-muted-foreground">{t("summary_fallback_hint", language)}</span>
         </div>
       )}
 
@@ -244,10 +244,10 @@ export default function SessionSummary() {
 
       <div className="mt-10 flex flex-col sm:flex-row justify-center gap-3">
         <Button variant="outline" onClick={() => navigate("/insights-library")} className="rounded-xl">
-          Библиотека инсайтов
+          {t("insight_library", language)}
         </Button>
         <Button onClick={() => navigate("/dashboard")} size="lg" className="rounded-xl">
-          Новая сессия
+          {t("new_session", language)}
         </Button>
       </div>
     </div>
