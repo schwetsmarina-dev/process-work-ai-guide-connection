@@ -1,8 +1,12 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Sparkles, Heart, Moon, GitBranch, PenLine, ArrowRight, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { normalizeLang } from "@/lib/i18n";
+
+const heroRu = "https://media.base44.com/images/public/69ecbcec1c0f2de14e2fbc75/850646afd_.png";
+const heroEs = "https://media.base44.com/images/public/69ecbcec1c0f2de14e2fbc75/d2cdae3ac_hero-es.png";
 
 const modes = [
   {
@@ -37,6 +41,23 @@ const fadeUp = {
 };
 
 export default function Landing() {
+  const [lang, setLang] = useState("ru");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const u = await base44.auth.me();
+        if (!u?.email) return;
+        const rows = await base44.entities.AppUser.filter({ email: u.email });
+        setLang(normalizeLang(rows[0]?.language || "ru"));
+      } catch {
+        setLang("ru");
+      }
+    })();
+  }, []);
+
+  const heroImage = lang === "es" ? heroEs : heroRu;
+
   const handleStart = () => {
     base44.auth.redirectToLogin("/dashboard");
   };
@@ -55,15 +76,15 @@ export default function Landing() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1.4, ease: "easeIn" }}
-            className="w-full max-w-3xl relative"
+            className="w-full relative"
+            style={{ maxWidth: "1400px" }}
           >
             {/* soft glow behind image */}
             <div className="absolute inset-0 blur-3xl opacity-20 bg-primary/40 rounded-3xl scale-95" />
             <img
-              src="https://media.base44.com/images/public/69ecbcec1c0f2de14e2fbc75/850646afd_.png"
-              alt="Process Work AI Guide"
-              className="relative w-full h-auto rounded-2xl shadow-2xl shadow-primary/10"
-              style={{ objectFit: "contain" }}
+              src={heroImage}
+              alt={lang === "es" ? "Process Work AI Guide — Español" : "Process Work AI Guide — Русский"}
+              className="relative w-full h-auto rounded-2xl shadow-2xl shadow-primary/10 object-contain mx-auto"
             />
           </motion.div>
 
