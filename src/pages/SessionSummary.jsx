@@ -14,6 +14,7 @@ import SessionInsightSuggestions from "@/components/session/SessionInsightSugges
 import { extractInsightsFromSession } from "@/lib/insightAI";
 import FullSessionReport from "@/components/session/FullSessionReport";
 import SessionFeedbackForm from "@/components/session/SessionFeedbackForm";
+import SummaryActions from "@/components/session/SummaryActions";
 import { normalizeLang, t } from "@/lib/i18n";
 
 const iconMap = { Heart, Moon, GitBranch, PenLine };
@@ -217,12 +218,13 @@ export default function SessionSummary() {
         <FullSessionReport session={session} messages={messages} />
       )}
 
-      {/* Regenerate summary if fallback */}
-      {!messagesError && messages.length > 0 && session.summary === "Сессия завершена. Резюме недоступно." && (
-        <div className="mt-4 p-4 rounded-xl border border-amber-200 bg-amber-50 text-sm text-amber-800">
-          {t("summary_fallback_notice", language)}{" "}
-          <span className="text-xs text-muted-foreground">{t("summary_fallback_hint", language)}</span>
-        </div>
+      {/* Summary actions: regenerate (if fallback) or save to diary */}
+      {!messagesError && messages.length > 0 && (
+        <SummaryActions
+          session={session}
+          language={language}
+          onUpdated={() => queryClient.invalidateQueries({ queryKey: ["session", sessionId, currentUser?.email] })}
+        />
       )}
 
       {/* Feedback (beta) — only for completed sessions owned by the user */}

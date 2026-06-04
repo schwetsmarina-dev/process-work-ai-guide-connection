@@ -1506,10 +1506,9 @@ const FALLBACK_SUMMARY = {
 };
 
 export async function generateSessionSummary(session, messages) {
-  const recent = messages.slice(-12);
-  const conversation = recent
-    .filter((m) => m.role !== "system")
-    .map((m) => `${m.role === "user" ? "П" : "А"}: ${m.content}`)
+  const conversation = messages
+    .filter((m) => m.role === "user" || m.role === "assistant")
+    .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
     .join("\n");
 
   const timeoutPromise = new Promise((_, reject) =>
@@ -1517,20 +1516,20 @@ export async function generateSessionSummary(session, messages) {
   );
 
   const llmPromise = base44.integrations.Core.InvokeLLM({
-    prompt: `Ты — Process Work фасилитатор. Напиши краткое резюме сессии (макс 120 слов, живой русский язык).
+    prompt: `Ты — процессуально-ориентированный фасилитатор. Проанализируй эту сессию и выдай ТОЛЬКО JSON без markdown:
+{
+  "summary": "связный абзац 3-5 предложений — что происходило, какой процесс разворачивался, к чему пришли",
+  "themes": ["тема 1", "тема 2", "тема 3"],
+  "signals": ["телесный или эмоциональный сигнал 1", "сигнал 2"],
+  "next_step_suggestion": "одна конкретная рекомендация — что исследовать в следующий раз",
+  "mode_fit": "был ли выбранный режим подходящим, или стоит попробовать другой — одна фраза"
+}
+Пиши на русском языке. Будь конкретным, не общим.
 
 Режим: ${session.mode_id || session.mode}
 
-Разговор:
-${conversation}
-
-Резюме должно включать:
-1. Главный процесс, который возник
-2. Важный сигнал
-3. Скрытая потребность или полярность
-4. Мягкий следующий шаг
-
-Стиль: тёплый, профессиональный, без канцелярита.`,
+Сессия:
+${conversation}`,
     response_json_schema: {
       type: "object",
       properties: {
@@ -1538,18 +1537,7 @@ ${conversation}
         themes: { type: "array", items: { type: "string" } },
         signals: { type: "array", items: { type: "string" } },
         next_step_suggestion: { type: "string" },
-        memories: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              key: { type: "string" },
-              value: { type: "string" },
-              category: { type: "string", enum: ["emotion", "body", "dream", "conflict", "pattern", "insight"] },
-              importance: { type: "string", enum: ["low", "medium", "high"] },
-            },
-          },
-        },
+        mode_fit: { type: "string" },
       },
     },
   });
