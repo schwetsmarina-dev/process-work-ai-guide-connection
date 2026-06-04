@@ -6,6 +6,10 @@
       "type": "string",
       "description": "Unique term identifier"
     },
+    "latin_key": {
+      "type": "string",
+      "description": "Short latin identifier matching ModeStep.related_term_ids (e.g. body_signal, primary_process)"
+    },
     "term": {
       "type": "string",
       "description": "Term name"
