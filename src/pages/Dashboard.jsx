@@ -6,6 +6,7 @@ import { Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import RecentSessionCard from "@/components/dashboard/RecentSessionCard";
 import ModeCardDB from "@/components/dashboard/ModeCardDB";
+import AdminPanel from "@/components/dashboard/AdminPanel";
 import { normalizeLang, t } from "@/lib/i18n";
 
 export default function Dashboard() {
@@ -36,6 +37,7 @@ export default function Dashboard() {
     enabled: !!currentUser?.email,
   });
 
+  const isAdmin = currentUser?.role === "admin" || currentUser?.email === "schwets.marina@gmail.com";
   const activeSession = sessions.find((s) => s.status === "active");
   const recentSessions = sessions.filter((s) => s.status !== "active").slice(0, 5);
 
@@ -116,6 +118,9 @@ export default function Dashboard() {
           {t("choose_direction", lang)}
         </p>
       </div>
+
+      {/* Admin quick-access panel */}
+      {isAdmin && <AdminPanel />}
 
       {/* Active session banner */}
       {activeSession && (

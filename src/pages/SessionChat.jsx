@@ -24,6 +24,34 @@ import ChatInput from "@/components/session/ChatInput";
 import StepErrorDebug from "@/components/session/StepErrorDebug";
 import { normalizeLang, t } from "@/lib/i18n";
 
+// Canonical, mode-specific opening question (do NOT use DB step.question for the first greeting)
+function getInitialOpeningQuestion(modeId, language, step) {
+  const mode = String(modeId || "").toLowerCase();
+  const isEs = language === "es";
+
+  if (mode.includes("dream")) {
+    return isEs
+      ? "Cuéntame tu sueño tal como lo recuerdas. ¿Qué momentos o sensaciones son los más importantes?"
+      : "Расскажи мне свой сон так, как ты его помнишь. Какие моменты или чувства в нём самые заметные?";
+  }
+  if (mode.includes("body")) {
+    return isEs
+      ? "¿Qué señal del cuerpo quieres explorar ahora? Puede ser un síntoma, una tensión, una sensación, dolor, cansancio o cualquier señal corporal."
+      : "Что в теле ты хочешь исследовать сейчас? Это может быть симптом, напряжение, ощущение, боль, усталость или любой телесный сигнал.";
+  }
+  if (mode.includes("conflict")) {
+    return isEs
+      ? "Describe, por favor, el conflicto que quieres explorar. ¿Qué partes, deseos o posiciones chocan en él?"
+      : "Опиши, пожалуйста, конфликт, который ты хочешь исследовать. Какие стороны, желания или позиции в нём сталкиваются?";
+  }
+  if (mode.includes("journal")) {
+    return isEs
+      ? "¿Qué quieres explorar hoy? Puede ser una situación, una emoción, una pregunta, un pensamiento o un tema que ocupa tu atención."
+      : "О чём ты хочешь поисследовать сегодня? Это может быть ситуация, чувство, вопрос, мысль или тема, которая сейчас занимает внимание.";
+  }
+  return step?.question || "";
+}
+
 // Parse [SHIFT_SUGGEST:mode] tag from AI response
 function parseShiftSuggestion(text) {
   const match = text.match(/\[SHIFT_SUGGEST:([^\]]*)\]/);
@@ -181,12 +209,9 @@ export default function SessionChat() {
 
       // Step found — create greeting, THEN mark init done
       console.log("[SESSION_INIT] step found:", step.step_key || step._stepKey, "session.id:", sessionId);
-      // Dream mode: ALWAYS use the canonical dream invite as the opening question,
-      // regardless of what is stored in the DB step, to prevent mapping prefaces leaking in.
-      const isDream = modeId.toLowerCase().includes("dream");
-      const openingQuestion = isDream
-        ? t("dream_opening", language)
-        : step.question;
+      // Use canonical, mode-specific opening question (never DB step.question for first greeting)
+      const openingQuestion = getInitialOpeningQuestion(modeId, language, step);
+      console.log("[CANONICAL_OPENING_USED]", { modeId, language, openingQuestion });
       const greeting = `${t("greeting_start", language)}\n\n${openingQuestion}`;
       try {
         await createMessage({ session_id: sessionId, mode_id: modeId, step_number: stepNum, role: "assistant", content: greeting });
@@ -227,10 +252,8 @@ export default function SessionChat() {
     fetchStep(modeId, stepNum).then(async (step) => {
       if (cancelled || !step) return;
       console.log("[SESSION_AUTORECOVERY] fetchStep succeeded — creating greeting, session.id:", sessionId);
-      const isDreamRecovery = modeId.toLowerCase().includes("dream");
-      const recoveryQuestion = isDreamRecovery
-        ? t("dream_opening", language)
-        : step.question;
+      const recoveryQuestion = getInitialOpeningQuestion(modeId, language, step);
+      console.log("[CANONICAL_OPENING_USED]", { modeId, language, openingQuestion: recoveryQuestion });
       const greeting = `${t("greeting_start", language)}\n\n${recoveryQuestion}`;
       await createMessage({ session_id: sessionId, mode_id: modeId, step_number: stepNum, role: "assistant", content: greeting });
       if (cancelled) return;

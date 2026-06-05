@@ -106,7 +106,7 @@ export default function AppLayout() {
   }, []);
 
   // Show onboarding full-screen for first-time users
-  if (userChecked && appUser && !appUser.onboarding_completed) {
+  if (userChecked && appUser && !appUser.onboarding_completed && !isAdmin) {
     return (
       <Onboarding
         appUser={appUser}
