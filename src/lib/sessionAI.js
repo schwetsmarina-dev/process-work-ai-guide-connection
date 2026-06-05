@@ -746,6 +746,7 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
     if (hit) {
       const modeForLog = (currentMode || "").toLowerCase();
       console.warn("[INITIAL_MATERIAL_REQUIRED]", { mode: modeForLog, stage: mappingStageValue, primaryQuestionBlocked: true });
+      console.warn("[PRIMARY_BEFORE_MATERIAL_BLOCKED]", { mode: modeForLog, stage: mappingStageValue, triggeredPhrase: hit });
       return {
         isValid: false,
         reason: `Initial material gate violated: primary/secondary question asked before material collected ("${hit}")`,
@@ -799,6 +800,26 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
     }
   }
 
+
+  // 0pre-b. SECONDARY-BEFORE-PRIMARY gate — block secondary question while still awaiting primary answer
+  if (mappingStageValue === "awaiting_primary") {
+    const SECONDARY_PHRASES = [
+      "что в этом сне кажется тебе самым странным", "не похожим на тебя",
+      "что в этом телесном ощущении странное", "не совсем твоё",
+      "более новая, непривычная", "труднее принимается", "больше напряжения",
+      "новым, странным, живым", "тревожащим, непривычным",
+      "что здесь нового", "что в этом странное", "что непривычное",
+    ];
+    const secHit = SECONDARY_PHRASES.find((p) => lower.includes(p));
+    if (secHit) {
+      console.warn("[SECONDARY_BEFORE_PRIMARY_BLOCKED]", { mode: (currentMode || "").toLowerCase(), triggeredPhrase: secHit });
+      return {
+        isValid: false,
+        reason: `Secondary question asked before primary answer ("${secHit}")`,
+        correctedInstruction: "Primary process has not been answered yet. Ask the primary-process question first (what is familiar/known/habitual). Do NOT ask the secondary-process question yet.",
+      };
+    }
+  }
 
   // 0a. Awaiting-dream gate
   if (mappingStageValue === "awaiting_dream") {
@@ -921,6 +942,7 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
     const prematureVoiceHit = VOICE_CHANNEL_PHRASES_PREMATURE.find((p) => lower.includes(p));
     if (prematureVoiceHit) {
       console.warn("[PREMATURE_VOICE_CHANNEL_BLOCKED]", { mode: currentMode, immersionRequired: true, triggeredPhrase: prematureVoiceHit });
+      console.warn("[PREMATURE_MESSAGE_BLOCKED]", { mode: (currentMode || "").toLowerCase(), triggeredPhrase: prematureVoiceHit });
       return {
         isValid: false,
         reason: `PREMATURE_VOICE_CHANNEL_BLOCKED: voice/message question ("${prematureVoiceHit}") asked before immersion phase`,
@@ -953,6 +975,7 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
     for (const phrase of deepeningPhrases) {
       if (lower.includes(phrase)) {
         console.warn(`[NARROWING_BLOCKED] reason: deepening_before_focus_selection triggered_phrase: "${phrase}"`);
+        console.warn("[AUTO_FOCUS_SELECTION_BLOCKED]", { mode: (currentMode || "").toLowerCase(), triggeredPhrase: phrase });
         return {
           isValid: false,
           reason: `Focus gate violated: deepening or narrowing question asked before user identified highest-energy element ("${phrase}")`,
@@ -971,6 +994,7 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
     for (const phrase of integrationIntrusionPhrases) {
       if (lower.includes(phrase)) {
         console.warn(`[PROCESS_STAGE_LOCK] primaryCompleted: true secondaryCompleted: true energySelectionCompleted: false blocked_phrase: "${phrase}"`);
+        console.warn("[PREMATURE_INTEGRATION_BLOCKED]", { mode: (currentMode || "").toLowerCase(), triggeredPhrase: phrase });
         return {
           isValid: false,
           reason: `Integration intrusion BLOCKED: life-integration question asked before focus selection and exploration ("${phrase}")`,
@@ -1341,7 +1365,16 @@ export async function getAIResponse(session, step, messages, userMessage, langua
 
   const secondaryAnswerIndex = messages.findLastIndex((m) => m.role === "user" && mappingStage.secondary_answer && m.content.includes(mappingStage.secondary_answer.substring(0, 30)));
   const messagesAfterSecondary = secondaryAnswerIndex >= 0 ? messages.slice(secondaryAnswerIndex + 1) : [];
-  const assistantReflectedMap = messagesAfterSecondary.some((m) => m.role === "assistant" && (m.content.includes("знакомое") || m.content.includes("непривычное") || m.content.includes("на что тебе сейчас хочется")));
+  const ENERGY_SELECTION_MARKERS = [
+    "знакомое", "непривычное", "на что тебе сейчас хочется",
+    "цепляет", "больше энергии", "самым живым", "самым заряженным",
+    "сильнее всего", "притягивающим", "притягивает", "удивляет",
+    "внимание само возвращается", "самым необычным",
+  ];
+  const assistantReflectedMap = messagesAfterSecondary.some((m) => m.role === "assistant" && ENERGY_SELECTION_MARKERS.some((mk) => m.content.toLowerCase().includes(mk)));
+  if (mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer && !assistantReflectedMap) {
+    console.warn("[ENERGY_SELECTION_REQUIRED]", { mode: getModeKey(currentMode), reflectionPending: true });
+  }
   const userSelectedFocus = assistantReflectedMap && messagesAfterSecondary.some((m) => m.role === "user");
 
   const mappingCompleteContext = mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer
