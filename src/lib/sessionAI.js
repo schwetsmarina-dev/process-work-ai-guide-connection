@@ -729,9 +729,41 @@ const SAFE_FALLBACKS = {
   dream_mapping: "Давай продолжим намечать карту. Что в этом сне кажется более знакомым или устойчивым — а что удивляет или тянет, как будто что-то новое?",
 };
 
-function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue, userSelectedFocus, completionDetected, coveredLayers, resistanceCount }, validationContext) {
+function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue, userSelectedFocus, completionDetected, coveredLayers, resistanceCount, step, hasValidStep, sessionId }, validationContext) {
   if (!validationContext) validationContext = { completionDetected };
   const lower = responseText.toLowerCase();
+
+  // 0rep. ANTI-REPEAT against last 5 assistant questions (ModeStep history)
+  const REPEATED_STEMS = [
+    "что происходит", "что начинает происходить", "что замечаешь",
+    "что в этом", "где это", "если бы это могло сказать",
+  ];
+  const previousAssistantQuestions = (conversationHistory || [])
+    .filter((m) => m.role === "assistant")
+    .slice(-5)
+    .map((m) => m.content.toLowerCase());
+
+  const normalizeQ = (s) => s.replace(/\s+/g, " ").replace(/[«»"".,!?]/g, "").trim();
+  const candidateNorm = normalizeQ(lower);
+  for (const prevQ of previousAssistantQuestions) {
+    const prevNorm = normalizeQ(prevQ);
+    const exactRepeat = prevNorm.length > 15 && candidateNorm.includes(prevNorm.slice(0, Math.min(60, prevNorm.length)));
+    const sharedStem = REPEATED_STEMS.find((stem) => candidateNorm.includes(stem) && prevNorm.includes(stem));
+    if (exactRepeat || sharedStem) {
+      console.warn("[MODESTEP_REPEAT_BLOCKED]", {
+        session_id: sessionId,
+        step_number: step?.step_number ?? "?",
+        matched_previous_question: prevQ.slice(0, 120),
+      });
+      return {
+        isValid: false,
+        reason: `Repeated question/stem vs previous assistant message${sharedStem ? ` (stem: "${sharedStem}")` : ""}`,
+        correctedInstruction: hasValidStep
+          ? `Do NOT repeat a previous question or reuse the same stem. Ask ONE new question that advances the current ModeStep — goal: "${step.goal || ""}", direction: "${step.question || ""}". Use the user's exact words.`
+          : "Do NOT repeat a previous question or reuse the same stem. Move to the next process layer with a genuinely new question.",
+      };
+    }
+  }
 
   // 0pre. INITIAL MATERIAL gate (body / conflict / journaling) — block primary/secondary questions
   const INITIAL_MATERIAL_STAGES = ["awaiting_body_signal", "awaiting_conflict_material", "awaiting_journaling_topic"];
@@ -1134,6 +1166,37 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
     };
   }
 
+  // 7. ModeStep relevance check — response must relate to the step goal/question keywords.
+  // Only enforced when a valid step exists AND no process gate is overriding it.
+  const GATE_STAGES = [
+    "awaiting_dream", "awaiting_body_signal", "awaiting_conflict_material",
+    "awaiting_journaling_topic", "awaiting_primary", "awaiting_secondary",
+  ];
+  const gateActive = GATE_STAGES.includes(mappingStageValue) || integrationLock || completionDetected || (resistanceCount || 0) >= 3;
+  if (hasValidStep && !gateActive) {
+    const stripWords = (s) => (s || "")
+      .toLowerCase()
+      .replace(/[«»"".,!?;:()\-—]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length >= 5);
+    const stepKeywords = [...new Set([...stripWords(step.goal), ...stripWords(step.question)])];
+    if (stepKeywords.length >= 3) {
+      const overlap = stepKeywords.filter((kw) => lower.includes(kw.slice(0, 5)));
+      if (overlap.length === 0) {
+        console.warn("[MODESTEP_IGNORED_BLOCKED]", {
+          session_id: sessionId,
+          step_number: step?.step_number ?? "?",
+          step_goal: step.goal,
+        });
+        return {
+          isValid: false,
+          reason: "Response unrelated to the current ModeStep goal/question",
+          correctedInstruction: `Return to the current ModeStep. Ask one question that advances step.goal ("${step.goal || ""}") and step.question ("${step.question || ""}"). Do not use a generic fallback.`,
+        };
+      }
+    }
+  }
+
   return { isValid: true, reason: "", correctedInstruction: "" };
 }
 
@@ -1161,6 +1224,32 @@ function getSafeFallback(currentMode, forcedNextLayer, integrationLock, mappingS
   if (modeKey.includes("conflict")) return SAFE_FALLBACKS.conflict;
   if (modeKey.includes("journal")) return SAFE_FALLBACKS.journaling;
   return SAFE_FALLBACKS.integration;
+}
+
+// ─── ModeStep as primary guide ───────────────────────────────────────────────
+function buildModeStepInstruction(step, language) {
+  if (!step || !step.question) return "";
+  const isEs = language === "es";
+  const langLine = isEs
+    ? "Если language = es — переведи/адаптируй вопрос на естественный испанский, СОХРАНИВ процессуальную функцию шага.\n"
+    : "";
+
+  return (
+    `\n\n━━━ ОБЯЗАТЕЛЬНЫЙ ТЕКУЩИЙ ШАГ ИЗ MODE_STEPS ━━━\n` +
+    `Сформулируй следующий вопрос на основе ЭТОГО шага. Не повторяй предыдущие вопросы.\n` +
+    `Можно адаптировать формулировку под слова пользователя, но нельзя игнорировать цель и направление шага.\n\n` +
+    `• step_number: ${step.step_number ?? "?"}\n` +
+    `• step_key: ${step.step_key || "—"}\n` +
+    `• goal (цель): ${step.goal || "—"}\n` +
+    `• question (направление): ${step.question || "—"}\n` +
+    (step.facilitator_hint ? `• facilitator_hint: ${step.facilitator_hint}\n` : "") +
+    (step.response_type ? `• expected_response_type: ${step.response_type}\n` : "") +
+    (step.related_term_ids ? `• related_term_ids: ${step.related_term_ids}\n` : "") +
+    `\nЗАДАЧА: задай ровно ОДИН вопрос, который продвигает именно этот шаг.\n` +
+    `Не задавай общий вопрос про карту/тело/диалог, если этот шаг прямо этого не требует.\n` +
+    `Используй точные слова пользователя.\n` +
+    langLine
+  );
 }
 
 function buildLanguageOverride(language) {
@@ -1462,7 +1551,8 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
     ? `\n\n🔚 ЗАВЕРШЕНИЕ ОБНАРУЖЕНО — сигнал: «${completionDetection.matchedSignal}». Отрази путь (начало→сейчас), признай сдвиг, задай МАКСИМУМ ОДИН мягкий закрывающий вопрос, затем завершай. ЗАПРЕЩЕНО: ещё один исследовательский вопрос, «что дальше?», повторное открытие материала.`
     : "";
 
-  const forcedInstruction = !isIntegrationStage && !completionDetection.isComplete && mappingStageComplete && forcedNext && NEXT_LAYER_INSTRUCTIONS[forcedNext]
+  // ModeStep wins when a valid step exists — only let NEXT_LAYER_INSTRUCTIONS drive when step is missing.
+  const forcedInstruction = !hasValidStep && !isIntegrationStage && !completionDetection.isComplete && mappingStageComplete && forcedNext && NEXT_LAYER_INSTRUCTIONS[forcedNext]
     ? `\n\n🔴 ОБЯЗАТЕЛЬНЫЙ СЛЕДУЮЩИЙ ШАГ: ${NEXT_LAYER_INSTRUCTIONS[forcedNext]}\n` +
       `НЕ задавай вопросы об уже пройденных слоях. Только этот шаг.\n` +
       (forcedNext === "transformation"
@@ -1477,18 +1567,20 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
     : "";
 
   const terms = await fetchRelatedTerms(step?.related_term_ids);
+  if (terms.length) {
+    console.log("[TERMS_CONTEXT_LOADED]", { count: terms.length, term_names: terms.map((t) => t.term) });
+  }
   const termsContext = terms.length
-    ? "\n\nРелевантные концепции Process Work:\n" +
+    ? "\n\nРелевантные концепции Process Work (используй ТОЛЬКО внутренне, чтобы выбрать правильный тип вмешательства):\n" +
       terms
         .map((t) => `• ${t.term}: ${t.short_definition || ""}${t.practical_application ? " | Применение: " + t.practical_application : ""}`)
-        .join("\n")
+        .join("\n") +
+      "\n\nНе объясняй теорию, если пользователь не просит. Не выдавай определения. Используй термины, чтобы выбрать правильный вопрос."
     : "";
 
-  const stepContext = step
-    ? `\n\nОриентир шага (используй как внутренний компас, не цитируй дословно):
-Цель: ${step.goal || "—"}
-Направление вопроса: ${step.question || "—"}
-${step.facilitator_hint ? `Подсказка: ${step.facilitator_hint}` : ""}`
+  const hasValidStep = !!(step && step.question);
+  const stepContext = hasValidStep
+    ? buildModeStepInstruction(step, language)
     : "\n\nВсе шаги пройдены. Мягко и тепло завершай сессию — без новых вопросов.";
 
   const modeShiftHint = step?.possible_mode_shift
@@ -1515,6 +1607,17 @@ ${userMessage}
 
   const fullPrompt = buildPrompt();
   const estimatedTokens = Math.ceil(fullPrompt.length / 4);
+
+  if (hasValidStep) {
+    console.log("[MODESTEP_ACTIVE]", {
+      mode_id: currentMode,
+      current_step: step.step_number ?? "?",
+      step_key: step.step_key || "—",
+      goal: step.goal || "—",
+      question: step.question || "—",
+      related_term_ids: step.related_term_ids || "—",
+    });
+  }
 
   console.log("[AI_RUNTIME] Pre-call diagnostics:", {
     mode: currentMode,
@@ -1583,6 +1686,9 @@ ${userMessage}
     completionDetected: completionDetection.isComplete,
     coveredLayers,
     resistanceCount,
+    step,
+    hasValidStep,
+    sessionId: session.id,
   };
 
   // ── Pass 1: initial generation ────────────────────────────────────────────
