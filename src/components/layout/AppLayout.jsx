@@ -12,6 +12,7 @@ import {
   Upload,
   ShieldAlert,
   BookOpen,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -29,6 +30,7 @@ const regularNavItems = [
 const adminNavItems = [
   { path: "/admin/import", label: "Импорт данных", icon: Upload },
   { path: "/admin/status", label: "Статус данных", icon: ShieldAlert },
+  { path: "/admin/feedback", label: "Отзывы beta", icon: MessageSquare },
 ];
 
 function NavContent({ currentPath, onNavigate, isAdmin }) {

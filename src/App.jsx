@@ -18,6 +18,7 @@ import Settings from './pages/Settings';
 import AppLayout from './components/layout/AppLayout';
 import AdminImport from './pages/AdminImport';
 import AdminDataStatus from './pages/AdminDataStatus';
+import AdminFeedback from './pages/AdminFeedback';
 import InsightLibrary from './pages/InsightLibrary';
 import InsightAgent from './pages/InsightAgent';
 import RequireAuth from './components/layout/RequireAuth';
@@ -79,6 +80,7 @@ const AuthenticatedApp = () => {
           <Route path="/insight-agent" element={<InsightAgent />} />
           <Route path="/admin/import" element={<ProtectedAdminRoute><AdminImport /></ProtectedAdminRoute>} />
           <Route path="/admin/status" element={<ProtectedAdminRoute><AdminDataStatus /></ProtectedAdminRoute>} />
+          <Route path="/admin/feedback" element={<ProtectedAdminRoute><AdminFeedback /></ProtectedAdminRoute>} />
         </Route>
 
         {/* Session pages (full screen, no sidebar) */}
