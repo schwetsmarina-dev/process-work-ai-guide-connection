@@ -1278,6 +1278,13 @@ export async function getAIResponse(session, step, messages, userMessage, langua
     .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
     .join("\n");
 
+  const hasValidStep = !!(step && step.question);
+  console.log("[MODESTEP_VALIDITY]", {
+    hasValidStep,
+    step_key: step?.step_key,
+    step_number: step?.step_number,
+  });
+
   const coveredLayers = detectCoveredLayers(messages);
   const isIntegrationStage = detectIntegrationStage(messages);
   const resistanceCount = detectResistanceCount(messages);
@@ -1578,7 +1585,6 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
       "\n\nНе объясняй теорию, если пользователь не просит. Не выдавай определения. Используй термины, чтобы выбрать правильный вопрос."
     : "";
 
-  const hasValidStep = !!(step && step.question);
   const stepContext = hasValidStep
     ? buildModeStepInstruction(step, language)
     : "\n\nВсе шаги пройдены. Мягко и тепло завершай сессию — без новых вопросов.";
