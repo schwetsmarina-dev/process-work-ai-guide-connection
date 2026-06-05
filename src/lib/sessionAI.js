@@ -232,6 +232,50 @@ function detectDreamContent(messages) {
   return { hasDreamContent: !!matchedSignal, reason, matchedSignal };
 }
 
+// ─── Initial material detection (body / conflict / journaling) ───────────────
+const BODY_MATERIAL_SIGNALS = [
+  "боль", "напряжение", "симптом", "ощущение", "тело", "усталость",
+  "тяжесть", "сжатие", "давление", "спазм",
+  "migraine", "migraña", "dolor", "tensión", "cuerpo", "cansancio", "síntoma",
+];
+
+const CONFLICT_MATERIAL_SIGNALS = [
+  "конфликт", "с одной стороны", "с другой стороны", "часть меня", "спор",
+  "не могу решить", "выбор", "уйти", "остаться",
+  "quiero", "no quiero", "conflicto", "por una parte", "por otra parte",
+  "una parte de mí", "decisión",
+];
+
+const JOURNALING_MATERIAL_SIGNALS = [
+  "хочу понять", "ситуация", "чувство", "вопрос", "тема", "мысль",
+  "не знаю что делать",
+  "quiero entender", "situación", "emoción", "pregunta", "tema", "pensamiento",
+];
+
+function detectInitialMaterial(messages, modeKey) {
+  const userMsgs = messages.filter((m) => m.role === "user");
+  const combined = userMsgs.map((m) => m.content.toLowerCase()).join(" ");
+
+  if (modeKey === "body") {
+    return BODY_MATERIAL_SIGNALS.some((s) => combined.includes(s));
+  }
+  if (modeKey === "conflict") {
+    return CONFLICT_MATERIAL_SIGNALS.some((s) => combined.includes(s));
+  }
+  if (modeKey === "journaling") {
+    const hasSignal = JOURNALING_MATERIAL_SIGNALS.some((s) => combined.includes(s));
+    const hasSubstance = userMsgs.some((m) => m.content.trim().length > 20);
+    return hasSignal || hasSubstance;
+  }
+  return true;
+}
+
+const INITIAL_MATERIAL_STAGE = {
+  body: "awaiting_body_signal",
+  conflict: "awaiting_conflict_material",
+  journaling: "awaiting_journaling_topic",
+};
+
 function detectProcessMappingStage(messages, modeId) {
   const modeKey = getModeKey(modeId);
   if (!modeKey) return { stage: "complete", primary_answer: null, secondary_answer: null, dream_shared: true };
@@ -245,6 +289,14 @@ function detectProcessMappingStage(messages, modeId) {
 
   if (isDream && !dream_shared) {
     return { stage: "awaiting_dream", primary_answer: null, secondary_answer: null, dream_shared: false };
+  }
+
+  // Initial material collection for body / conflict / journaling
+  if (!isDream && INITIAL_MATERIAL_STAGE[modeKey]) {
+    const hasMaterial = detectInitialMaterial(messages, modeKey);
+    if (!hasMaterial) {
+      return { stage: INITIAL_MATERIAL_STAGE[modeKey], primary_answer: null, secondary_answer: null, dream_shared: true };
+    }
   }
 
   let primaryQuestionIndex = -1;
@@ -661,6 +713,9 @@ const EDGE_LIMIT_FALLBACK = "Похоже, сейчас важнее не идт
 
 const SAFE_FALLBACKS = {
   awaiting_dream: "Расскажи мне свой сон так, как ты его помнишь. Какие моменты или чувства в нём самые заметные?",
+  awaiting_body_signal: "Что в теле ты хочешь исследовать сейчас? Это может быть симптом, напряжение, ощущение, боль, усталость или любой телесный сигнал.",
+  awaiting_conflict_material: "Опиши, пожалуйста, конфликт, который ты хочешь исследовать. Какие стороны, желания или позиции в нём сталкиваются?",
+  awaiting_journaling_topic: "О чём ты хочешь поисследовать сегодня? Это может быть ситуация, чувство, вопрос, мысль или тема, которая сейчас занимает внимание.",
   awaiting_primary: "Если смотреть на этот сон целиком — что в нём больше всего откликается с твоей реальной жизнью, привычными чувствами или знакомыми состояниями?",
   awaiting_secondary: "А что в этом сне кажется тебе самым непривычным, странным, новым или не совсем похожим на тебя?",
   mismatch_dream: "Ты права, я перескочил вперёд. Сначала важно услышать сам сон целиком. Расскажи его так, как он тебе запомнился.",
@@ -677,6 +732,27 @@ const SAFE_FALLBACKS = {
 function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue, userSelectedFocus, completionDetected, coveredLayers, resistanceCount }, validationContext) {
   if (!validationContext) validationContext = { completionDetected };
   const lower = responseText.toLowerCase();
+
+  // 0pre. INITIAL MATERIAL gate (body / conflict / journaling) — block primary/secondary questions
+  const INITIAL_MATERIAL_STAGES = ["awaiting_body_signal", "awaiting_conflict_material", "awaiting_journaling_topic"];
+  if (INITIAL_MATERIAL_STAGES.includes(mappingStageValue)) {
+    const PRIMARY_SECONDARY_PHRASES = [
+      "что здесь знакомо", "что для тебя привычно", "что похоже на твой обычный способ",
+      "какая сторона привычнее", "что связано с обычной жизнью",
+      "как ты обычно объясняешь", "более привычная", "уже понятно, знакомо",
+      "что в этом странное", "что здесь нового", "что непривычное",
+    ];
+    const hit = PRIMARY_SECONDARY_PHRASES.find((p) => lower.includes(p));
+    if (hit) {
+      const modeForLog = (currentMode || "").toLowerCase();
+      console.warn("[INITIAL_MATERIAL_REQUIRED]", { mode: modeForLog, stage: mappingStageValue, primaryQuestionBlocked: true });
+      return {
+        isValid: false,
+        reason: `Initial material gate violated: primary/secondary question asked before material collected ("${hit}")`,
+        correctedInstruction: "First collect the user's actual material/complaint/topic for this mode. Do not map primary/secondary yet.",
+      };
+    }
+  }
 
   // 0. RUSSIAN PROCESS LANGUAGE check — must run first
   const UNNATURAL_RUSSIAN_PATTERNS = [
@@ -1050,6 +1126,9 @@ function getSafeFallback(currentMode, forcedNextLayer, integrationLock, mappingS
     if (mappingStage.stage === "awaiting_secondary") return SAFE_FALLBACKS.awaiting_secondary;
   }
   if (mappingStage?.stage === "awaiting_dream") return SAFE_FALLBACKS.awaiting_dream;
+  if (mappingStage?.stage === "awaiting_body_signal") return SAFE_FALLBACKS.awaiting_body_signal;
+  if (mappingStage?.stage === "awaiting_conflict_material") return SAFE_FALLBACKS.awaiting_conflict_material;
+  if (mappingStage?.stage === "awaiting_journaling_topic") return SAFE_FALLBACKS.awaiting_journaling_topic;
   if (mappingStage?.stage === "awaiting_primary") return SAFE_FALLBACKS.awaiting_primary;
   if (mappingStage?.stage === "awaiting_secondary") return SAFE_FALLBACKS.awaiting_secondary;
   if (forcedNextLayer === "transformation") return SAFE_FALLBACKS.transformation;
@@ -1132,6 +1211,20 @@ export async function getAIResponse(session, step, messages, userMessage, langua
     : "";
 
   const modeKey = getModeKey(currentMode);
+  const INITIAL_MATERIAL_QUESTIONS = {
+    body: {
+      ru: "Что в теле ты хочешь исследовать сейчас? Это может быть симптом, напряжение, ощущение, боль, усталость или любой телесный сигнал.",
+      es: "¿Qué señal del cuerpo quieres explorar ahora? Puede ser un síntoma, una tensión, una sensación, dolor, cansancio o cualquier señal corporal.",
+    },
+    conflict: {
+      ru: "Опиши, пожалуйста, конфликт, который ты хочешь исследовать. Какие стороны, желания или позиции в нём сталкиваются?",
+      es: "Describe, por favor, el conflicto que quieres explorar. ¿Qué partes, deseos o posiciones chocan en él?",
+    },
+    journaling: {
+      ru: "О чём ты хочешь поисследовать сегодня? Это может быть ситуация, чувство, вопрос, мысль или тема, которая сейчас занимает внимание.",
+      es: "¿Qué quieres explorar hoy? Puede ser una situación, una emoción, una pregunta, un pensamiento o un tema que ocupa tu atención.",
+    },
+  };
   const PRIMARY_QUESTIONS = {
     dream:      "Что из этого сна больше всего откликается с твоей реальной жизнью, привычными чувствами или знакомыми ситуациями?",
     body:       "Как ты обычно объясняешь это ощущение? Что в нём для тебя понятно, знакомо или связано с твоей обычной жизнью?",
@@ -1205,7 +1298,19 @@ export async function getAIResponse(session, step, messages, userMessage, langua
       `ЗАПРЕЩЕНО: переадресовывать, уходить в коучинг, задавать вопросы о теле или образах.`;
   }
   else if (!isDreamAlreadyTold && !mappingStageComplete && !isIntegrationStage && modeKey) {
-    if (mappingStage.stage === "awaiting_dream") {
+    const initialStageForMode = INITIAL_MATERIAL_STAGE[modeKey];
+    if (initialStageForMode && mappingStage.stage === initialStageForMode) {
+      const q = (INITIAL_MATERIAL_QUESTIONS[modeKey] || {})[language === "es" ? "es" : "ru"];
+      console.warn("[INITIAL_MATERIAL_REQUIRED]", { mode: modeKey, stage: mappingStage.stage, primaryQuestionBlocked: true });
+      mappingStageInstruction = `\n\n🔴 СТАДИЯ: СБОР ИСХОДНОГО МАТЕРИАЛА (${mappingStage.stage})\n` +
+        `Пользователь ещё НЕ описал материал для этого режима. Задай ТОЛЬКО:\n` +
+        `«${q}»\n\n` +
+        `АБСОЛЮТНО ЗАПРЕЩЕНО до получения материала:\n` +
+        `✗ Вопросы про первичный/вторичный процесс\n` +
+        `✗ «что здесь знакомо», «что для тебя привычно», «какая сторона привычнее»\n` +
+        `✗ Вопросы про тело-исследование, образы, смысл\n` +
+        `✗ Любые уточнения, рефлексии, интерпретации`;
+    } else if (mappingStage.stage === "awaiting_dream") {
       mappingStageInstruction = `\n\n🔴 СТАДИЯ: ОЖИДАНИЕ СНОВИДЕНИЯ\n` +
         `Пользователь ещё НЕ рассказал свой сон. Задай ТОЛЬКО:\n` +
         `«Расскажи мне свой сон так, как ты его помнишь. Какие моменты или чувства в нём самые заметные?»\n\n` +
