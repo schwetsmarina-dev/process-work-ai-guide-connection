@@ -42,7 +42,7 @@ export default function ChatMessage({ message, sessionId, sourceMode }) {
         >
           <p className="whitespace-pre-wrap">{message.content}</p>
         </div>
-        {isAssistant && sessionId && (
+        {isUser && sessionId && (
           <SaveInsightButton
             messageContent={message.content}
             sessionId={sessionId}
