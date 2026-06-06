@@ -1,6 +1,10 @@
 import { base44 } from "@/api/base44Client";
 import { COMPLETION_SIGNALS, detectCompletionState } from "@/lib/sessionSignals";
 import { SYSTEM_PROMPT } from "@/lib/systemPrompt";
+import {
+  extractStageAnswersFromUserMessages,
+  detectUserAlreadyAnswered,
+} from "@/lib/stageExtraction";
 
 // ─── Crisis detection ────────────────────────────────────────────────────────
 const CRISIS_KEYWORDS = [
@@ -276,96 +280,6 @@ const INITIAL_MATERIAL_STAGE = {
   journaling: "awaiting_journaling_topic",
 };
 
-// ─── Semantic stage extraction (user may answer future stages early) ─────────
-const PRIMARY_SEMANTIC_MARKERS = [
-  // RU
-  "привычная часть", "более привычная", "знакомая часть", "это мне знакомо",
-  "обычно я", "мой обычный способ", "это похоже на меня", "мне ближе",
-  "повседневная часть",
-  // ES
-  "la parte habitual", "más familiar", "me resulta familiar", "mi forma habitual",
-  "se parece a mí", "me es más cercana",
-];
-
-const SECONDARY_SEMANTIC_MARKERS = [
-  // RU
-  "странно", "странная часть", "странные для меня", "непривычно", "непривычная часть",
-  "новое", "непонятно", "труднее принять", "вызывает напряжение",
-  "не похоже на меня", "удивляет",
-  // ES
-  "extraño", "raro", "poco habitual", "nuevo", "difícil de aceptar",
-  "no se parece a mí", "me sorprende", "me genera tensión",
-];
-
-const FOCUS_SEMANTIC_MARKERS = [
-  // RU
-  "сильнее всего", "больше всего цепляет", "самое заряженное", "хочу исследовать",
-  "главное", "для меня важнее", "выбираю", "интереснее", "мне хочется пойти туда",
-  // ES
-  "lo más vivo", "lo que más me toca", "lo más cargado", "quiero explorar",
-  "elijo", "me interesa más",
-];
-
-// User explicitly says they already answered / asks to re-read prior messages
-const ALREADY_ANSWERED_MARKERS = [
-  // RU
-  "я же написала", "я же написал", "я уже написала", "я уже написал",
-  "я уже ответила", "я уже ответил", "прочитай мое первое сообщение",
-  "прочитай моё первое сообщение", "прочитай предыдущее сообщение",
-  "прочитай первое сообщение", "сам ответь", "ты повторяешь",
-  "я вынуждена повторять", "я вынужден повторять",
-  // ES
-  "ya lo escribí", "ya respondí", "lee mi mensaje anterior",
-  "lee el primer mensaje", "me estás repitiendo",
-];
-
-function detectUserAlreadyAnswered(userMessage) {
-  const lower = (userMessage || "").toLowerCase();
-  return ALREADY_ANSWERED_MARKERS.some((m) => lower.includes(m));
-}
-
-// Extract the sentence around the first matched marker so we keep concrete words
-function extractSentenceAround(text, marker) {
-  const lower = text.toLowerCase();
-  const idx = lower.indexOf(marker);
-  if (idx === -1) return null;
-  const sentences = text.split(/(?<=[.!?\n])\s+/);
-  let cursor = 0;
-  for (const s of sentences) {
-    const end = cursor + s.length;
-    if (idx >= cursor && idx <= end + 1) return s.trim();
-    cursor = end + 1;
-  }
-  return text.slice(Math.max(0, idx - 40), idx + 80).trim();
-}
-
-function extractStageAnswersFromUserMessages(messages) {
-  const userMsgs = messages.filter((m) => m.role === "user");
-  let primary_answer = null;
-  let secondary_answer = null;
-  let selected_focus = null;
-
-  for (const m of userMsgs) {
-    const text = m.content;
-    const lower = text.toLowerCase();
-
-    if (!primary_answer) {
-      const pm = PRIMARY_SEMANTIC_MARKERS.find((mk) => lower.includes(mk));
-      if (pm) primary_answer = extractSentenceAround(text, pm) || text;
-    }
-    if (!secondary_answer) {
-      const sm = SECONDARY_SEMANTIC_MARKERS.find((mk) => lower.includes(mk));
-      if (sm) secondary_answer = extractSentenceAround(text, sm) || text;
-    }
-    if (!selected_focus) {
-      const fm = FOCUS_SEMANTIC_MARKERS.find((mk) => lower.includes(mk));
-      if (fm) selected_focus = extractSentenceAround(text, fm) || text;
-    }
-  }
-
-  return { primary_answer, secondary_answer, selected_focus };
-}
-
 function detectProcessMappingStage(messages, modeId) {
   const modeKey = getModeKey(modeId);
   if (!modeKey) return { stage: "complete", primary_answer: null, secondary_answer: null, dream_shared: true };
@@ -420,18 +334,22 @@ function detectProcessMappingStage(messages, modeId) {
   }
 
   // ── Merge with semantic extraction (user may have answered stages early) ──
-  const semantic = extractStageAnswersFromUserMessages(messages);
+  const semantic = extractStageAnswersFromUserMessages(messages, modeKey, detectInitialMaterial);
   primary_answer = primary_answer || semantic.primary_answer;
   secondary_answer = secondary_answer || semantic.secondary_answer;
   const selected_focus = semantic.selected_focus || null;
+  const integration_material = semantic.integration_material || null;
+  const closure_signal = semantic.closure_signal || null;
+
+  const base = { primary_answer, secondary_answer, selected_focus, integration_material, closure_signal, dream_shared };
 
   if (!primary_answer) {
-    return { stage: "awaiting_primary", primary_answer, secondary_answer, selected_focus, dream_shared };
+    return { stage: "awaiting_primary", ...base };
   }
   if (!secondary_answer) {
-    return { stage: "awaiting_secondary", primary_answer, secondary_answer, selected_focus, dream_shared };
+    return { stage: "awaiting_secondary", ...base };
   }
-  return { stage: "complete", primary_answer, secondary_answer, selected_focus, dream_shared };
+  return { stage: "complete", ...base };
 }
 
 // ─── Process Map (for dream map context display) ──────────────────────────────
@@ -1452,9 +1370,12 @@ export async function getAIResponse(session, step, messages, userMessage, langua
     const nextStage = mappingStage.stage;
     console.warn("[USER_ALREADY_ANSWERED_STAGE]", {
       mode: modeKeyEarly,
+      detected_initial_material: !!extractStageAnswersFromUserMessages(messages, modeKeyEarly, detectInitialMaterial).initial_material,
       detected_primary: !!mappingStage.primary_answer,
       detected_secondary: !!mappingStage.secondary_answer,
       detected_focus: !!mappingStage.selected_focus,
+      detected_integration: !!mappingStage.integration_material,
+      detected_closure: !!mappingStage.closure_signal,
       next_stage: nextStage,
     });
   }
