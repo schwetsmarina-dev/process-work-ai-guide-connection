@@ -101,6 +101,25 @@ const translations = {
     onb_step5_text:
       "Твоё первое путешествие начинается. Следуй за тем, что привлекает внимание — это и есть твой процесс.",
     onb_step5_button: "Начать сессию",
+    // Journal / My history
+    journal_title: "Дневник",
+    journal_subtitle: "Обзор ваших сессий, инсайтов и прогресса",
+    journal_recent_sessions: "Последние сессии",
+    journal_my_insights: "Мои инсайты",
+    journal_progress: "Прогресс",
+    journal_read_full: "Читать полностью",
+    journal_collapse: "Свернуть",
+    journal_repeat_session: "Повторить сессию",
+    journal_add_favorite: "В избранное",
+    journal_favorited: "В избранном",
+    journal_no_sessions: "У вас пока нет завершённых сессий",
+    journal_no_insights: "У вас пока нет сохранённых инсайтов",
+    journal_stat_sessions: "Сессий завершено",
+    journal_stat_insights: "Инсайтов сохранено",
+    journal_stat_top_mode: "Любимый режим",
+    journal_stat_first_session: "Первая сессия",
+    journal_stat_last_session: "Последняя сессия",
+    journal_no_data: "—",
   },
   es: {
     // Settings
@@ -194,6 +213,25 @@ const translations = {
     onb_step5_text:
       "Tu primer viaje comienza. Sigue aquello que llama tu atención — eso es tu proceso.",
     onb_step5_button: "Iniciar sesión",
+    // Journal / My history
+    journal_title: "Diario",
+    journal_subtitle: "Resumen de tus sesiones, insights y progreso",
+    journal_recent_sessions: "Últimas sesiones",
+    journal_my_insights: "Mis insights",
+    journal_progress: "Progreso",
+    journal_read_full: "Leer completo",
+    journal_collapse: "Contraer",
+    journal_repeat_session: "Repetir sesión",
+    journal_add_favorite: "A favoritos",
+    journal_favorited: "En favoritos",
+    journal_no_sessions: "Aún no tienes sesiones completadas",
+    journal_no_insights: "Aún no tienes insights guardados",
+    journal_stat_sessions: "Sesiones completadas",
+    journal_stat_insights: "Insights guardados",
+    journal_stat_top_mode: "Modo favorito",
+    journal_stat_first_session: "Primera sesión",
+    journal_stat_last_session: "Última sesión",
+    journal_no_data: "—",
   },
 };
 

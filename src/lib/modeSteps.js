@@ -2,10 +2,10 @@
 // The database tables ModeStep, Mode, Term are the source of truth.
 
 export const MODE_LABELS = {
-  body: { ru: "Сигнал тела", en: "Body Signal" },
-  dream: { ru: "Работа со сном", en: "Dream Exploration" },
-  conflict: { ru: "Внутренний конфликт", en: "Inner Conflict" },
-  journaling: { ru: "Дневник", en: "Guided Journaling" },
+  body: { ru: "Сигнал тела", en: "Body Signal", es: "Señal corporal" },
+  dream: { ru: "Работа со сном", en: "Dream Exploration", es: "Trabajo con sueños" },
+  conflict: { ru: "Внутренний конфликт", en: "Inner Conflict", es: "Conflicto interno" },
+  journaling: { ru: "Дневник", en: "Guided Journaling", es: "Diario reflexivo" },
 };
 
 export const MODE_ICONS = {

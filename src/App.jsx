@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard';
 import SessionChat from './pages/SessionChat';
 import SessionSummary from './pages/SessionSummary';
 import History from './pages/History';
+import Journal from './pages/Journal';
 import Insights from './pages/Insights';
 import Settings from './pages/Settings';
 import AppLayout from './components/layout/AppLayout';
@@ -73,6 +74,7 @@ const AuthenticatedApp = () => {
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/journal" element={<Journal />} />
           <Route path="/history" element={<History />} />
           <Route path="/insights" element={<Insights />} />
           <Route path="/settings" element={<Settings />} />
