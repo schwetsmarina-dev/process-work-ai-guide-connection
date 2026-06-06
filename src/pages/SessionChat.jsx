@@ -70,6 +70,7 @@ export default function SessionChat() {
 
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
+  const [sessionComplete, setSessionComplete] = useState(false);
   const [stepError, setStepError] = useState(false);
   const [stepDebugInfo, setStepDebugInfo] = useState(null);
   const [sendError, setSendError] = useState(false);
@@ -379,9 +380,8 @@ export default function SessionChat() {
       if (nextStep) {
         await base44.entities.Session.update(sessionId, { current_step: nextStep });
       } else {
-        // No next step — complete session
-        await handleEndSessionSilent(updatedMessages);
-        return;
+        // No next step — final closing message shown; reveal "Завершить сессию" button instead of auto-redirect
+        setSessionComplete(true);
       }
 
       queryClient.invalidateQueries({ queryKey: ["session", sessionId, currentUser?.email] });
@@ -622,6 +622,20 @@ export default function SessionChat() {
                 />
               )}
 
+              {/* Session complete — clear closing + explicit end button */}
+              {sessionComplete && !isAiLoading && (
+                <div className="flex flex-col items-center gap-3 p-5 rounded-2xl border border-primary/20 bg-primary/5 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    {language === "es"
+                      ? "Esta sesión ha llegado a su cierre natural."
+                      : "Эта сессия подошла к естественному завершению."}
+                  </p>
+                  <Button size="lg" onClick={handleEndSession}>
+                    {language === "es" ? "Finalizar sesión" : "Завершить сессию"}
+                  </Button>
+                </div>
+              )}
+
               {/* Mode shift suggestion */}
               {shiftSuggestion && (
                 <div className="flex flex-col gap-3 p-4 rounded-xl border border-primary/20 bg-primary/5">
@@ -651,7 +665,7 @@ export default function SessionChat() {
               <ChatInput
                 onSend={handleSend}
                 isLoading={isAiLoading}
-                disabled={!!stepError || !!shiftSuggestion || isAdminView}
+                disabled={!!stepError || !!shiftSuggestion || isAdminView || sessionComplete}
               />
             </div>
           </div>
