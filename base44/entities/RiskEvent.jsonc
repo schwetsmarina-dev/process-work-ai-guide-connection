@@ -10,6 +10,10 @@
       "type": "string",
       "description": "Reference to Session"
     },
+    "message_id": {
+      "type": "string",
+      "description": "Reference to Message that triggered the risk"
+    },
     "detected_at": {
       "type": "string",
       "format": "date-time"

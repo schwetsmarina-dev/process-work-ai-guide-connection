@@ -109,6 +109,10 @@ export default function Dashboard() {
       "user:", currentUser?.email
     );
 
+    if (appUser?.id) {
+      await base44.entities.AppUser.update(appUser.id, { last_session_id: session.id }).catch(() => {});
+    }
+
     navigate(`/session/${session.id}`);
   };
 

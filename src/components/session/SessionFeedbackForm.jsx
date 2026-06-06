@@ -35,6 +35,7 @@ export default function SessionFeedbackForm({ session, user, language }) {
     setSaving(true);
     await base44.entities.SessionFeedback.create({
       session_id: session.id,
+      user_id: user.id,
       user_email: user.email,
       mode_id: session.mode_id || session.mode,
       language: lang,

@@ -296,7 +296,7 @@ export default function SessionChat() {
 
     try {
       // Save user message to backend
-      await createMessage({ session_id: sessionId, mode_id: modeId, step_number: currentStep, role: "user", content: text });
+      const savedUserMsg = await createMessage({ session_id: sessionId, mode_id: modeId, step_number: currentStep, role: "user", content: text });
       console.log("[CHAT_FLOW] 2. user message saved");
 
       // Clear optimistic after save
@@ -308,6 +308,8 @@ export default function SessionChat() {
         await createMessage({ session_id: sessionId, role: "system", content: CRISIS_MESSAGE });
         await base44.entities.RiskEvent.create({
           session_id: sessionId,
+          message_id: savedUserMsg?.id,
+          user_id: currentUser?.id,
           risk_type: "suicide_mention",
           severity: "high",
           trigger_text: text.substring(0, 500),
@@ -454,6 +456,11 @@ export default function SessionChat() {
           signals: summaryData.signals || [],
           next_step_suggestion: summaryData.next_step_suggestion || "",
         });
+      }
+
+      // Keep AppUser.last_session_id pointing at the most recent session
+      if (appUser?.id) {
+        await base44.entities.AppUser.update(appUser.id, { last_session_id: sessionId }).catch(() => {});
       }
 
       // ── Persist memory via backend (service role, silent, idempotent) ────

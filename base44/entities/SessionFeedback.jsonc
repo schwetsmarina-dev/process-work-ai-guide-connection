@@ -6,6 +6,10 @@
       "type": "string",
       "description": "Reference to Session"
     },
+    "user_id": {
+      "type": "string",
+      "description": "Reference to AppUser"
+    },
     "user_email": {
       "type": "string",
       "description": "Email of the user giving feedback"

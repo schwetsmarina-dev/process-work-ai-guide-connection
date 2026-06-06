@@ -19,6 +19,10 @@
       "type": "number",
       "default": 0
     },
+    "last_session_id": {
+      "type": "string",
+      "description": "Reference to last active or recent Session"
+    },
     "created_at": {
       "type": "string",
       "format": "date-time"

@@ -53,6 +53,9 @@ export default function Onboarding({ appUser, currentUser, onComplete }) {
           current_step: 1,
           started_at: new Date().toISOString(),
         });
+        if (appUser?.id) {
+          await base44.entities.AppUser.update(appUser.id, { last_session_id: session.id }).catch(() => {});
+        }
         onComplete?.();
         navigate(`/session/${session.id}`);
         return;
