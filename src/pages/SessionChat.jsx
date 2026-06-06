@@ -15,8 +15,6 @@ import { createMessage, listMessages } from "@/lib/messageApi";
 import {
   loadUserMemories,
   formatMemoriesForPrompt,
-  extractMemoriesFromSession,
-  saveUserMemories,
 } from "@/lib/userMemory";
 import SessionHeader from "@/components/session/SessionHeader";
 import ChatMessage from "@/components/session/ChatMessage";
@@ -458,17 +456,12 @@ export default function SessionChat() {
         });
       }
 
-      // ── Analyze session & persist memory (update, dedupe, cap at 20) ──────
-      try {
-        const memoryItems = await extractMemoriesFromSession(sessionMessages);
-        await saveUserMemories(currentUser?.id, memoryItems, {
-          sessionId,
-          modeId: session.mode_id,
-        });
-        console.log("[SessionFlow] memory saved:", memoryItems.length, "types");
-      } catch (memErr) {
-        console.error("[SessionFlow] memory save failed:", memErr?.message);
-      }
+      // ── Persist memory via backend (service role, silent, idempotent) ────
+      // Fire-and-forget: do NOT await — must not delay the redirect or surface errors.
+      base44.functions
+        .invoke("persistSessionMemory", { session_id: sessionId })
+        .then((res) => console.log("[SessionFlow] memory persist requested:", res?.data))
+        .catch((memErr) => console.error("[SessionFlow] memory persist request failed (silent):", memErr?.message));
     } catch (e) {
       console.error("[SessionFlow] finalization error:", e.message);
       await base44.entities.Session.update(sessionId, {
