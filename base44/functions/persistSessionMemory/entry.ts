@@ -22,9 +22,9 @@ async function extractMemories(base44, messages) {
       prompt: `Ты — процессуально-ориентированный аналитик. Внимательно проанализируй сессию ниже и извлеки память о пользователе.
 ОБЯЗАТЕЛЬНО заполни хотя бы themes, progress и (если есть) insights — НЕ возвращай пустые массивы, если в диалоге есть хоть какое-то содержание. Опирайся на реальные слова и темы пользователя, не выдумывай.
 
-ВАЖНОЕ ПРАВИЛО ФОРМУЛИРОВОК: пиши каждое значение БЕЗ слова «пользователь» — короткими фразами от третьего лица без подлежащего, как заметки о человеке.
+КРИТИЧЕСКОЕ ПРАВИЛО ФОРМУЛИРОВОК (СТРОГО): НИКОГДА не используй слова «пользователь», «человек», «он», «она» как подлежащее. Каждое значение — короткая безличная фраза от третьего лица БЕЗ подлежащего, как заметка о человеке.
 Например: «Избегает телесного контакта», «Чувствует тревогу при финансовых решениях», «Склонен к самокритике», «Замечает паттерн избегания», «Осознал, что...».
-НЕ пиши «Пользователь испытывает...», «Пользователь осознал...».
+СТРОГО ЗАПРЕЩЕНО начинать фразу со слов «Пользователь», «Человек», «Он», «Она» (например НЕЛЬЗЯ: «Пользователь испытывает...», «Пользователь осознал...»).
 
 Поля:
 - insights: ключевые открытия/осознания пользователя
@@ -67,7 +67,13 @@ ${conversation}`,
     progress: !!result.progress,
   });
 
-  const join = (arr) => (Array.isArray(arr) ? arr.filter(Boolean).join('; ') : '');
+  // Remove leading impersonal subject ("Пользователь/Человек/Он/Она") from each phrase.
+  const stripSubject = (s) =>
+    String(s || '')
+      .replace(/(^|;\s*)(пользовател[ьяюе]|человек|он|она)\s+/giu, (_m, sep) => sep)
+      .replace(/(^|;\s*)([а-яё])/gu, (_m, sep, ch) => sep + ch.toUpperCase());
+
+  const join = (arr) => (Array.isArray(arr) ? arr.filter(Boolean).map(stripSubject).join('; ') : '');
   const items = [];
   const insights = join(result.insights);
   const patterns = join(result.patterns);
@@ -78,8 +84,8 @@ ${conversation}`,
   if (patterns) items.push({ memory_type: 'pattern', memory_key: 'patterns', memory_value: patterns });
   if (themes) items.push({ memory_type: 'theme', memory_key: 'themes', memory_value: themes });
   if (bodySignals) items.push({ memory_type: 'body_signal', memory_key: 'body_signals', memory_value: bodySignals });
-  if (result.edge && result.edge !== 'null') items.push({ memory_type: 'edge', memory_key: 'edge', memory_value: result.edge });
-  if (result.progress) items.push({ memory_type: 'progress', memory_key: 'progress', memory_value: result.progress });
+  if (result.edge && result.edge !== 'null') items.push({ memory_type: 'edge', memory_key: 'edge', memory_value: stripSubject(result.edge) });
+  if (result.progress) items.push({ memory_type: 'progress', memory_key: 'progress', memory_value: stripSubject(result.progress) });
 
   return items;
 }
