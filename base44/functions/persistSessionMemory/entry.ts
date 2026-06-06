@@ -26,6 +26,8 @@ async function extractMemories(base44, messages) {
 Например: «Избегает телесного контакта», «Чувствует тревогу при финансовых решениях», «Склонен к самокритике», «Замечает паттерн избегания», «Осознал, что...».
 СТРОГО ЗАПРЕЩЕНО начинать фразу со слов «Пользователь», «Человек», «Он», «Она» (например НЕЛЬЗЯ: «Пользователь испытывает...», «Пользователь осознал...»).
 
+ВАЖНО ПРО ЯЗЫК: пиши значения на том же языке, на котором говорил человек в сессии (русский или испанский). Если сессия на испанском — то же правило: НИКОГДА не начинай с «El usuario», «La persona», «Él», «Ella». Пиши безличными фразами от третьего лица без подлежащего (например: «Evita el contacto físico», «Siente ansiedad ante decisiones financieras», «Tiende a la autocrítica»).
+
 Поля:
 - insights: ключевые открытия/осознания пользователя
 - patterns: повторяющиеся паттерны реакций или поведения
@@ -67,11 +69,12 @@ ${conversation}`,
     progress: !!result.progress,
   });
 
-  // Remove leading impersonal subject ("Пользователь/Человек/Он/Она") from each phrase.
+  // Remove leading impersonal subject (RU: Пользователь/Человек/Он/Она, ES: El usuario/La persona/Él/Ella) from each phrase.
   const stripSubject = (s) =>
     String(s || '')
       .replace(/(^|;\s*)(пользовател[ьяюе]|человек|он|она)\s+/giu, (_m, sep) => sep)
-      .replace(/(^|;\s*)([а-яё])/gu, (_m, sep, ch) => sep + ch.toUpperCase());
+      .replace(/(^|;\s*)(el usuario|la usuaria|la persona|él|ella|el)\s+/giu, (_m, sep) => sep)
+      .replace(/(^|;\s*)([а-яёa-zñáéíóú])/gu, (_m, sep, ch) => sep + ch.toUpperCase());
 
   const join = (arr) => (Array.isArray(arr) ? arr.filter(Boolean).map(stripSubject).join('; ') : '');
   const items = [];
