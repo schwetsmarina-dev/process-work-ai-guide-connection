@@ -86,8 +86,14 @@ export default function Dashboard() {
       return;
     }
 
+    if (!currentUser?.id) {
+      console.error("[SessionFlow] Cannot create session — current user not loaded");
+      alert("Профиль пользователя ещё не загружен. Обновите страницу и попробуйте снова.");
+      return;
+    }
+
     const session = await base44.entities.Session.create({
-      user_id: currentUser?.id,
+      user_id: currentUser.id,
       mode_id: modeId,
       mode: modeId,
       status: "active",
