@@ -7,12 +7,15 @@ import { Button } from "@/components/ui/button";
 import RecentSessionCard from "@/components/dashboard/RecentSessionCard";
 import ModeCardDB from "@/components/dashboard/ModeCardDB";
 import AdminPanel from "@/components/dashboard/AdminPanel";
+import ExistingSessionDialog from "@/components/dashboard/ExistingSessionDialog";
 import { normalizeLang, t } from "@/lib/i18n";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [appUser, setAppUser] = useState(null);
+  const [pendingMode, setPendingMode] = useState(null);
+  const [existingActive, setExistingActive] = useState(null);
   const lang = normalizeLang(appUser?.language || "ru");
 
   useEffect(() => {
@@ -42,6 +45,40 @@ export default function Dashboard() {
   const recentSessions = sessions.filter((s) => s.status !== "active").slice(0, 5);
 
   const handleModeSelect = async (mode) => {
+    const modeId = mode.mode_id;
+
+    // Guard: if an active session already exists for this user+mode, ask before creating
+    const existing = sessions.find((s) => s.status === "active" && (s.mode_id || s.mode) === modeId);
+    if (existing) {
+      console.log("[SessionFlow] existing active session found for mode:", modeId, "→", existing.id);
+      setPendingMode(mode);
+      setExistingActive(existing);
+      return;
+    }
+
+    await createSession(mode);
+  };
+
+  const handleContinueExisting = () => {
+    if (existingActive) navigate(`/session/${existingActive.id}`);
+    setExistingActive(null);
+    setPendingMode(null);
+  };
+
+  const handleStartNew = async () => {
+    if (existingActive) {
+      await base44.entities.Session.update(existingActive.id, {
+        status: "abandoned",
+        ended_at: new Date().toISOString(),
+      }).catch(() => {});
+    }
+    const mode = pendingMode;
+    setExistingActive(null);
+    setPendingMode(null);
+    if (mode) await createSession(mode);
+  };
+
+  const createSession = async (mode) => {
     const modeId = mode.mode_id;
     const stepKey = `${modeId}_1`;
 
@@ -131,6 +168,13 @@ export default function Dashboard() {
 
       {/* Admin quick-access panel */}
       {isAdmin && <AdminPanel />}
+
+      <ExistingSessionDialog
+        open={!!existingActive}
+        onContinue={handleContinueExisting}
+        onStartNew={handleStartNew}
+        onOpenChange={(o) => { if (!o) { setExistingActive(null); setPendingMode(null); } }}
+      />
 
       {/* Active session banner */}
       {activeSession && (
