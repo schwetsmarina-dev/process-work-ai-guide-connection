@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import RecentSessionCard from "@/components/dashboard/RecentSessionCard";
+import RegenerateSummaryButton, { needsRegenerate } from "@/components/history/RegenerateSummaryButton";
 
 export default function History() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -11,7 +12,7 @@ export default function History() {
     base44.auth.me().then(setCurrentUser);
   }, []);
 
-  const { data: sessions = [], isLoading } = useQuery({
+  const { data: sessions = [], isLoading, refetch } = useQuery({
     queryKey: ["sessions-all", currentUser?.email],
     queryFn: () => base44.entities.Session.filter({ created_by: currentUser.email }, "-created_date", 50),
     enabled: !!currentUser?.email,
@@ -33,7 +34,14 @@ export default function History() {
       ) : (
         <div className="space-y-2">
           {sessions.map((session) => (
-            <RecentSessionCard key={session.id} session={session} />
+            <div key={session.id} className="space-y-2">
+              <RecentSessionCard session={session} />
+              {session.status === "completed" && needsRegenerate(session) && (
+                <div className="flex justify-end px-1">
+                  <RegenerateSummaryButton session={session} onUpdated={refetch} />
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}

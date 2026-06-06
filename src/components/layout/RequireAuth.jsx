@@ -33,6 +33,11 @@ async function ensureAppUser(user) {
       last_seen_at: new Date().toISOString(),
     });
   }
+
+  // Fire-and-forget: clean up stale "active" sessions older than 24h
+  base44.functions
+    .invoke("abandonStaleSessions", {})
+    .catch((e) => console.warn("abandonStaleSessions failed (silent):", e?.message));
 }
 
 export default function RequireAuth() {
