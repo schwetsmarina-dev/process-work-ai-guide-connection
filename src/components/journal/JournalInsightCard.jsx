@@ -1,5 +1,5 @@
 import React from "react";
-import { Heart } from "lucide-react";
+import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getModeIcon } from "./modeVisual";
 import { t } from "@/lib/i18n";
@@ -27,7 +27,7 @@ export default function JournalInsightCard({ insight, lang, onToggleFavorite, is
               disabled={isUpdating}
               onClick={() => onToggleFavorite(insight)}
             >
-              <Heart className={`w-3.5 h-3.5 ${fav ? "fill-current text-rose-500" : ""}`} />
+              <Star className={`w-3.5 h-3.5 ${fav ? "fill-amber-400 text-amber-400" : ""}`} />
               {fav ? t("journal_favorited", lang) : t("journal_add_favorite", lang)}
             </Button>
           </div>
