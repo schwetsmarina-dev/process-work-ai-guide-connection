@@ -31,9 +31,33 @@ export function detectFocusChange(userMessage) {
   return FOCUS_CHANGE_SIGNALS.some((s) => lower.includes(s));
 }
 
+// Classify the intervention type of an assistant question (for intervention memory).
+const INTERVENTION_TYPE_MARKERS = {
+  immersion:     ["остаёшься", "остаешься", "продолжаешь находиться", "продолжаешь чувствовать", "permaneces", "sigues sintiendo"],
+  amplification: ["стать чуть сильнее", "усилить", "если позволить этому", "не сдерживать", "amplificar", "un poco más fuerte"],
+  body:          ["в теле", "тело реагирует", "телесно", "en el cuerpo", "tu cuerpo"],
+  resource:      ["устойчивее", "опора", "ресурс", "безопаснее", "más estable", "apoyo", "recurso"],
+  polarity:      ["какая часть", "полярность", "по-старому", "una parte", "polaridad"],
+  movement:      ["хочет сделать", "импульс", "куда это движется", "движение", "impulso", "se mueve"],
+  atmosphere:    ["атмосфера", "пространство", "вокруг этого", "atmósfera", "espacio"],
+  dialogue:      ["могло сказать", "если бы у этого был голос", "послание", "diría", "mensaje"],
+  edge:          ["трудно выдерживать", "мешает полностью войти", "грань", "difícil de sostener"],
+  temporal:      ["что происходит дальше", "продолжает расширяться", "что начинает происходить", "qué ocurre después"],
+};
+
+export function detectLastInterventionType(messages) {
+  const lastAssistant = [...(messages || [])].reverse().find((m) => m.role === "assistant");
+  if (!lastAssistant) return null;
+  const lower = lastAssistant.content.toLowerCase();
+  for (const [type, markers] of Object.entries(INTERVENTION_TYPE_MARKERS)) {
+    if (markers.some((mk) => lower.includes(mk))) return type;
+  }
+  return null;
+}
+
 // Build the locked sessionState from the mapping stage + covered layers.
 // mappingStage comes from detectProcessMappingStage; coveredLayers is a Set.
-export function buildSessionState({ mappingStage, userSelectedFocus, isIntegrationStage, completionDetected, coveredLayers }) {
+export function buildSessionState({ mappingStage, userSelectedFocus, isIntegrationStage, completionDetected, coveredLayers, resistanceCount = 0, lastInterventionType = null, userFrustrationDetected = false }) {
   const primary_locked = !!mappingStage?.primary_answer;
   const secondary_locked = !!mappingStage?.secondary_answer;
   const focus_locked = !!userSelectedFocus || !!mappingStage?.selected_focus || !!mappingStage?.focus_locked;
@@ -77,6 +101,9 @@ export function buildSessionState({ mappingStage, userSelectedFocus, isIntegrati
     exploration_depth,
     integration_detected: !!isIntegrationStage,
     closure_detected: !!completionDetected,
+    resistance_count: resistanceCount || 0,
+    last_intervention_type: lastInterventionType || null,
+    user_frustration_detected: !!userFrustrationDetected,
     current_stage: currentStage,
     current_stage_rank: STAGE_RANK[currentStage] || 1,
   };
