@@ -94,6 +94,20 @@ export async function fetchStep(modeId, stepNumber) {
     return match;
   }
 
+  // Resilient fallback: the mode HAS steps, but none match the requested number
+  // (e.g. session.current_step advanced past the last step, or a gap in numbering).
+  // Never strand the user with "Step not found" — fall back to the closest available step.
+  const sorted = [...forMode].sort((a, b) => a._stepNum - b._stepNum);
+  const nextHigher = sorted.find((s) => s._stepNum >= stepNum);
+  const fallback = nextHigher || sorted[0];
+  if (fallback) {
+    console.warn(
+      `[FETCH_STEP_DEBUG] No exact match for step ${stepNum} — falling back to step "${fallback._stepKey || fallback._stepNum}" ` +
+      `(mode="${modeIdClean}", availableKeys=[${availableKeys.join(", ")}])`
+    );
+    return fallback;
+  }
+
   console.error(
     `[FETCH_STEP_DEBUG] NOT FOUND — modeId="${modeIdClean}" stepKey="${stepKey}" ` +
     `availableKeys=[${availableKeys.join(", ")}]`
