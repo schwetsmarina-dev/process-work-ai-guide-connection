@@ -5,6 +5,11 @@ import {
   extractStageAnswersFromUserMessages,
   detectUserAlreadyAnswered,
 } from "@/lib/stageExtraction";
+import {
+  buildSessionState,
+  detectFocusChange,
+  validateNoStageRegression,
+} from "@/lib/stageLocks";
 
 // ─── Crisis detection ────────────────────────────────────────────────────────
 const CRISIS_KEYWORDS = [
@@ -743,9 +748,28 @@ const SAFE_FALLBACKS = {
   dream_mapping: "Давай продолжим намечать карту. Что в этом сне кажется более знакомым или устойчивым — а что удивляет или тянет, как будто что-то новое?",
 };
 
-function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue, userSelectedFocus, completionDetected, coveredLayers, resistanceCount, step, hasValidStep, sessionId, userAlreadyAnswered, mappingStageObj }, validationContext) {
+function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue, userSelectedFocus, completionDetected, coveredLayers, resistanceCount, step, hasValidStep, sessionId, userAlreadyAnswered, mappingStageObj, sessionState, userChangedFocus }, validationContext) {
   if (!validationContext) validationContext = { completionDetected };
   const lower = responseText.toLowerCase();
+
+  // 0lock. STAGE MEMORY LOCKS + ANTI-REGRESSION (all modes) — runs first.
+  // Once primary/secondary/focus is locked, reject re-asking earlier stages.
+  if (sessionState) {
+    const regression = validateNoStageRegression(responseText, sessionState, userChangedFocus);
+    if (!regression.isValid) {
+      console.warn(regression.log, {
+        session_id: sessionId,
+        current_stage: sessionState.current_stage,
+        attempted_stage: regression.reason,
+        question: responseText.slice(0, 120),
+      });
+      return {
+        isValid: false,
+        reason: regression.reason,
+        correctedInstruction: regression.correctedInstruction,
+      };
+    }
+  }
 
   // 0arep. REPEATED STAGE QUESTION — user said they already answered, reject re-asking the same stage question
   if (userAlreadyAnswered) {
@@ -1545,6 +1569,24 @@ export async function getAIResponse(session, step, messages, userMessage, langua
   }
   const userSelectedFocus = assistantReflectedMap && messagesAfterSecondary.some((m) => m.role === "user");
 
+  // ── Stage memory locks + anti-regression state ──────────────────────────────
+  const userChangedFocus = detectFocusChange(userMessage);
+  const sessionState = buildSessionState({
+    mappingStage,
+    userSelectedFocus,
+    isIntegrationStage,
+    completionDetected: completionDetection.isComplete,
+    coveredLayers,
+  });
+  console.log("[STAGE_LOCKS]", {
+    primary_locked: sessionState.primary_locked,
+    secondary_locked: sessionState.secondary_locked,
+    focus_locked: sessionState.focus_locked,
+    current_stage: sessionState.current_stage,
+    current_stage_rank: sessionState.current_stage_rank,
+    userChangedFocus,
+  });
+
   const mappingCompleteContext = mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer
     ? !assistantReflectedMap
       ? `\n\n✅ КАРТА ЗАВЕРШЕНА — СЛЕДУЮЩИЙ ШАГ: ОТРАЖЕНИЕ ВТОРИЧНОГО ПОЛЯ + ВЫБОР ЭНЕРГИИ\n` +
@@ -1769,6 +1811,8 @@ ${userMessage}
     sessionId: session.id,
     userAlreadyAnswered,
     mappingStageObj: mappingStage,
+    sessionState,
+    userChangedFocus,
   };
 
   // ── Pass 1: initial generation ────────────────────────────────────────────
