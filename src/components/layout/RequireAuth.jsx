@@ -58,8 +58,9 @@ export default function RequireAuth() {
     );
   }
 
+  // Auth gating is handled upstream by ProtectedRoute (redirects to /login).
+  // RequireAuth now only ensures the AppUser record exists for the authenticated user.
   if (!isAuthenticated) {
-    base44.auth.redirectToLogin(window.location.pathname);
     return null;
   }
 

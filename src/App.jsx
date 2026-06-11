@@ -23,6 +23,12 @@ import AdminFeedback from './pages/AdminFeedback';
 import InsightLibrary from './pages/InsightLibrary';
 import InsightAgent from './pages/InsightAgent';
 import RequireAuth from './components/layout/RequireAuth';
+import { Navigate } from 'react-router-dom';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function ProtectedAdminRoute({ children }) {
   const [status, setStatus] = React.useState("loading");
@@ -70,24 +76,32 @@ const AuthenticatedApp = () => {
       {/* Public landing page */}
       <Route path="/" element={<Landing />} />
 
-      {/* Authenticated routes */}
-      <Route element={<RequireAuth />}>
-        <Route element={<AppLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/journal" element={<Journal />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/insights" element={<Insights />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/insights-library" element={<InsightLibrary />} />
-          <Route path="/insight-agent" element={<InsightAgent />} />
-          <Route path="/admin/import" element={<ProtectedAdminRoute><AdminImport /></ProtectedAdminRoute>} />
-          <Route path="/admin/status" element={<ProtectedAdminRoute><AdminDataStatus /></ProtectedAdminRoute>} />
-          <Route path="/admin/feedback" element={<ProtectedAdminRoute><AdminFeedback /></ProtectedAdminRoute>} />
-        </Route>
+      {/* Public custom auth pages */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* Session pages (full screen, no sidebar) */}
-        <Route path="/session/:id" element={<SessionChat />} />
-        <Route path="/session/:id/summary" element={<SessionSummary />} />
+      {/* Authenticated routes — gated by ProtectedRoute, unauthenticated users go to /login */}
+      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+        <Route element={<RequireAuth />}>
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/journal" element={<Journal />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/insights" element={<Insights />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/insights-library" element={<InsightLibrary />} />
+            <Route path="/insight-agent" element={<InsightAgent />} />
+            <Route path="/admin/import" element={<ProtectedAdminRoute><AdminImport /></ProtectedAdminRoute>} />
+            <Route path="/admin/status" element={<ProtectedAdminRoute><AdminDataStatus /></ProtectedAdminRoute>} />
+            <Route path="/admin/feedback" element={<ProtectedAdminRoute><AdminFeedback /></ProtectedAdminRoute>} />
+          </Route>
+
+          {/* Session pages (full screen, no sidebar) */}
+          <Route path="/session/:id" element={<SessionChat />} />
+          <Route path="/session/:id/summary" element={<SessionSummary />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<PageNotFound />} />
