@@ -15,6 +15,7 @@ import { extractInsightsFromSession } from "@/lib/insightAI";
 import FullSessionReport from "@/components/session/FullSessionReport";
 import SessionFeedbackForm from "@/components/session/SessionFeedbackForm";
 import SummaryActions from "@/components/session/SummaryActions";
+import SessionNotFoundDiagnostic from "@/components/session/SessionNotFoundDiagnostic";
 import { normalizeLang, t } from "@/lib/i18n";
 
 const iconMap = { Heart, Moon, GitBranch, PenLine };
@@ -81,6 +82,17 @@ export default function SessionSummary() {
   }
 
   if (accessDenied || (!isLoading && currentUser && !session)) {
+    const params = new URLSearchParams(window.location.search);
+    const fromFeedback = params.get("from") === "feedback";
+    const isAdmin = currentUser?.role === "admin" || currentUser?.email === "schwets.marina@gmail.com";
+    if (fromFeedback && isAdmin) {
+      return (
+        <SessionNotFoundDiagnostic
+          sessionId={sessionId}
+          fromFeedback={{ userEmail: params.get("fe"), createdAt: params.get("fc") }}
+        />
+      );
+    }
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-muted-foreground">Сессия не найдена</p>
@@ -135,6 +147,11 @@ export default function SessionSummary() {
             <p className="text-sm leading-relaxed text-muted-foreground">
               {session.summary || t("summary_missing", language)}
             </p>
+            {session.confidence_note && session.summary && session.summary !== "Сессия завершена. Резюме недоступно." && (
+              <p className="text-xs text-muted-foreground/70 italic mt-3 pt-3 border-t border-border">
+                {session.confidence_note}
+              </p>
+            )}
           </Card>
         </motion.div>
 

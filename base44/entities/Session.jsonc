@@ -45,6 +45,10 @@
       "type": "string",
       "description": "AI-generated session summary"
     },
+    "confidence_note": {
+      "type": "string",
+      "description": "Disclaimer note that the summary is automatic and should be checked by the user"
+    },
     "themes": {
       "type": "array",
       "items": {

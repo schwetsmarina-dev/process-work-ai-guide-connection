@@ -119,7 +119,13 @@ export default function AdminFeedback() {
               <FeedbackCard
                 key={item.id}
                 item={item}
-                onOpenSession={(sid) => navigate(`/session/${sid}/summary`)}
+                onOpenSession={(sid) =>
+                  navigate(
+                    `/session/${sid}/summary?from=feedback` +
+                    `&fe=${encodeURIComponent(item.user_email || "")}` +
+                    `&fc=${encodeURIComponent(item.created_at || item.created_date || "")}`
+                  )
+                }
               />
             ))}
             {filtered.length === 0 && (

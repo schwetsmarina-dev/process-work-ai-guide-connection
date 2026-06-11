@@ -175,6 +175,17 @@ function detectDreamAlreadyTold(userMessage) {
   return DREAM_ALREADY_TOLD_SIGNALS.some((sig) => lower.includes(sig));
 }
 
+// Beginner confusion signals — when present, offer simple choices instead of deepening.
+const BEGINNER_CONFUSION_SIGNALS = [
+  "не знаю", "сложно сказать", "не понимаю", "непонятно",
+  "затрудняюсь", "не чувствую", "не могу описать", "трудно сказать",
+];
+
+function detectBeginnerConfusion(userMessage) {
+  const lower = userMessage.toLowerCase().trim();
+  return BEGINNER_CONFUSION_SIGNALS.some((sig) => lower.includes(sig));
+}
+
 const MISMATCH_SIGNALS = [
   "я ещё не рассказала", "я ещё не рассказал", "я не рассказывала",
   "ты перескочил", "ты перескочила", "откуда это", "это не то",
@@ -867,6 +878,21 @@ export async function getAIResponse(session, step, messages, userMessage, langua
       `'Что для тебя было самым важным в этой сессии?' or 'Какой инсайт тебе хочется сохранить?' or 'Что сейчас кажется самым ценным?'`
     : "";
 
+  const isBeginnerConfused = detectBeginnerConfusion(userMessage);
+  const isBodyModeEarly = (currentMode || "").toLowerCase().includes("body");
+  if (isBeginnerConfused) {
+    console.log("[BEGINNER_CHOICES_OFFERED]", { mode: currentMode, userMessage: userMessage.slice(0, 60) });
+  }
+  const beginnerChoicesInstruction = isBeginnerConfused
+    ? `\n\n🟢 ПОЛЬЗОВАТЕЛЬ ЗАТРУДНЯЕТСЯ ОТВЕТИТЬ — НЕ УГЛУБЛЯЙ\n` +
+      `Пользователь сказал, что не знает / сложно сказать / не понимает. Не углубляйся и не дави.\n` +
+      `Тепло предложи варианты на выбор (используй короткий список):\n` +
+      (isBodyModeEarly
+        ? `«Можно выбрать из вариантов:\n— напряжение\n— давление\n— тепло\n— холод\n— пустота\n— движение\n— пульсация\n— или что-то другое?»`
+        : `«Это больше похоже на:\n— страх\n— злость\n— усталость\n— сопротивление\n— интерес\n— облегчение\n— или что-то своё?»`) +
+      `\nТолько в этом случае список вариантов разрешён.`
+    : "";
+
   const mappingStage = detectProcessMappingStage(messages, currentMode);
   const mappingStageComplete = mappingStage.stage === "complete";
   const isDreamMode = (currentMode || "").toLowerCase().includes("dream");
@@ -1260,7 +1286,7 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
     : "";
 
   const buildPrompt = (extraInstruction = "") =>
-    `${SYSTEM_PROMPT}${languageOverride}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${alreadyAnsweredInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${focusContinuity}${edgeLimitInstruction}${extraInstruction}
+    `${SYSTEM_PROMPT}${languageOverride}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${alreadyAnsweredInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${focusContinuity}${edgeLimitInstruction}${beginnerChoicesInstruction}${extraInstruction}
 
 Режим: ${currentMode}
 
@@ -1422,10 +1448,12 @@ const FALLBACK_SUMMARY = {
   themes: [],
   signals: [],
   next_step_suggestion: "",
+  confidence_note: "Это автоматическое резюме. Проверь, насколько оно тебе откликается.",
   memories: [],
 };
 
-export async function generateSessionSummary(session, messages) {
+export async function generateSessionSummary(session, messages, language = "ru") {
+  const lang = language === "es" ? "es" : "ru";
   const conversation = messages
     .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
@@ -1435,16 +1463,42 @@ export async function generateSessionSummary(session, messages) {
     setTimeout(() => reject(new Error("timeout")), 15000)
   );
 
+  const confidenceNote = lang === "es"
+    ? "Este resumen es automático. Comprueba si refleja tu experiencia."
+    : "Это автоматическое резюме. Проверь, насколько оно тебе откликается.";
+
+  const langInstruction = lang === "es"
+    ? "Escribe TODO en español natural."
+    : "Пиши ВСЁ на русском языке.";
+
   const llmPromise = base44.integrations.Core.InvokeLLM({
     prompt: `Ты — процессуально-ориентированный фасилитатор. Проанализируй эту сессию и выдай ТОЛЬКО JSON без markdown:
 {
-  "summary": "связный абзац 3-5 предложений — что происходило, какой процесс разворачивался, к чему пришли",
+  "summary": "описательный абзац 3-5 предложений — что звучало и что исследовалось в сессии",
   "themes": ["тема 1", "тема 2", "тема 3"],
   "signals": ["телесный или эмоциональный сигнал 1", "сигнал 2"],
-  "next_step_suggestion": "одна конкретная рекомендация — что исследовать в следующий раз",
-  "mode_fit": "был ли выбранный режим подходящим, или стоит попробовать другой — одна фраза"
+  "next_step_suggestion": "одна возможная тема для следующей сессии",
+  "confidence_note": "${confidenceNote}"
 }
-Пиши на русском языке. Будь конкретным, не общим.
+
+🔴 КРИТИЧЕСКОЕ ПРАВИЛО — НЕ ВЫДУМЫВАЙ РЕЗУЛЬТАТЫ КЛИЕНТА:
+НЕ утверждай, что клиент понял, осознал, достиг, к чему-то пришёл или что-то интегрировал — ЕСЛИ пользователь не сказал это прямо.
+
+ЗАПРЕЩЕНО:
+✗ «ты поняла», «ты осознала», «ты пришла к», «ты смогла»
+✗ «у тебя появился», «стало ясно», «произошла трансформация»
+
+РАЗРЕШЕНО (описательно, не оценочно):
+✓ «В сессии звучали...»
+✓ «Пользователь исследовала...»
+✓ «Появлялись темы...»
+✓ «Были отмечены...»
+✓ «В конце сессии пользователь сказала...»
+✓ «Возможная тема для следующей сессии...»
+
+Резюме должно быть ОПИСАТЕЛЬНЫМ, а не оценочным. Не приписывай инсайты, которых пользователь не выразил словами.
+
+${langInstruction} Будь конкретным, опирайся на реальные слова из диалога.
 
 Режим: ${session.mode_id || session.mode}
 
@@ -1457,7 +1511,7 @@ ${conversation}`,
         themes: { type: "array", items: { type: "string" } },
         signals: { type: "array", items: { type: "string" } },
         next_step_suggestion: { type: "string" },
-        mode_fit: { type: "string" },
+        confidence_note: { type: "string" },
       },
     },
   });

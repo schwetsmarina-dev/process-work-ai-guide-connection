@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Star, MessageSquare, CheckCircle2, Loader2 } from "lucide-react";
+import { Star, MessageSquare, CheckCircle2, Loader2, Send } from "lucide-react";
 import { normalizeLang, t } from "@/lib/i18n";
 
 export default function SessionFeedbackForm({ session, user, language }) {
@@ -140,7 +140,14 @@ export default function SessionFeedbackForm({ session, user, language }) {
         </div>
 
         <Button onClick={handleSubmit} disabled={saving} className="w-full rounded-xl">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : t("feedback_submit", lang)}
+          {saving ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <>
+              <Send className="w-4 h-4 mr-2" />
+              {t("feedback_submit", lang)}
+            </>
+          )}
         </Button>
       </div>
     </Card>
