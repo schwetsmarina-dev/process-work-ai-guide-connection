@@ -36,7 +36,8 @@ export function detectFocusChange(userMessage) {
 export function buildSessionState({ mappingStage, userSelectedFocus, isIntegrationStage, completionDetected, coveredLayers }) {
   const primary_locked = !!mappingStage?.primary_answer;
   const secondary_locked = !!mappingStage?.secondary_answer;
-  const focus_locked = !!userSelectedFocus || !!mappingStage?.selected_focus;
+  const focus_locked = !!userSelectedFocus || !!mappingStage?.selected_focus || !!mappingStage?.focus_locked;
+  const exploration_active = !!mappingStage?.exploration_active || focus_locked;
 
   const selected_process_focus =
     mappingStage?.selected_focus || null;
@@ -67,6 +68,7 @@ export function buildSessionState({ mappingStage, userSelectedFocus, isIntegrati
     primary_locked,
     secondary_locked,
     focus_locked,
+    exploration_active,
     selected_process_focus,
     current_exploration_target: selected_process_focus,
     exploration_depth: coveredLayers ? coveredLayers.size : 0,
@@ -115,10 +117,44 @@ export function classifyProposedStage(responseText) {
   return null;
 }
 
+// Hard-blocked phrases once focus is locked OR exploration is active (all modes).
+const FOCUS_LOCKED_FORBIDDEN_PHRASES = [
+  // RU
+  "какой момент сна", "какой образ сна", "самым ярким", "что кажется странным",
+  "что кажется непривычным", "что в этом знакомо", "что больше всего откликается",
+  "где больше энергии", "что из этого цепляет",
+  // ES
+  "qué momento del sueño", "qué imagen del sueño", "lo más llamativo",
+  "qué parece extraño", "qué parece poco habitual", "qué te resulta familiar",
+  "dónde hay más energía", "qué te toca más",
+];
+
 // Core anti-regression validator. Returns { isValid, reason, correctedInstruction, log }.
 export function validateNoStageRegression(responseText, sessionState, userChangedFocus) {
   if (userChangedFocus) {
     return { isValid: true };
+  }
+
+  const lowerResp = (responseText || "").toLowerCase();
+
+  // FOCUS LOCK HARD BLOCK — once focus locked or exploration active, reject any
+  // mapping / image-selection / energy-selection phrase outright.
+  if (sessionState.focus_locked || sessionState.exploration_active) {
+    const hit = FOCUS_LOCKED_FORBIDDEN_PHRASES.find((p) => lowerResp.includes(p));
+    if (hit) {
+      return {
+        isValid: false,
+        log: "[FOCUS_REGRESSION_BLOCKED]",
+        reason: `Focus locked / exploration active — forbidden mapping phrase "${hit}" (rank ${sessionState.current_stage_rank})`,
+        correctedInstruction:
+          "Focus is already locked. Continue unfolding selected_process_focus. " +
+          "Do not return to mapping, image selection, or energy selection. " +
+          (sessionState.selected_process_focus
+            ? `Выбранный фокус: «${String(sessionState.selected_process_focus).substring(0, 120)}». `
+            : "") +
+          "Пример: «Если этот образ продолжает расширяться, что происходит дальше?»",
+      };
+    }
   }
 
   const proposedStage = classifyProposedStage(responseText);

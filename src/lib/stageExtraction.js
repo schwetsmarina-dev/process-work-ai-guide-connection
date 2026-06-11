@@ -69,10 +69,12 @@ export const ALREADY_ANSWERED_MARKERS = [
   "прочитай", "сам ответь", "ты повторяешь",
   "я вынуждена повторять", "я вынужден повторять",
   "ты уже спрашивал", "ты уже спрашивала",
+  "не поняла вопрос", "не понял вопрос", "не понимаю", "не понял",
+  "я же уже говорила", "я же уже говорил", "я уже это говорила", "я уже это говорил",
   // ES
   "ya lo escribí", "ya respondí", "ya lo dije", "lee mi mensaje anterior",
   "lee mi primer mensaje", "lee el primer mensaje", "respóndelo tú",
-  "me estás repitiendo", "ya me lo preguntaste",
+  "me estás repitiendo", "ya me lo preguntaste", "no entiendo", "no entendí",
 ];
 
 export function detectUserAlreadyAnswered(userMessage) {

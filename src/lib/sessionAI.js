@@ -345,8 +345,16 @@ function detectProcessMappingStage(messages, modeId) {
   const selected_focus = semantic.selected_focus || null;
   const integration_material = semantic.integration_material || null;
   const closure_signal = semantic.closure_signal || null;
+  const initial_material = semantic.initial_material || null;
 
-  const base = { primary_answer, secondary_answer, selected_focus, integration_material, closure_signal, dream_shared };
+  // Focus lock + exploration detection (all modes)
+  const focus_locked = !!selected_focus;
+  const exploration_active = focus_locked || detectUnfoldingSignals(messages);
+
+  const base = {
+    primary_answer, secondary_answer, selected_focus, integration_material,
+    closure_signal, initial_material, dream_shared, focus_locked, exploration_active,
+  };
 
   if (!primary_answer) {
     return { stage: "awaiting_primary", ...base };
@@ -355,6 +363,36 @@ function detectProcessMappingStage(messages, modeId) {
     return { stage: "awaiting_secondary", ...base };
   }
   return { stage: "complete", ...base };
+}
+
+// Unfolding / exploration signals — once present, exploration is active.
+const UNFOLDING_SIGNALS = [
+  // RU
+  "расцветает", "расширяется", "растёт", "растет", "становится", "много света",
+  "радость", "изобилие", "свобода", "рост", "энергия", "меняется", "развивается",
+  // ES
+  "florece", "se expande", "crece", "luz", "alegría", "abundancia", "libertad",
+  "energía", "cambia", "se desarrolla",
+];
+
+function detectUnfoldingSignals(messages) {
+  const combined = messages
+    .filter((m) => m.role === "user")
+    .map((m) => m.content.toLowerCase())
+    .join(" ");
+  return UNFOLDING_SIGNALS.some((s) => combined.includes(s));
+}
+
+// Stage rank — higher = later. Used to block backward regression.
+export function getCurrentStageRank(mappingStage) {
+  if (mappingStage.closure_signal) return 7;
+  if (mappingStage.integration_material) return 6;
+  if (mappingStage.exploration_active) return 5;
+  if (mappingStage.focus_locked) return 5;
+  if (mappingStage.primary_answer && mappingStage.secondary_answer) return 4;
+  if (mappingStage.primary_answer) return 3;
+  if (mappingStage.dream_shared || mappingStage.initial_material) return 2;
+  return 1;
 }
 
 // ─── Process Map (for dream map context display) ──────────────────────────────
@@ -664,10 +702,15 @@ function detectResistanceCount(messages) {
   return count;
 }
 
-function getForcedNextLayer(modeId, coveredLayers) {
+// Layers that represent mapping / focus-selection — never allowed once focus is locked.
+const BACKWARD_LAYERS = new Set(["process_mapping", "atmosphere", "dream_image"]);
+
+function getForcedNextLayer(modeId, coveredLayers, mappingStage) {
   const modeKey = modeId?.toLowerCase().replace(/[^a-z]/g, "") || "";
   const chainKey = Object.keys(FORWARD_CHAIN).find((k) => modeKey.includes(k)) || null;
   if (!chainKey) return null;
+
+  const focusLocked = !!(mappingStage?.focus_locked || mappingStage?.exploration_active);
 
   const chain = FORWARD_CHAIN[chainKey];
   let forcedNext = null;
@@ -677,6 +720,11 @@ function getForcedNextLayer(modeId, coveredLayers) {
     }
   }
   if (forcedNext && coveredLayers.has(forcedNext)) return null;
+
+  // Once focus is locked, never force a backward mapping/image/atmosphere layer.
+  if (focusLocked && forcedNext && BACKWARD_LAYERS.has(forcedNext)) {
+    return coveredLayers.has("immersion") ? "message" : "immersion";
+  }
   return forcedNext;
 }
 
@@ -1419,7 +1467,7 @@ export async function getAIResponse(session, step, messages, userMessage, langua
     ? null
     : needsMapping
     ? null
-    : getForcedNextLayer(currentMode, coveredLayers);
+    : getForcedNextLayer(currentMode, coveredLayers, mappingStage);
   const isLooping = detectLoopInLastExchanges(messages);
 
   const layerStatus = coveredLayers.size > 0
@@ -1687,6 +1735,19 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
     ? `\n\n⚠️ ПЕТЛЯ ОБНАРУЖЕНА: немедленно переходи к следующему слою. Скажи: «Похоже, мы хорошо изучили этот уровень. Давай двинемся глубже.»`
     : "";
 
+  // FOCUS LOCK — once focus is selected, force unfolding (no return to mapping/image/energy)
+  const focusContinuity = (mappingStage.focus_locked || mappingStage.exploration_active)
+    ? `\n\n🔒 ФОКУС ЗАБЛОКИРОВАН — РАЗВОРАЧИВАНИЕ АКТИВНО\n` +
+      (mappingStage.selected_focus
+        ? `Выбранный фокус (selected_process_focus): «${String(mappingStage.selected_focus).substring(0, 160)}».\n`
+        : `Пользователь уже выбрал фокус и начал его разворачивать.\n`) +
+      `ЗАПРЕЩЕНО возвращаться к: сбору материала, первичному/вторичному вопросу, выбору энергии, выбору образа сна.\n` +
+      `ЗАПРЕЩЕНЫ фразы: «какой момент сна был самым ярким», «какой образ сна», «что кажется странным», «что больше всего откликается», «где больше энергии», «что из этого цепляет».\n` +
+      `ОБЯЗАТЕЛЬНО: продолжай разворачивать именно выбранный фокус. Примеры:\n` +
+      `RU: «Если этот образ продолжает расширяться, что происходит дальше?» / «Что становится возможным, когда в тебе есть этот свет, изобилие и рост?» / «Как меняется твоё состояние, когда этот образ занимает больше пространства?»\n` +
+      `ES: «Si esto sigue expandiéndose, ¿qué ocurre después?» / «¿Qué se vuelve posible cuando hay en ti esta luz, abundancia y crecimiento?»`
+    : "";
+
   const terms = await fetchRelatedTerms(step?.related_term_ids);
   if (terms.length) {
     console.log("[TERMS_CONTEXT_LOADED]", { count: terms.length, term_names: terms.map((t) => t.term) });
@@ -1708,7 +1769,7 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
     : "";
 
   const buildPrompt = (extraInstruction = "") =>
-    `${SYSTEM_PROMPT}${languageOverride}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${alreadyAnsweredInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${edgeLimitInstruction}${extraInstruction}
+    `${SYSTEM_PROMPT}${languageOverride}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${alreadyAnsweredInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${focusContinuity}${edgeLimitInstruction}${extraInstruction}
 
 Режим: ${currentMode}
 
