@@ -41,6 +41,17 @@ export function buildSessionState({ mappingStage, userSelectedFocus, isIntegrati
 
   const selected_process_focus =
     mappingStage?.selected_focus || null;
+  const current_process_target =
+    mappingStage?.current_process_target || selected_process_focus || null;
+
+  // Number of distinct exploration-layer covered → exploration depth.
+  const EXPLORATION_LAYERS = [
+    "immersion", "transformation", "interaction", "movement",
+    "image", "atmosphere", "message", "part_b", "quality", "emotion", "localization",
+  ];
+  const exploration_depth = coveredLayers
+    ? EXPLORATION_LAYERS.filter((l) => coveredLayers.has(l)).length
+    : 0;
 
   // Determine current highest reached stage rank.
   let currentStage = "material";
@@ -48,19 +59,10 @@ export function buildSessionState({ mappingStage, userSelectedFocus, isIntegrati
   if (secondary_locked) currentStage = "secondary";
   if (focus_locked) currentStage = "focus_selection";
 
-  // Exploration begins once focus is locked AND the user has produced any
-  // exploration-layer material after focus selection.
-  const explorationActive =
-    focus_locked &&
-    (coveredLayers?.has("immersion") ||
-      coveredLayers?.has("transformation") ||
-      coveredLayers?.has("interaction") ||
-      coveredLayers?.has("movement") ||
-      coveredLayers?.has("image") ||
-      coveredLayers?.has("atmosphere") ||
-      coveredLayers?.has("message") ||
-      coveredLayers?.has("part_b"));
-  if (explorationActive) currentStage = "exploration";
+  // Exploration is active once focus is locked OR the user is actively unfolding.
+  if (exploration_active || (focus_locked && exploration_depth >= 1)) {
+    currentStage = "exploration";
+  }
   if (isIntegrationStage) currentStage = "integration";
   if (completionDetected) currentStage = "closure";
 
@@ -70,8 +72,11 @@ export function buildSessionState({ mappingStage, userSelectedFocus, isIntegrati
     focus_locked,
     exploration_active,
     selected_process_focus,
-    current_exploration_target: selected_process_focus,
-    exploration_depth: coveredLayers ? coveredLayers.size : 0,
+    current_process_target,
+    current_exploration_target: current_process_target,
+    exploration_depth,
+    integration_detected: !!isIntegrationStage,
+    closure_detected: !!completionDetected,
     current_stage: currentStage,
     current_stage_rank: STAGE_RANK[currentStage] || 1,
   };

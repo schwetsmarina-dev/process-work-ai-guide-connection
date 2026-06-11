@@ -30,10 +30,12 @@ const FOCUS_SEMANTIC_MARKERS = [
   // RU
   "сильнее всего", "больше всего цепляет", "самое заряженное", "хочу исследовать",
   "главное", "для меня важнее", "выбираю", "интереснее", "мне хочется пойти туда",
-  "больше энергии", "самое живое",
+  "больше энергии", "самое живое", "больше всего", "самое важное", "цепляет",
+  "тянет", "сам заказ", "беременность", "радость", "цветок", "гибискус",
   // ES
   "lo más vivo", "lo que más me toca", "lo más cargado", "quiero explorar",
   "elijo", "me interesa más", "lo más importante", "donde hay más energía",
+  "me atrae", "la flor", "alegría",
 ];
 
 const INTEGRATION_SEMANTIC_MARKERS = [

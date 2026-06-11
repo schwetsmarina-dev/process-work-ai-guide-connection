@@ -348,12 +348,14 @@ function detectProcessMappingStage(messages, modeId) {
   const initial_material = semantic.initial_material || null;
 
   // Focus lock + exploration detection (all modes)
-  const focus_locked = !!selected_focus;
+  const current_process_target = detectCurrentProcessTarget(messages);
+  const focus_locked = !!selected_focus || !!current_process_target;
   const exploration_active = focus_locked || detectUnfoldingSignals(messages);
 
   const base = {
     primary_answer, secondary_answer, selected_focus, integration_material,
     closure_signal, initial_material, dream_shared, focus_locked, exploration_active,
+    current_process_target,
   };
 
   if (!primary_answer) {
@@ -369,10 +371,11 @@ function detectProcessMappingStage(messages, modeId) {
 const UNFOLDING_SIGNALS = [
   // RU
   "расцветает", "расширяется", "растёт", "растет", "становится", "много света",
-  "радость", "изобилие", "свобода", "рост", "энергия", "меняется", "развивается",
+  "солнечный свет", "радость", "изобилие", "широта", "свобода", "рост", "энергия",
+  "меняется", "развивается", "разворачивается", "раскрывается",
   // ES
-  "florece", "se expande", "crece", "luz", "alegría", "abundancia", "libertad",
-  "energía", "cambia", "se desarrolla",
+  "florece", "se expande", "crece", "se desarrolla", "luz", "alegría",
+  "abundancia", "libertad", "energía", "cambia", "se abre",
 ];
 
 function detectUnfoldingSignals(messages) {
@@ -381,6 +384,24 @@ function detectUnfoldingSignals(messages) {
     .map((m) => m.content.toLowerCase())
     .join(" ");
   return UNFOLDING_SIGNALS.some((s) => combined.includes(s));
+}
+
+// Extract a short "current_process_target" — the concrete image/process the user
+// is actively unfolding. Looks at recent user messages for unfolding language and
+// returns the surrounding sentence (capped).
+function detectCurrentProcessTarget(messages) {
+  const userMsgs = messages.filter((m) => m.role === "user");
+  for (let i = userMsgs.length - 1; i >= 0; i--) {
+    const text = userMsgs[i].content;
+    const lower = text.toLowerCase();
+    const hit = UNFOLDING_SIGNALS.find((s) => lower.includes(s));
+    if (hit) {
+      const sentences = text.split(/(?<=[.!?\n])\s+/);
+      const target = sentences.find((s) => s.toLowerCase().includes(hit)) || text;
+      return target.trim().slice(0, 160);
+    }
+  }
+  return null;
 }
 
 // Stage rank — higher = later. Used to block backward regression.
@@ -815,6 +836,55 @@ function validateAssistantResponse({ responseText, currentMode, forcedNextLayer,
         isValid: false,
         reason: regression.reason,
         correctedInstruction: regression.correctedInstruction,
+      };
+    }
+  }
+
+  // 0int. PREMATURE INTEGRATION gate (all modes) — block life-integration before exploration_depth >= 2
+  if (sessionState && sessionState.exploration_active && (sessionState.exploration_depth || 0) < 2 && !sessionState.integration_detected) {
+    const PREMATURE_INTEGRATION_PHRASES = [
+      // RU
+      "как это связано с жизнью", "где это есть в жизни", "как это применить",
+      "что это значит для жизни", "в твоей жизни", "в реальной жизни",
+      // ES
+      "cómo se relaciona con tu vida", "dónde aparece en tu vida", "cómo aplicarlo",
+    ];
+    const hit = PREMATURE_INTEGRATION_PHRASES.find((p) => lower.includes(p));
+    if (hit) {
+      console.warn("[PREMATURE_INTEGRATION_BLOCKED]", {
+        mode: (currentMode || "").toLowerCase(),
+        exploration_depth: sessionState.exploration_depth,
+        triggeredPhrase: hit,
+      });
+      return {
+        isValid: false,
+        reason: `Premature integration: life-connection phrase "${hit}" before exploration_depth >= 2`,
+        correctedInstruction:
+          "Integration is not yet allowed (exploration is too shallow). Continue unfolding " +
+          (sessionState.current_process_target ? `«${String(sessionState.current_process_target).substring(0, 120)}»` : "the current focus") +
+          " with one more exploration question (immersion, amplification, movement, atmosphere). Do NOT ask about real life yet.",
+      };
+    }
+  }
+
+  // 0clo. CLOSURE STAGE gate — at rank 7 only reflect + one closing question
+  if (sessionState && (sessionState.closure_detected || sessionState.current_stage_rank === 7)) {
+    const EXPLORATION_PHRASES_AT_CLOSURE = [
+      "что начинает происходить", "что происходит дальше", "если усилить",
+      "если позволить", "давай исследуем", "пойдём глубже",
+    ];
+    const hit = EXPLORATION_PHRASES_AT_CLOSURE.find((p) => lower.includes(p));
+    if (hit) {
+      console.warn("[CLOSURE_STAGE_ACTIVE]", {
+        mode: (currentMode || "").toLowerCase(),
+        triggeredPhrase: hit,
+      });
+      return {
+        isValid: false,
+        reason: `Closure stage active — exploration phrase "${hit}" not allowed`,
+        correctedInstruction:
+          "Сессия в стадии завершения. Не задавай исследовательских вопросов. " +
+          "Отрази дугу процесса, задай ОДИН мягкий закрывающий вопрос и предложи сохранить инсайт.",
       };
     }
   }
@@ -1452,13 +1522,17 @@ export async function getAIResponse(session, step, messages, userMessage, langua
     });
   }
 
+  const focusForAck = mappingStage.selected_focus || mappingStage.current_process_target;
   const alreadyAnsweredInstruction = userAlreadyAnswered
-    ? `\n\n🟠 ПОЛЬЗОВАТЕЛЬ УКАЗАЛ, ЧТО УЖЕ ОТВЕТИЛ\n` +
-      `НЕ задавай тот же вопрос снова. Перечитай предыдущие сообщения пользователя и извлеки уже данный ответ.\n` +
-      `Кратко признай: «Да, ты уже это написала.» и сразу переходи к следующей незакрытой стадии.\n` +
+    ? `\n\n🟠 ПОЛЬЗОВАТЕЛЬ УКАЗАЛ, ЧТО УЖЕ ОТВЕТИЛ / НЕ ПОНЯЛ ВОПРОС\n` +
+      `НЕ задавай тот же вопрос снова. Перечитай предыдущие сообщения и извлеки уже данный ответ.\n` +
+      `Формат ответа (строго):\n` +
+      (language === "es"
+        ? `«Sí, ya lo señalaste: [краткое summary]. El foco ahora es ${focusForAck ? `«${String(focusForAck).substring(0, 120)}»` : "[selected_focus]"}. [один разворачивающий вопрос текущей стадии]»\n`
+        : `«Да, ты уже это обозначила: [краткое summary]. Фокус сейчас — ${focusForAck ? `«${String(focusForAck).substring(0, 120)}»` : "[selected_focus]"}. [один разворачивающий вопрос текущей стадии]»\n`) +
       (mappingStage.primary_answer ? `• первичный процесс (из слов пользователя): «${String(mappingStage.primary_answer).substring(0, 120)}»\n` : "") +
       (mappingStage.secondary_answer ? `• вторичный процесс (из слов пользователя): «${String(mappingStage.secondary_answer).substring(0, 120)}»\n` : "") +
-      `ЗАПРЕЩЕНО: просить пользователя повторить уже сказанное.`
+      `ЗАПРЕЩЕНО: снова спрашивать про картирование / выбор фокуса. ЗАПРЕЩЕНО: просить пользователя повторить уже сказанное.`
     : "";
 
   const needsMapping = !mappingStageComplete && !isIntegrationStage;
@@ -1626,14 +1700,42 @@ export async function getAIResponse(session, step, messages, userMessage, langua
     completionDetected: completionDetection.isComplete,
     coveredLayers,
   });
-  console.log("[STAGE_LOCKS]", {
+  console.log("[SESSION_STATE]", {
+    mode: modeKeyEarly,
+    rank: sessionState.current_stage_rank,
     primary_locked: sessionState.primary_locked,
     secondary_locked: sessionState.secondary_locked,
     focus_locked: sessionState.focus_locked,
-    current_stage: sessionState.current_stage,
-    current_stage_rank: sessionState.current_stage_rank,
+    selected_focus: sessionState.selected_process_focus,
+    current_process_target: sessionState.current_process_target,
+    exploration_active: sessionState.exploration_active,
+    exploration_depth: sessionState.exploration_depth,
+    integration_detected: sessionState.integration_detected,
+    closure_detected: sessionState.closure_detected,
+    user_frustration_detected: userAlreadyAnswered,
     userChangedFocus,
   });
+
+  // ── SESSION STATE — SOURCE OF TRUTH prompt block (after systemPrompt, before steps) ──
+  const sessionStateBlock =
+    `\n\n━━━ CURRENT SESSION STATE — SOURCE OF TRUTH ━━━\n` +
+    `• stage_rank: ${sessionState.current_stage_rank} (${sessionState.current_stage})\n` +
+    `• primary_locked: ${sessionState.primary_locked}\n` +
+    `• secondary_locked: ${sessionState.secondary_locked}\n` +
+    `• focus_locked: ${sessionState.focus_locked}\n` +
+    (sessionState.selected_process_focus ? `• selected_focus: «${String(sessionState.selected_process_focus).substring(0, 140)}»\n` : "") +
+    (sessionState.current_process_target ? `• current_process_target: «${String(sessionState.current_process_target).substring(0, 140)}»\n` : "") +
+    `• exploration_active: ${sessionState.exploration_active} (depth ${sessionState.exploration_depth})\n` +
+    `\nYou must NOT ask questions from stages below current_stage_rank.\n` +
+    (sessionState.current_process_target
+      ? `You MUST continue unfolding current_process_target. Every next question must explicitly refer to it.\n`
+      : "") +
+    (sessionState.focus_locked
+      ? `Focus is already locked — do NOT return to mapping, image selection, energy selection, primary or secondary questions.\n`
+      : "") +
+    (sessionState.exploration_active && sessionState.exploration_depth < 2
+      ? `Integration / life-connection questions are NOT yet allowed (need exploration_depth >= 2).\n`
+      : "");
 
   const mappingCompleteContext = mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer
     ? !assistantReflectedMap
@@ -1736,10 +1838,11 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
     : "";
 
   // FOCUS LOCK — once focus is selected, force unfolding (no return to mapping/image/energy)
+  const focusTarget = mappingStage.current_process_target || mappingStage.selected_focus;
   const focusContinuity = (mappingStage.focus_locked || mappingStage.exploration_active)
     ? `\n\n🔒 ФОКУС ЗАБЛОКИРОВАН — РАЗВОРАЧИВАНИЕ АКТИВНО\n` +
-      (mappingStage.selected_focus
-        ? `Выбранный фокус (selected_process_focus): «${String(mappingStage.selected_focus).substring(0, 160)}».\n`
+      (focusTarget
+        ? `Текущая цель процесса (current_process_target): «${String(focusTarget).substring(0, 160)}». Каждый следующий вопрос ДОЛЖЕН явно ссылаться на неё.\n`
         : `Пользователь уже выбрал фокус и начал его разворачивать.\n`) +
       `ЗАПРЕЩЕНО возвращаться к: сбору материала, первичному/вторичному вопросу, выбору энергии, выбору образа сна.\n` +
       `ЗАПРЕЩЕНЫ фразы: «какой момент сна был самым ярким», «какой образ сна», «что кажется странным», «что больше всего откликается», «где больше энергии», «что из этого цепляет».\n` +
@@ -1769,7 +1872,7 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
     : "";
 
   const buildPrompt = (extraInstruction = "") =>
-    `${SYSTEM_PROMPT}${languageOverride}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${alreadyAnsweredInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${focusContinuity}${edgeLimitInstruction}${extraInstruction}
+    `${SYSTEM_PROMPT}${languageOverride}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${alreadyAnsweredInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${focusContinuity}${edgeLimitInstruction}${extraInstruction}
 
 Режим: ${currentMode}
 
