@@ -41,6 +41,18 @@ export default function Dashboard() {
     enabled: !!currentUser?.email,
   });
 
+  // Full completed-session history for the consistency calendar
+  const { data: completedSessions = [] } = useQuery({
+    queryKey: ["sessions-completed", currentUser?.email],
+    queryFn: () =>
+      base44.entities.Session.filter(
+        { created_by: currentUser.email, status: "completed" },
+        "-created_date",
+        500
+      ),
+    enabled: !!currentUser?.email,
+  });
+
   const isAdmin = currentUser?.role === "admin" || currentUser?.email === "schwets.marina@gmail.com";
   const activeSession = sessions.find((s) => s.status === "active");
   const recentSessions = sessions.filter((s) => s.status !== "active").slice(0, 5);
@@ -218,8 +230,8 @@ export default function Dashboard() {
       )}
 
       {/* Consistency calendar */}
-      {!sessionsLoading && sessions.length > 0 && (
-        <ConsistencyCalendar sessions={sessions} lang={lang} />
+      {completedSessions.length > 0 && (
+        <ConsistencyCalendar sessions={completedSessions} lang={lang} />
       )}
 
       {/* Recent sessions */}
