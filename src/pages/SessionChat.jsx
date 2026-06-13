@@ -193,6 +193,14 @@ export default function SessionChat() {
     fetchStep(modeId, stepNum).then(async (step) => {
       if (cancelled) return;
 
+      console.log("[STEP_LOOKUP]", {
+        sessionId,
+        modeId,
+        currentStep: stepNum,
+        lookupKey: stepKey,
+        stepFound: !!step,
+      });
+
       if (!step) {
         console.error("[SESSION_INIT] fetchStep returned null for", stepKey);
         const allSteps = await base44.entities.ModeStep.list("step_number", 20).catch(() => []);
@@ -325,15 +333,20 @@ export default function SessionChat() {
       const stepKey = `${modeId}_${currentStep}`;
       console.log("[CHAT_FLOW] looking up step_key:", stepKey);
       const step = await fetchStep(modeId, currentStep);
+      console.log("[STEP_LOOKUP]", {
+        sessionId,
+        modeId,
+        currentStep,
+        lookupKey: stepKey,
+        stepFound: !!step,
+      });
       if (!step) {
-        const [forMode, allSteps] = await Promise.all([
-          base44.entities.ModeStep.filter({ mode_id: modeId }),
-          base44.entities.ModeStep.list("step_number", 10),
-        ]);
-        const availableKeys = forMode.map((s) => s.step_key || `[no key, step_number=${s.step_number}]`);
-        const allModeIds = [...new Set(allSteps.map((s) => s.mode_id).filter(Boolean))];
-        setStepDebugInfo({ stepKey, modeId, stepNum: currentStep, availableKeys, totalStepsInDb: allSteps.length, allModeIds, sampleRows: allSteps.map((s) => `${s.mode_id}/${s.step_key || s.step_number}`) });
-        setStepError(true);
+        // Soft fallback — never dead-end. Show an error message in chat but keep input enabled.
+        console.error("[CHAT_FLOW] step not found — soft fallback, input stays enabled:", stepKey);
+        setOptimisticMessages([]);
+        setIsAiLoading(false);
+        setSendErrorMessage("Произошла ошибка загрузки шага. Попробуйте обновить страницу.");
+        setSendError(true);
         return;
       }
 
@@ -615,8 +628,9 @@ export default function SessionChat() {
                 </div>
               )}
 
-              {/* Step not found error — full debug block */}
-              {stepError && (
+              {/* Step load error — admins get full diagnostics, regular users get a soft message.
+                  Either way the input below stays enabled (never dead-end). */}
+              {stepError && (currentUser?.role === "admin" ? (
                 <StepErrorDebug
                   session={session}
                   stepDebugInfo={stepDebugInfo}
@@ -628,7 +642,20 @@ export default function SessionChat() {
                     queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
                   }}
                 />
-              )}
+              ) : (
+                <div className="flex items-start gap-3 p-4 rounded-xl border border-destructive/30 bg-destructive/5">
+                  <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-destructive">
+                      Произошла ошибка загрузки шага. Попробуйте обновить страницу.
+                    </p>
+                    <Button size="sm" variant="outline" className="mt-2 gap-1.5" onClick={handleReload}>
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Перезагрузить чат
+                    </Button>
+                  </div>
+                </div>
+              ))}
 
               {/* Session complete — clear closing + explicit end button */}
               {sessionComplete && !isAiLoading && (
@@ -670,11 +697,26 @@ export default function SessionChat() {
 
           <div className="border-t border-border bg-card/80 backdrop-blur-lg px-4 py-3">
             <div className="max-w-3xl mx-auto">
-              <ChatInput
-                onSend={handleSend}
-                isLoading={isAiLoading}
-                disabled={!!stepError || !!shiftSuggestion || isAdminView || sessionComplete}
-              />
+              {(() => {
+                // Input is disabled ONLY for states where typing makes no sense.
+                // stepError NO LONGER disables input — user must always be able to type.
+                const inputDisabled = !!shiftSuggestion || isAdminView || sessionComplete;
+                console.log("[CHAT_INPUT_STATE]", {
+                  disabled: inputDisabled,
+                  loading: isAiLoading,
+                  isGenerating: isAiLoading,
+                  sessionLoaded: !!session,
+                  currentStep: session?.current_step ?? null,
+                  stepError,
+                });
+                return (
+                  <ChatInput
+                    onSend={handleSend}
+                    isLoading={isAiLoading}
+                    disabled={inputDisabled}
+                  />
+                );
+              })()}
             </div>
           </div>
         </>
