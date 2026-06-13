@@ -34,7 +34,7 @@ const PROVIDERS = [
 
 export default function SocialButtons() {
   const handleProvider = (provider) => {
-    base44.auth.loginWithProvider(provider, "/");
+    base44.auth.loginWithProvider(provider, "/dashboard");
   };
 
   return (
