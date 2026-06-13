@@ -16,6 +16,7 @@ import FullSessionReport from "@/components/session/FullSessionReport";
 import SessionFeedbackForm from "@/components/session/SessionFeedbackForm";
 import SummaryActions from "@/components/session/SummaryActions";
 import SessionNotFoundDiagnostic from "@/components/session/SessionNotFoundDiagnostic";
+import SessionHighlights from "@/components/session/SessionHighlights";
 import { normalizeLang, t } from "@/lib/i18n";
 
 const iconMap = { Heart, Moon, GitBranch, PenLine };
@@ -189,6 +190,15 @@ export default function SessionSummary() {
             )}
           </Card>
         </motion.div>
+
+        {/* Quick visual overview of themes + signals */}
+        {session.summary !== "Сессия завершена. Резюме недоступно." && (
+          <SessionHighlights
+            themes={session.themes || []}
+            signals={session.signals || []}
+            language={language}
+          />
+        )}
 
         {/* Themes — only show if summary is not the fallback */}
         {session.themes?.length > 0 && session.summary !== "Сессия завершена. Резюме недоступно." && (
