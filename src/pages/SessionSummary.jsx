@@ -45,10 +45,34 @@ export default function SessionSummary() {
     queryFn: async () => {
       const sessions = await base44.entities.Session.filter({ id: sessionId });
       const found = sessions[0];
-      if (!found || found.created_by !== currentUser.email) {
+      const isAdmin =
+        currentUser?.role === "admin" ||
+        currentUser?.email === "schwets.marina@gmail.com";
+
+      if (!found) {
+        const params = new URLSearchParams(window.location.search);
+        console.log("[SESSION_NOT_FOUND_FROM_FEEDBACK]", {
+          sessionId,
+          feedbackUserEmail: params.get("fe"),
+          feedbackCreatedAt: params.get("fc"),
+        });
         setAccessDenied(true);
         return null;
       }
+
+      if (found.created_by !== currentUser.email && !isAdmin) {
+        setAccessDenied(true);
+        return null;
+      }
+
+      if (isAdmin && found.created_by !== currentUser.email) {
+        console.log("[ADMIN_SUMMARY_ACCESS_GRANTED]", {
+          adminEmail: currentUser.email,
+          sessionId,
+          sessionOwner: found.created_by,
+        });
+      }
+
       return found;
     },
     enabled: !!sessionId && !!currentUser?.email,
@@ -102,9 +126,19 @@ export default function SessionSummary() {
 
   const Icon = iconMap[MODE_ICONS[session.mode]] || Heart;
   const label = MODE_LABELS[session.mode]?.ru || session.mode;
+  const isAdmin = currentUser?.role === "admin" || currentUser?.email === "schwets.marina@gmail.com";
+  const isAdminViewing = isAdmin && session.created_by !== currentUser.email;
 
   return (
     <div className="max-w-2xl mx-auto px-4 md:px-6 py-8 md:py-12">
+      {isAdminViewing && (
+        <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm text-center">
+          {language === "es"
+            ? "Modo administrador: vista de la sesión de un usuario. No se realizan cambios."
+            : "Режим администратора: просмотр сессии пользователя. Изменения не вносятся."}
+        </div>
+      )}
+
       <Button
         variant="ghost"
         onClick={() => navigate("/dashboard")}
