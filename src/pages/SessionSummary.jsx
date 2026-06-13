@@ -124,8 +124,9 @@ export default function SessionSummary() {
     );
   }
 
-  const Icon = iconMap[MODE_ICONS[session.mode]] || Heart;
-  const label = MODE_LABELS[session.mode]?.ru || session.mode;
+  const resolvedMode = session.mode_id || session.mode || "journaling";
+  const Icon = iconMap[MODE_ICONS[resolvedMode]] || Heart;
+  const label = MODE_LABELS[resolvedMode]?.ru || resolvedMode;
   const isAdmin = currentUser?.role === "admin" || currentUser?.email === "schwets.marina@gmail.com";
   const isAdminViewing = isAdmin && session.created_by !== currentUser.email;
 
