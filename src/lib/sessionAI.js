@@ -40,6 +40,18 @@ export function checkCrisis(text) {
   return CRISIS_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
+// ─── Low-severity distress detection (test condition) ────────────────────────
+// Softer emotional-distress words. When present (and no full crisis), a RiskEvent
+// with severity "low" should be created so distress is logged for review.
+const LOW_RISK_KEYWORDS = [
+  "смерть", "потеря", "не хочу жить", "горе",
+];
+
+export function checkLowRisk(text) {
+  const lower = text.toLowerCase();
+  return LOW_RISK_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
 // ─── Fetch step from DB — bulletproof lookup ─────────────────────────────────
 export async function fetchStep(modeId, stepNumber) {
   const modeIdClean = String(modeId || "").trim();

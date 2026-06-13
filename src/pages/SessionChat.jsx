@@ -6,6 +6,7 @@ import { Loader2, AlertTriangle, RefreshCw, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   checkCrisis,
+  checkLowRisk,
   CRISIS_MESSAGE,
   fetchStep,
   getAIResponse,
@@ -359,10 +360,10 @@ export default function SessionChat() {
       setOptimisticMessages([]);
       queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
 
-      // Crisis check
+      // Crisis check (high severity)
       if (checkCrisis(text)) {
         await createMessage({ session_id: sessionId, role: "system", content: CRISIS_MESSAGE });
-        await base44.entities.RiskEvent.create({
+        const created = await base44.entities.RiskEvent.create({
           session_id: sessionId,
           message_id: savedUserMsg?.id,
           user_id: currentUser?.id,
@@ -372,9 +373,25 @@ export default function SessionChat() {
           detected_at: new Date().toISOString(),
           status: "open",
         });
+        console.log("[RISK_EVENT_CREATED]", { id: created?.id, severity: "high", session_id: sessionId });
         await base44.entities.Session.update(sessionId, { risk_flag: true });
         queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
         return;
+      }
+
+      // Low-severity distress check — log a RiskEvent but keep the session flowing
+      if (checkLowRisk(text)) {
+        const createdLow = await base44.entities.RiskEvent.create({
+          session_id: sessionId,
+          message_id: savedUserMsg?.id,
+          user_id: currentUser?.id,
+          risk_type: "other",
+          severity: "low",
+          trigger_text: text.substring(0, 500),
+          detected_at: new Date().toISOString(),
+          status: "open",
+        });
+        console.log("[RISK_EVENT_CREATED]", { id: createdLow?.id, severity: "low", session_id: sessionId });
       }
 
       // Fetch current step from DB
