@@ -190,6 +190,22 @@ export default function SessionChat() {
 
     let cancelled = false;
 
+    // Last-resort canonical greeting — used when fetchStep returns null or the
+    // primary greeting create fails. Never leaves the user with an empty chat.
+    const createFallbackGreeting = async (reason) => {
+      const fallbackOpening =
+        getInitialOpeningQuestion(modeId, language, null) ||
+        (language === "es" ? "¿Qué quieres explorar hoy?" : "О чём ты хочешь поисследовать сегодня?");
+      const content = `${t("greeting_start", language)}\n\n${fallbackOpening}`;
+      await createMessage({ session_id: sessionId, mode_id: modeId, step_number: stepNum || 1, role: "assistant", content });
+      if (cancelled) return;
+      console.log("[SESSION_INIT_FALLBACK_GREETING_CREATED]", { sessionId, modeId, stepNum, reason });
+      initDone.current = true;
+      setStepError(false);
+      setStepDebugInfo(null);
+      queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
+    };
+
     fetchStep(modeId, stepNum).then(async (step) => {
       if (cancelled) return;
 
@@ -202,16 +218,23 @@ export default function SessionChat() {
       });
 
       if (!step) {
-        console.error("[SESSION_INIT] fetchStep returned null for", stepKey);
-        const allSteps = await base44.entities.ModeStep.list("step_number", 20).catch(() => []);
-        const forMode = allSteps.filter((s) => String(s.mode_id || "").trim() === modeId);
-        const availableKeys = forMode.map((s) => s.step_key || `[no key, step_number=${s.step_number}]`);
-        const allModeIds = [...new Set(allSteps.map((s) => s.mode_id).filter(Boolean))];
-        const sampleRows = allSteps.map((s) => `${s.mode_id}/${s.step_key || s.step_number}`);
-        setStepDebugInfo({ stepKey, modeId, stepNum, availableKeys, totalStepsInDb: allSteps.length, allModeIds, sampleRows });
-        setStepError(true);
-        // Do NOT set initDone — allow retry
-        return;
+        console.error("[SESSION_INIT] fetchStep returned null for", stepKey, "— using canonical fallback greeting");
+        try {
+          await createFallbackGreeting("fetchStep_null");
+          return;
+        } catch (fbErr) {
+          if (cancelled) return;
+          console.error("[SESSION_INIT] fallback greeting also failed:", fbErr?.message);
+          // Only now surface the diagnostic block (admins see details, users a soft message).
+          const allSteps = await base44.entities.ModeStep.list("step_number", 20).catch(() => []);
+          const forMode = allSteps.filter((s) => String(s.mode_id || "").trim() === modeId);
+          const availableKeys = forMode.map((s) => s.step_key || `[no key, step_number=${s.step_number}]`);
+          const allModeIds = [...new Set(allSteps.map((s) => s.mode_id).filter(Boolean))];
+          const sampleRows = allSteps.map((s) => `${s.mode_id}/${s.step_key || s.step_number}`);
+          setStepDebugInfo({ stepKey, modeId, stepNum, availableKeys, totalStepsInDb: allSteps.length, allModeIds, sampleRows });
+          setStepError(true);
+          return;
+        }
       }
 
       // Step found — create greeting, THEN mark init done
@@ -229,7 +252,14 @@ export default function SessionChat() {
           message: createErr?.message,
           session_id: sessionId,
         });
-        setStepError(true);
+        // Retry once via canonical fallback before surfacing an error.
+        try {
+          await createFallbackGreeting("create_failed");
+        } catch (fbErr) {
+          if (cancelled) return;
+          console.error("[SESSION_INIT] fallback greeting also failed:", fbErr?.message);
+          setStepError(true);
+        }
         return;
       }
       if (cancelled) return;
