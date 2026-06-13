@@ -17,6 +17,7 @@ import SessionFeedbackForm from "@/components/session/SessionFeedbackForm";
 import SummaryActions from "@/components/session/SummaryActions";
 import SessionNotFoundDiagnostic from "@/components/session/SessionNotFoundDiagnostic";
 import SessionHighlights from "@/components/session/SessionHighlights";
+import ExportSessionPdfButton from "@/components/session/ExportSessionPdfButton";
 import { normalizeLang, t } from "@/lib/i18n";
 
 const iconMap = { Heart, Moon, GitBranch, PenLine };
@@ -272,6 +273,13 @@ export default function SessionSummary() {
         <div className="mt-6 p-4 rounded-xl border border-destructive/30 bg-destructive/5 flex items-center justify-between">
           <p className="text-sm text-destructive">{t("messages_load_error", language)}</p>
           <Button size="sm" variant="outline" onClick={() => refetchMessages()}>{t("retry", language)}</Button>
+        </div>
+      )}
+
+      {/* Quick PDF export of the whole session for personal archive */}
+      {!messagesError && messages.length > 0 && (
+        <div className="mt-6">
+          <ExportSessionPdfButton session={session} messages={messages} language={language} />
         </div>
       )}
 
