@@ -2,6 +2,7 @@ import React from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import GoogleIcon from "@/components/GoogleIcon";
+import { getStoredLanguage, t } from "@/lib/i18n";
 
 // Enabled providers for this app: Email+password (handled by forms), Google, Microsoft, Facebook, Apple.
 const MicrosoftIcon = (props) => (
@@ -26,20 +27,22 @@ const AppleIcon = (props) => (
 );
 
 const PROVIDERS = [
-  { id: "google", label: "Continue with Google", Icon: GoogleIcon },
-  { id: "microsoft", label: "Continue with Microsoft", Icon: MicrosoftIcon },
-  { id: "facebook", label: "Continue with Facebook", Icon: FacebookIcon },
-  { id: "apple", label: "Continue with Apple", Icon: AppleIcon },
+  { id: "google", labelKey: "auth_continue_google", Icon: GoogleIcon },
+  { id: "microsoft", labelKey: "auth_continue_microsoft", Icon: MicrosoftIcon },
+  { id: "facebook", labelKey: "auth_continue_facebook", Icon: FacebookIcon },
+  { id: "apple", labelKey: "auth_continue_apple", Icon: AppleIcon },
 ];
 
 export default function SocialButtons() {
+  const language = getStoredLanguage();
+
   const handleProvider = (provider) => {
     base44.auth.loginWithProvider(provider, "/dashboard");
   };
 
   return (
     <div className="space-y-3 mb-6">
-      {PROVIDERS.map(({ id, label, Icon }) => (
+      {PROVIDERS.map(({ id, labelKey, Icon }) => (
         <Button
           key={id}
           type="button"
@@ -48,7 +51,7 @@ export default function SocialButtons() {
           onClick={() => handleProvider(id)}
         >
           <Icon className="w-5 h-5 mr-2" />
-          {label}
+          {t(labelKey, language)}
         </Button>
       ))}
     </div>

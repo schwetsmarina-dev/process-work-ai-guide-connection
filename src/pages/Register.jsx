@@ -9,8 +9,10 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import AuthLayout from "@/components/AuthLayout";
 import SocialButtons from "@/components/auth/SocialButtons";
 import { toast } from "@/components/ui/use-toast";
+import { getStoredLanguage, t, translateAuthError } from "@/lib/i18n";
 
 export default function Register() {
+  const language = getStoredLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -23,7 +25,7 @@ export default function Register() {
     e.preventDefault();
     setError("");
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError(t("auth_passwords_no_match", language));
       return;
     }
     setLoading(true);
@@ -31,7 +33,7 @@ export default function Register() {
       await base44.auth.register({ email, password });
       setShowOtp(true);
     } catch (err) {
-      setError(err.message || "Registration failed");
+      setError(translateAuthError(err?.message, language, "err_registration_failed"));
     } finally {
       setLoading(false);
     }
@@ -47,7 +49,7 @@ export default function Register() {
       }
       window.location.href = "/dashboard";
     } catch (err) {
-      setError(err.message || "Invalid verification code");
+      setError(translateAuthError(err?.message, language, "err_verification_failed"));
     } finally {
       setLoading(false);
     }
@@ -58,11 +60,11 @@ export default function Register() {
     try {
       await base44.auth.resendOtp(email);
       toast({
-        title: "Code sent",
-        description: "Check your email for the new code.",
+        title: t("auth_code_sent", language),
+        description: t("auth_code_sent_desc", language),
       });
     } catch (err) {
-      setError(err.message || "Failed to resend code");
+      setError(translateAuthError(err?.message, language, "err_resend_failed"));
     }
   };
 
@@ -70,8 +72,8 @@ export default function Register() {
     return (
       <AuthLayout
         icon={Mail}
-        title="Verify your email"
-        subtitle={`We sent a code to ${email}`}
+        title={t("auth_verify_title", language)}
+        subtitle={`${t("auth_verify_subtitle", language)} ${email}`}
       >
         {error && (
           <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
@@ -104,16 +106,16 @@ export default function Register() {
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Verifying...
+              {t("auth_verifying", language)}
             </>
           ) : (
-            "Verify"
+            t("auth_verify", language)
           )}
         </Button>
         <p className="text-center text-sm text-muted-foreground mt-4">
-          Didn't receive the code?{" "}
+          {t("auth_code_not_received", language)}{" "}
           <button onClick={handleResend} className="text-primary font-medium hover:underline">
-            Resend
+            {t("auth_resend", language)}
           </button>
         </p>
       </AuthLayout>
@@ -123,13 +125,13 @@ export default function Register() {
   return (
     <AuthLayout
       icon={UserPlus}
-      title="Create your account"
-      subtitle="Sign up to get started"
+      title={t("auth_create_account", language)}
+      subtitle={t("auth_register_subtitle", language)}
       footer={
         <>
-          Already have an account?{" "}
+          {t("auth_have_account", language)}{" "}
           <Link to="/login" className="text-primary font-medium hover:underline">
-            Log in
+            {t("auth_login_link", language)}
           </Link>
         </>
       }
@@ -141,7 +143,7 @@ export default function Register() {
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground">or</span>
+          <span className="bg-card px-3 text-muted-foreground">{t("auth_or", language)}</span>
         </div>
       </div>
 
@@ -153,7 +155,7 @@ export default function Register() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t("auth_email", language)}</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
@@ -161,7 +163,7 @@ export default function Register() {
               type="email"
               autoComplete="email"
               autoFocus
-              placeholder="you@example.com"
+              placeholder={t("auth_email_placeholder", language)}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="pl-10 h-12"
@@ -170,7 +172,7 @@ export default function Register() {
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">{t("auth_password", language)}</Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
@@ -186,7 +188,7 @@ export default function Register() {
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="confirm">Confirm Password</Label>
+          <Label htmlFor="confirm">{t("auth_confirm_password", language)}</Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
@@ -205,10 +207,10 @@ export default function Register() {
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Creating account...
+              {t("auth_creating_account", language)}
             </>
           ) : (
-            "Create account"
+            t("auth_create_account", language)
           )}
         </Button>
       </form>
