@@ -50,6 +50,24 @@ function getInitialOpeningQuestion(modeId, language, step) {
   return step?.question || "";
 }
 
+// Last-resort canonical greeting — used when fetchStep returns null or a greeting
+// create fails. Never leaves the user with an empty chat. Throws if create fails.
+async function createFallbackGreeting({ sessionId, modeId, stepNum, language, reason }) {
+  const fallbackOpening =
+    getInitialOpeningQuestion(modeId, language, null) ||
+    (language === "es" ? "¿Qué quieres explorar hoy?" : "О чём ты хочешь поисследовать сегодня?");
+
+  await createMessage({
+    session_id: sessionId,
+    mode_id: modeId,
+    step_number: stepNum || 1,
+    role: "assistant",
+    content: `${t("greeting_start", language)}\n\n${fallbackOpening}`,
+  });
+
+  console.warn("[SESSION_INIT_FALLBACK_GREETING_CREATED]", { sessionId, modeId, stepNum, reason });
+}
+
 // Parse [SHIFT_SUGGEST:mode] tag from AI response
 function parseShiftSuggestion(text) {
   const match = text.match(/\[SHIFT_SUGGEST:([^\]]*)\]/);
@@ -190,16 +208,10 @@ export default function SessionChat() {
 
     let cancelled = false;
 
-    // Last-resort canonical greeting — used when fetchStep returns null or the
-    // primary greeting create fails. Never leaves the user with an empty chat.
-    const createFallbackGreeting = async (reason) => {
-      const fallbackOpening =
-        getInitialOpeningQuestion(modeId, language, null) ||
-        (language === "es" ? "¿Qué quieres explorar hoy?" : "О чём ты хочешь поисследовать сегодня?");
-      const content = `${t("greeting_start", language)}\n\n${fallbackOpening}`;
-      await createMessage({ session_id: sessionId, mode_id: modeId, step_number: stepNum || 1, role: "assistant", content });
+    // Runs the shared fallback greeting + clears error state. Throws if create fails.
+    const runFallback = async (reason) => {
+      await createFallbackGreeting({ sessionId, modeId, stepNum, language, reason });
       if (cancelled) return;
-      console.log("[SESSION_INIT_FALLBACK_GREETING_CREATED]", { sessionId, modeId, stepNum, reason });
       initDone.current = true;
       setStepError(false);
       setStepDebugInfo(null);
@@ -220,7 +232,7 @@ export default function SessionChat() {
       if (!step) {
         console.error("[SESSION_INIT] fetchStep returned null for", stepKey, "— using canonical fallback greeting");
         try {
-          await createFallbackGreeting("fetchStep_null");
+          await runFallback("fetchStep returned null");
           return;
         } catch (fbErr) {
           if (cancelled) return;
@@ -254,7 +266,7 @@ export default function SessionChat() {
         });
         // Retry once via canonical fallback before surfacing an error.
         try {
-          await createFallbackGreeting("create_failed");
+          await runFallback("greeting createMessage failed");
         } catch (fbErr) {
           if (cancelled) return;
           console.error("[SESSION_INIT] fallback greeting also failed:", fbErr?.message);
@@ -292,7 +304,13 @@ export default function SessionChat() {
       const recoveryQuestion = getInitialOpeningQuestion(modeId, language, step);
       console.log("[CANONICAL_OPENING_USED]", { modeId, language, openingQuestion: recoveryQuestion });
       const greeting = `${t("greeting_start", language)}\n\n${recoveryQuestion}`;
-      await createMessage({ session_id: sessionId, mode_id: modeId, step_number: stepNum, role: "assistant", content: greeting });
+      try {
+        await createMessage({ session_id: sessionId, mode_id: modeId, step_number: stepNum, role: "assistant", content: greeting });
+      } catch (createErr) {
+        if (cancelled) return;
+        console.error("[SESSION_AUTORECOVERY] greeting create failed — trying fallback:", createErr?.message);
+        await createFallbackGreeting({ sessionId, modeId, stepNum, language, reason: "autorecovery greeting create failed" });
+      }
       if (cancelled) return;
       initDone.current = true;
       setStepError(false);
@@ -587,11 +605,6 @@ export default function SessionChat() {
 
   return (
     <div className="flex flex-col h-screen">
-      {/* ████ PERMANENT BUILD PROBE — remove after diagnosis ████ */}
-      <div style={{ background: "#7c3aed", color: "#fff", fontFamily: "monospace", fontSize: "11px", padding: "4px 12px", letterSpacing: "0.05em", zIndex: 9999 }}>
-        SESSIONCHAT BUILD: listSessionMessages active · 2026-05-14-v9
-      </div>
-
       {/* Admin debug banner */}
       {isAdminView && (
         <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border-b border-amber-200 text-amber-800 text-xs">
