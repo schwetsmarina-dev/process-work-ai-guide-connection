@@ -36,6 +36,9 @@ const translations = {
       "Загрузите данные в таблицу MODES через страницу «Импорт данных».",
     recent_sessions: "Недавние сессии",
     all_sessions: "Все сессии",
+    consistency_title: "Регулярность",
+    consistency_subtitle: "Дни, когда вы завершили сессию самоисследования",
+    consistency_count: "Завершено сессий за последние 12 недель: {count}",
     // Session
     greeting_start: "Давай начнём.",
     dream_opening:
@@ -208,6 +211,9 @@ const translations = {
       "Carga los datos en la tabla MODES desde la página «Importar datos».",
     recent_sessions: "Sesiones recientes",
     all_sessions: "Todas las sesiones",
+    consistency_title: "Constancia",
+    consistency_subtitle: "Días en que completaste una sesión de autoexploración",
+    consistency_count: "Sesiones completadas en las últimas 12 semanas: {count}",
     // Session
     greeting_start: "Empecemos.",
     dream_opening:

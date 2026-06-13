@@ -8,6 +8,7 @@ import RecentSessionCard from "@/components/dashboard/RecentSessionCard";
 import ModeCardDB from "@/components/dashboard/ModeCardDB";
 import AdminPanel from "@/components/dashboard/AdminPanel";
 import ExistingSessionDialog from "@/components/dashboard/ExistingSessionDialog";
+import ConsistencyCalendar from "@/components/dashboard/ConsistencyCalendar";
 import { normalizeLang, t } from "@/lib/i18n";
 
 export default function Dashboard() {
@@ -214,6 +215,11 @@ export default function Dashboard() {
             <ModeCardDB key={mode.id} mode={mode} onClick={handleModeSelect} />
           ))}
         </div>
+      )}
+
+      {/* Consistency calendar */}
+      {!sessionsLoading && sessions.length > 0 && (
+        <ConsistencyCalendar sessions={sessions} lang={lang} />
       )}
 
       {/* Recent sessions */}
