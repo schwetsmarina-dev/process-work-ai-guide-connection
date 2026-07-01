@@ -1376,8 +1376,8 @@ ${userMessage}
 
 Напиши 1 отражение и 1 вопрос к следующему слою. Строго 2–3 предложения.`;
     try {
-      const r = await base44.integrations.Core.InvokeLLM({ prompt: trimmedPrompt });
-      return r || getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold);
+      const r = await base44.functions.invoke("invokeAI", { prompt: trimmedPrompt });
+      return r.data?.response || getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold);
     } catch (e) {
       console.error("[AI_RUNTIME] InvokeLLM FAILED (trimmed):", e?.message);
       throw e;
@@ -1409,13 +1409,13 @@ ${userMessage}
   let firstResponse;
   try {
     console.log("[AI_RUNTIME] Calling InvokeLLM (pass 1), est tokens:", estimatedTokens);
-    firstResponse = await base44.integrations.Core.InvokeLLM({ prompt: fullPrompt });
+    firstResponse = (await base44.functions.invoke("invokeAI", { prompt: fullPrompt })).data?.response;
     console.log("[AI_RUNTIME] InvokeLLM pass 1 success, response length:", firstResponse?.length);
   } catch (e) {
     console.error("[AI_RUNTIME] InvokeLLM FAILED (pass 1):", e?.message, String(e));
     const minimalPrompt = `Ты Process Work guide. Задавай один мягкий вопрос.\n\nПоследнее сообщение пользователя: ${userMessage}`;
     try {
-      const safeResponse = await base44.integrations.Core.InvokeLLM({ prompt: minimalPrompt });
+      const safeResponse = (await base44.functions.invoke("invokeAI", { prompt: minimalPrompt })).data?.response;
       return safeResponse || getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold);
     } catch (e2) {
       console.error("[AI_RUNTIME] Safe-mode retry ALSO FAILED:", e2?.message);
@@ -1434,7 +1434,7 @@ ${userMessage}
   const retryInstruction = `\n\n🚨 ВАЖНО: предыдущий ответ был ОТКЛОНЁН. Причина: ${firstValidation.reason}. ${firstValidation.correctedInstruction}`;
   let secondResponse;
   try {
-    secondResponse = await base44.integrations.Core.InvokeLLM({ prompt: buildPrompt(retryInstruction) });
+    secondResponse = (await base44.functions.invoke("invokeAI", { prompt: buildPrompt(retryInstruction) })).data?.response;
     console.log("[AI_RUNTIME] InvokeLLM pass 2 success, response length:", secondResponse?.length);
   } catch (e) {
     console.error("[AI_RUNTIME] InvokeLLM FAILED (pass 2):", e?.message);
@@ -1483,7 +1483,7 @@ export async function generateSessionSummary(session, messages, language = "ru")
     ? "Escribe TODO en español natural."
     : "Пиши ВСЁ на русском языке.";
 
-  const llmPromise = base44.integrations.Core.InvokeLLM({
+  const llmPromise = base44.functions.invoke("invokeAI", {
     prompt: `Ты — процессуально-ориентированный фасилитатор. Проанализируй эту сессию и выдай ТОЛЬКО JSON без markdown:
 {
   "summary": "описательный абзац 3-5 предложений — что звучало и что исследовалось в сессии",
@@ -1532,8 +1532,8 @@ ${conversation}`,
   });
 
   try {
-    const result = await Promise.race([llmPromise, timeoutPromise]);
-    return result || FALLBACK_SUMMARY;
+    const res = await Promise.race([llmPromise, timeoutPromise]);
+    return res?.data?.response || FALLBACK_SUMMARY;
   } catch (e) {
     console.error("Summary generation failed:", e.message);
     return FALLBACK_SUMMARY;

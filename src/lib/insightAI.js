@@ -18,7 +18,7 @@ export async function extractInsightsFromSession(session, messages) {
 
   if (!userMessages.trim()) return [];
 
-  const result = await base44.integrations.Core.InvokeLLM({
+  const res = await base44.functions.invoke("invokeAI", {
     prompt: `Ты — Process Work фасилитатор. На основе ОТВЕТОВ ПОЛЬЗОВАТЕЛЯ выдели 2-3 ключевых личных открытия.
 
 Режим: ${session.mode_id || session.mode}
@@ -61,7 +61,7 @@ ${userMessages}`,
     },
   });
 
-  return result?.insights || [];
+  return res?.data?.response?.insights || [];
 }
 
 export async function saveInsight({ sessionId, sourceMode, insight }) {

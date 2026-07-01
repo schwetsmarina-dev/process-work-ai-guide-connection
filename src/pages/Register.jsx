@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,21 @@ export default function Register() {
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
 
+  useEffect(() => {
+    if (!showOtp) return;
+    // WebOTP API — Android Chrome auto-reads SMS codes
+    if (!('OTPCredential' in window)) return;
+    const ac = new AbortController();
+    navigator.credentials.get({ otp: { transport: ['sms'] }, signal: ac.signal })
+      .then((otp) => {
+        if (otp?.code) {
+          setOtpCode(otp.code);
+        }
+      })
+      .catch(() => { /* silently ignore — not all Android devices support this */ });
+    return () => ac.abort();
+  }, [showOtp]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -40,6 +55,7 @@ export default function Register() {
   };
 
   const handleVerify = async () => {
+    if (loading) return; // prevent double-submit on Android (tap events can fire twice)
     setError("");
     setLoading(true);
     try {
@@ -80,13 +96,14 @@ export default function Register() {
             {error}
           </div>
         )}
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-6" inputMode="numeric">
           <InputOTP
             maxLength={6}
             value={otpCode}
             onChange={setOtpCode}
             autoFocus
             autoComplete="one-time-code"
+            inputMode="numeric"
           >
             <InputOTPGroup>
               <InputOTPSlot index={0} />
@@ -162,6 +179,7 @@ export default function Register() {
               id="email"
               type="email"
               autoComplete="email"
+              inputMode="email"
               autoFocus
               placeholder={t("auth_email_placeholder", language)}
               value={email}
@@ -179,6 +197,7 @@ export default function Register() {
               id="password"
               type="password"
               autoComplete="new-password"
+              inputMode="text"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
