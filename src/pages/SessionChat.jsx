@@ -106,6 +106,7 @@ export default function SessionChat() {
   const [optimisticMessages, setOptimisticMessages] = useState([]);
   const messagesEndRef = useRef(null);
   const initDone = useRef(false);
+  const lastFailedMessageRef = useRef(null);
 
   // ── Reset all init state when sessionId changes ───────────────────────────
   useEffect(() => {
@@ -335,6 +336,7 @@ export default function SessionChat() {
     if (!session || isAdminView) return;
     setSendError(false);
     setSendErrorMessage(null);
+    lastFailedMessageRef.current = null;
 
     const modeId = String(session.mode_id || session.mode || "").trim();
     const currentStep = session.current_step || 1;
@@ -477,6 +479,7 @@ export default function SessionChat() {
       setIsAiLoading(false);
       setSendError(true);
       setSendErrorMessage(err?.message || String(err));
+      lastFailedMessageRef.current = text;
       queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
     }
   };
@@ -582,9 +585,16 @@ export default function SessionChat() {
 
   // ── Manual reload ─────────────────────────────────────────────────────────
   const handleReload = () => {
+    const retryText = lastFailedMessageRef.current;
     setSendError(false);
+    setSendErrorMessage(null);
+    lastFailedMessageRef.current = null;
     queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
-    refetchMessages();
+    if (retryText) {
+      setTimeout(() => handleSend(retryText), 300);
+    } else {
+      refetchMessages();
+    }
   };
 
   // ── Guards ────────────────────────────────────────────────────────────────
