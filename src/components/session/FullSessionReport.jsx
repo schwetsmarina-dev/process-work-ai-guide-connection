@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card";
 import { Loader2, FileText, Zap, GitBranch, ListChecks, ChevronDown, ChevronUp, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
-import { jsPDF } from "jspdf";
 import { downloadSummaryTxt } from "@/lib/downloadSummary";
 
 const MODE_LABELS_RU = {
@@ -15,106 +14,131 @@ const MODE_LABELS_RU = {
   journaling: "Свободное письмо",
 };
 
+const escapeHtml = (str) =>
+  String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 export default function FullSessionReport({ session, messages }) {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(true);
 
   const downloadPDF = () => {
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
-    const pageW = doc.internal.pageSize.getWidth();
-    const margin = 18;
-    const maxW = pageW - margin * 2;
-    let y = 20;
+    if (!report) return;
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
 
-    const addText = (text, opts = {}) => {
-      const { size = 10, bold = false, color = [60, 60, 60], indent = 0 } = opts;
-      doc.setFontSize(size);
-      doc.setFont("helvetica", bold ? "bold" : "normal");
-      doc.setTextColor(...color);
-      const lines = doc.splitTextToSize(String(text || ""), maxW - indent);
-      if (y + lines.length * (size * 0.4 + 1) > 275) { doc.addPage(); y = 20; }
-      doc.text(lines, margin + indent, y);
-      y += lines.length * (size * 0.4 + 1) + 1;
-    };
-
-    const addSection = (title, color = [80, 80, 80]) => {
-      y += 5;
-      if (y > 265) { doc.addPage(); y = 20; }
-      doc.setFillColor(...color);
-      doc.rect(margin, y - 4, maxW, 8, "F");
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(255, 255, 255);
-      doc.text(title, margin + 3, y + 1);
-      y += 9;
-      doc.setTextColor(60, 60, 60);
-    };
-
-    const addLine = () => {
-      y += 2;
-      doc.setDrawColor(220, 220, 220);
-      doc.line(margin, y, pageW - margin, y);
-      y += 4;
-    };
-
-    // Title
-    addText("Inner Process Path", { size: 18, bold: true, color: [70, 130, 100] });
-    addText("Отчёт о сессии", { size: 13, bold: false, color: [100, 100, 100] });
-    y += 2;
-
-    // Meta
     const modeName = MODE_LABELS_RU[session.mode_id || session.mode] || (session.mode_id || session.mode);
     const dateStr = session.created_date ? format(new Date(session.created_date), "d MMM yyyy, HH:mm") : "";
-    addText(`Режим: ${modeName}   |   Дата: ${dateStr}`, { size: 9, color: [130, 130, 130] });
-    addLine();
 
-    // Session summary (from session entity)
+    const sections = [];
+
     if (session.summary && session.summary !== "Сессия завершена. Резюме недоступно.") {
-      addSection("Краткое резюме", [70, 130, 100]);
-      addText(session.summary, { size: 10 });
+      sections.push(`
+        <div class="section">
+          <div class="section-title summary">Краткое резюме</div>
+          <div class="section-body">${escapeHtml(session.summary)}</div>
+        </div>`);
     }
 
-    // Key signals
     if (report.key_signals?.length > 0) {
-      addSection("Ключевые сигналы", [200, 150, 50]);
-      report.key_signals.forEach((s) => addText(`• ${s}`, { size: 10, indent: 3 }));
+      sections.push(`
+        <div class="section">
+          <div class="section-title signals">Ключевые сигналы</div>
+          <ul class="section-body">${report.key_signals.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ul>
+        </div>`);
     }
 
-    // Polarities
     if (report.polarities?.length > 0) {
-      addSection("Выявленные полярности", [110, 80, 160]);
-      report.polarities.forEach((p, i) => {
-        addText(`${i + 1}. ${p.primary}  ↔  ${p.secondary}`, { size: 10, bold: true, indent: 3, color: [90, 60, 140] });
-        if (p.tension) addText(p.tension, { size: 9, indent: 6, color: [120, 100, 160] });
-        y += 1;
-      });
+      sections.push(`
+        <div class="section">
+          <div class="section-title polarities">Выявленные полярности</div>
+          ${report.polarities
+            .map(
+              (p, i) => `
+              <div class="polarity">
+                <div class="polarity-head">${i + 1}. ${escapeHtml(p.primary)} ↔ ${escapeHtml(p.secondary)}</div>
+                ${p.tension ? `<div class="polarity-tension">${escapeHtml(p.tension)}</div>` : ""}
+              </div>`
+            )
+            .join("")}
+        </div>`);
     }
 
-    // Self-work plan
     if (report.self_work_plan?.length > 0) {
-      addSection("План самостоятельной работы", [50, 110, 160]);
-      report.self_work_plan.forEach((item, i) => {
-        addText(`${i + 1}. ${item.practice}`, { size: 10, bold: true, indent: 3 });
-        if (item.how) addText(item.how, { size: 9, indent: 6, color: [100, 100, 100] });
-        y += 1;
-      });
+      sections.push(`
+        <div class="section">
+          <div class="section-title plan">План самостоятельной работы</div>
+          ${report.self_work_plan
+            .map(
+              (item, i) => `
+              <div class="plan-item">
+                <div class="plan-practice">${i + 1}. ${escapeHtml(item.practice)}</div>
+                ${item.how ? `<div class="plan-how">${escapeHtml(item.how)}</div>` : ""}
+              </div>`
+            )
+            .join("")}
+        </div>`);
     }
 
-    // Closing reflection
     if (report.closing_reflection) {
-      addSection("Завершающее отражение", [100, 100, 100]);
-      addText(report.closing_reflection, { size: 10, color: [80, 80, 80] });
+      sections.push(`
+        <div class="section">
+          <div class="section-title reflection">Завершающее отражение</div>
+          <div class="section-body">${escapeHtml(report.closing_reflection)}</div>
+        </div>`);
     }
 
-    // Footer
-    y = doc.internal.pageSize.getHeight() - 12;
-    doc.setFontSize(8);
-    doc.setTextColor(180, 180, 180);
-    doc.text("Inner Process Path · Сгенерировано автоматически", margin, y);
+    const html = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Inner Process Path — ${escapeHtml(modeName)}</title>
+  <style>
+    body { font-family: -apple-system, Arial, Helvetica, sans-serif;
+           max-width: 720px; margin: 30px auto; padding: 0 20px;
+           color: #1a1a1a; line-height: 1.6; }
+    h1 { font-size: 22px; color: #46825f; margin-bottom: 2px; }
+    .subtitle { color: #666; font-size: 14px; margin: 0 0 4px; }
+    .meta { color: #999; font-size: 12px; border-bottom: 2px solid #46825f;
+            padding-bottom: 10px; margin-bottom: 20px; }
+    .section { margin-bottom: 18px; }
+    .section-title { font-weight: bold; font-size: 12px; text-transform: uppercase;
+                     letter-spacing: 0.5px; color: #fff; padding: 5px 10px;
+                     border-radius: 6px; display: inline-block; margin-bottom: 8px; }
+    .section-title.summary    { background: #46825f; }
+    .section-title.signals    { background: #c89632; }
+    .section-title.polarities { background: #6e50a0; }
+    .section-title.plan       { background: #326ea0; }
+    .section-title.reflection { background: #646464; }
+    .section-body { white-space: pre-wrap; }
+    ul.section-body { padding-left: 20px; }
+    .polarity { margin: 8px 0; padding: 8px 12px; background: #f4f1fa;
+                border-left: 3px solid #6e50a0; border-radius: 8px; page-break-inside: avoid; }
+    .polarity-head { font-weight: bold; color: #5a3f8f; }
+    .polarity-tension { font-size: 13px; color: #888; font-style: italic; margin-top: 2px; }
+    .plan-item { margin: 8px 0; page-break-inside: avoid; }
+    .plan-practice { font-weight: bold; }
+    .plan-how { color: #666; font-size: 14px; margin-top: 2px; }
+    .footer { color: #bbb; font-size: 11px; margin-top: 30px;
+              border-top: 1px solid #eee; padding-top: 10px; }
+    @media print {
+      body { margin: 0; }
+      button { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Inner Process Path</h1>
+  <p class="subtitle">Отчёт о сессии</p>
+  <div class="meta">Режим: ${escapeHtml(modeName)} &nbsp;·&nbsp; ${escapeHtml(dateStr)}</div>
+  ${sections.join("")}
+  <div class="footer">Inner Process Path · Сгенерировано автоматически</div>
+</body>
+</html>`;
 
-    const filename = `session-report-${session.id?.slice(0, 8) || "export"}.pdf`;
-    doc.save(filename);
+    printWindow.document.write(html);
+    printWindow.document.close();
+    setTimeout(() => printWindow.print(), 500);
   };
 
   const [generateError, setGenerateError] = useState(null);
@@ -324,7 +348,7 @@ ${conversation}
                     onClick={downloadPDF}
                   >
                     <Download className="w-3.5 h-3.5 mr-1.5" />
-                    PDF (англ. шрифт)
+                    PDF
                   </Button>
                   <Button
                     variant="ghost"
