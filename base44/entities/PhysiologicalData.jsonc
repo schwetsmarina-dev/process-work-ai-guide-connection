@@ -1,0 +1,91 @@
+{
+  "name": "PhysiologicalData",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Reference to AppUser"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "apple_health",
+        "garmin",
+        "other"
+      ],
+      "default": "other",
+      "description": "Origin of the physiological data"
+    },
+    "metric_type": {
+      "type": "string",
+      "description": "Type of metric, e.g. heart_rate, hrv, sleep_hours, steps, respiratory_rate, stress"
+    },
+    "value": {
+      "type": "number",
+      "description": "Measured value for the metric"
+    },
+    "unit": {
+      "type": "string",
+      "description": "Unit of the value, e.g. bpm, ms, hours"
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the measurement was recorded"
+    }
+  },
+  "required": [
+    "metric_type",
+    "recorded_at"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
