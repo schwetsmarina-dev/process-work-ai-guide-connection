@@ -269,6 +269,18 @@ export default function SessionSummary() {
         )}
       </div>
 
+      {/* Body mode: match session signals with physiological data from the same period */}
+      {String(resolvedMode).toLowerCase().includes("body") && currentUser && !isAdminViewing && (
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.45 }}
+          className="mt-6"
+        >
+          <BodySignalMatch session={session} userId={currentUser.id} />
+        </motion.div>
+      )}
+
       {/* Messages load error */}
       {messagesError && (
         <div className="mt-6 p-4 rounded-xl border border-destructive/30 bg-destructive/5 flex items-center justify-between">
