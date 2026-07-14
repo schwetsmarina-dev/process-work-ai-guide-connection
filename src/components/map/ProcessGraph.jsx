@@ -205,16 +205,23 @@ export default function ProcessGraph({ nodes, edges }) {
                 transform={`translate(${p.x}, ${p.y})`}
                 onMouseEnter={() => setHoverId(nd.id)}
                 onMouseLeave={() => setHoverId(null)}
+                onClick={() => setSelectedId((prev) => (prev === nd.id ? null : nd.id))}
                 style={{ cursor: "pointer", opacity: dim ? 0.25 : 1 }}
               >
-                <circle r={r} fill={cfg.color} fillOpacity={0.85} stroke="#fff" strokeWidth={2} />
-                {(hoverId === nd.id || (connectedIds && connectedIds.has(nd.id)) || nd.count >= 2) && (
+                <circle
+                  r={r}
+                  fill={cfg.color}
+                  fillOpacity={0.85}
+                  stroke={selectedId === nd.id ? "#1a1a1a" : "#fff"}
+                  strokeWidth={selectedId === nd.id ? 3 : 2}
+                />
+                {(focusId === nd.id || (connectedIds && connectedIds.has(nd.id)) || nd.count >= 2) && (
                   <text
                     y={-r - 5}
                     textAnchor="middle"
                     fontSize={11}
                     fill="#1a1a1a"
-                    style={{ pointerEvents: "none", fontWeight: hoverId === nd.id ? 600 : 400 }}
+                    style={{ pointerEvents: "none", fontWeight: focusId === nd.id ? 600 : 400 }}
                   >
                     {nd.label.length > 34 ? nd.label.slice(0, 34) + "…" : nd.label}
                   </text>
@@ -224,6 +231,59 @@ export default function ProcessGraph({ nodes, edges }) {
           })}
         </svg>
       </div>
+
+      {/* Selected node details */}
+      {selectedNode && (
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span
+                className="w-3.5 h-3.5 rounded-full shrink-0"
+                style={{ backgroundColor: (TYPE_STYLE[selectedNode.type] || {}).color || "#888" }}
+              />
+              <div>
+                <h3 className="font-semibold text-sm leading-snug">{selectedNode.label}</h3>
+                <p className="text-xs text-muted-foreground">
+                  {(TYPE_STYLE[selectedNode.type] || {}).label || selectedNode.type} ·
+                  {" "}встречается в {selectedNode.count || 1} сесс.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setSelectedId(null)}
+              className="text-xs text-muted-foreground hover:text-foreground shrink-0"
+            >
+              Закрыть
+            </button>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-xs font-medium text-muted-foreground mb-2">
+              Связано с ({selectedConnections.length})
+            </p>
+            {selectedConnections.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Нет связей с другими узлами.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {selectedConnections.map((c) => (
+                  <button
+                    key={c.node.id}
+                    onClick={() => setSelectedId(c.node.id)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border border-border bg-background hover:bg-accent transition-colors"
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: (TYPE_STYLE[c.node.type] || {}).color || "#888" }}
+                    />
+                    {c.node.label.length > 28 ? c.node.label.slice(0, 28) + "…" : c.node.label}
+                    <span className="text-muted-foreground">×{c.weight}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
