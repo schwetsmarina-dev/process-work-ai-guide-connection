@@ -129,7 +129,16 @@ export default function ExportSessionPdfButton({ session, messages = [], languag
 
     printWindow.document.write(html);
     printWindow.document.close();
-    setTimeout(() => printWindow.print(), 500);
+    // Wait for the Noto Sans web font to finish loading before printing —
+    // otherwise the browser may still be using a fallback font (some of which
+    // lack Cyrillic glyphs) at the moment print() fires.
+    const triggerPrint = () => printWindow.print();
+    if (printWindow.document.fonts?.ready) {
+      printWindow.document.fonts.ready.then(triggerPrint).catch(triggerPrint);
+      setTimeout(triggerPrint, 1500); // safety fallback if fonts.ready never resolves
+    } else {
+      setTimeout(triggerPrint, 800);
+    }
   };
 
   return (
