@@ -15,6 +15,7 @@ import {
   MessageSquare,
   NotebookPen,
   Network,
+  Stethoscope,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -31,14 +32,18 @@ const regularNavItems = [
   { path: "/settings", label: "Настройки", icon: Settings },
 ];
 
+const therapistNavItem = { path: "/therapist", label: "Кабинет терапевта", icon: Stethoscope };
+
 const adminNavItems = [
   { path: "/admin/import", label: "Импорт данных", icon: Upload },
   { path: "/admin/status", label: "Статус данных", icon: ShieldAlert },
   { path: "/admin/feedback", label: "Отзывы beta", icon: MessageSquare },
 ];
 
-function NavContent({ currentPath, onNavigate, isAdmin }) {
-  const items = isAdmin ? [...regularNavItems, ...adminNavItems] : regularNavItems;
+function NavContent({ currentPath, onNavigate, isAdmin, isTherapist }) {
+  let items = [...regularNavItems];
+  if (isTherapist || isAdmin) items = [...items, therapistNavItem];
+  if (isAdmin) items = [...items, ...adminNavItems];
   return (
     <div className="flex flex-col h-full">
       <div className="p-6 border-b border-border">
