@@ -1,6 +1,5 @@
 import React, { useRef, useState } from "react";
 import { Upload, FileText, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 export default function CsvUploader({ onParsed, disabled }) {
   const inputRef = useRef();
