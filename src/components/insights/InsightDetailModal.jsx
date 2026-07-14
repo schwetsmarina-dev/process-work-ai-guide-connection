@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Star, ExternalLink, Save } from "lucide-react";
+import { ExternalLink, Save } from "lucide-react";
 import { format } from "date-fns";
 
 const IMPORTANCE_LABELS = { 1: "наблюдение", 2: "значимое", 3: "ключевой инсайт" };
