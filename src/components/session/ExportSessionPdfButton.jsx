@@ -77,8 +77,15 @@ export default function ExportSessionPdfButton({ session, messages = [], languag
 <head>
   <meta charset="UTF-8">
   <title>Inner Process Path — ${escapeHtml(modeName)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: -apple-system, Arial, Helvetica, sans-serif;
+    /* 'Noto Sans' embeds full Cyrillic glyphs, so the exported PDF stays readable
+       regardless of the OS/print-driver's default font (unlike the literal
+       PostScript font 'Helvetica', which has no Cyrillic glyphs at all and was
+       producing mojibake for Russian-language exports). */
+    body { font-family: 'Noto Sans', -apple-system, 'Segoe UI', Arial, sans-serif;
            max-width: 720px; margin: 30px auto; padding: 0 20px;
            color: #1a1a1a; line-height: 1.6; }
     h1 { font-size: 22px; color: #46825f; margin-bottom: 2px; }
