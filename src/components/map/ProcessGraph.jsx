@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 
 // Node type visual config
 const TYPE_STYLE = {
