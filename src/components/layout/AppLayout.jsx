@@ -150,7 +150,7 @@ export default function AppLayout() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
-              <NavContent currentPath={location.pathname} onNavigate={() => setOpen(false)} isAdmin={isAdmin} />
+              <NavContent currentPath={location.pathname} onNavigate={() => setOpen(false)} isAdmin={isAdmin} isTherapist={isTherapist} />
             </SheetContent>
           </Sheet>
         </div>
