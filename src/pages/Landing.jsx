@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Sparkles, Heart, Moon, GitBranch, PenLine, ArrowRight, Shield } from "lucide-react";
+import { Heart, Moon, GitBranch, PenLine, ArrowRight, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { normalizeLang, t, getStoredLanguage, setStoredLanguage } from "@/lib/i18n";
