@@ -665,6 +665,7 @@ export default function SessionChat() {
                   message={msg}
                   sessionId={sessionId}
                   sourceMode={session?.mode_id || session?.mode}
+                  language={language}
                 />
               ))}
 

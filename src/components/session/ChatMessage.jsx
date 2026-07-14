@@ -50,6 +50,9 @@ export default function ChatMessage({ message, sessionId, sourceMode, language }
             sourceMode={sourceMode}
           />
         )}
+        {isAssistant && (
+          <SpeakButton text={message.content} language={language} />
+        )}
       </div>
     </motion.div>
   );
