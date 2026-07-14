@@ -18,6 +18,7 @@ import SummaryActions from "@/components/session/SummaryActions";
 import SessionNotFoundDiagnostic from "@/components/session/SessionNotFoundDiagnostic";
 import SessionHighlights from "@/components/session/SessionHighlights";
 import ExportSessionPdfButton from "@/components/session/ExportSessionPdfButton";
+import BodySignalMatch from "@/components/physio/BodySignalMatch";
 import { normalizeLang, t } from "@/lib/i18n";
 
 const iconMap = { Heart, Moon, GitBranch, PenLine };
