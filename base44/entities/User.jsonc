@@ -5,7 +5,8 @@
       "description": "The role of the user in the app",
       "enum": [
         "admin",
-        "user"
+        "user",
+        "therapist"
       ]
     }
   },
