@@ -22,6 +22,7 @@ import AdminDataStatus from './pages/AdminDataStatus';
 import AdminFeedback from './pages/AdminFeedback';
 import InsightLibrary from './pages/InsightLibrary';
 import InsightAgent from './pages/InsightAgent';
+import LifeProcessMap from './pages/LifeProcessMap';
 import RequireAuth from './components/layout/RequireAuth';
 import { Navigate } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -92,6 +93,7 @@ const AuthenticatedApp = () => {
             <Route path="/insights" element={<Insights />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/insights-library" element={<InsightLibrary />} />
+            <Route path="/life-process-map" element={<LifeProcessMap />} />
             <Route path="/insight-agent" element={<InsightAgent />} />
             <Route path="/admin/import" element={<ProtectedAdminRoute><AdminImport /></ProtectedAdminRoute>} />
             <Route path="/admin/status" element={<ProtectedAdminRoute><AdminDataStatus /></ProtectedAdminRoute>} />
