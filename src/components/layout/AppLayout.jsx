@@ -16,6 +16,7 @@ import {
   NotebookPen,
   Network,
   Stethoscope,
+  GitCommitVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -28,6 +29,7 @@ const regularNavItems = [
   { path: "/history", label: "История", icon: History },
   { path: "/insights-library", label: "Библиотека инсайтов", icon: BookOpen },
   { path: "/life-process-map", label: "Карта процесса", icon: Network },
+  { path: "/timeline", label: "Timeline личности", icon: GitCommitVertical },
   { path: "/insights", label: "Аналитика", icon: BarChart3 },
   { path: "/settings", label: "Настройки", icon: Settings },
 ];
