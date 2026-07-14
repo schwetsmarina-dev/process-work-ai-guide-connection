@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2, Search, BookOpen, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import InsightCard from "@/components/insights/InsightCard";
 import InsightDetailModal from "@/components/insights/InsightDetailModal";
 
