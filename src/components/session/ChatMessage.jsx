@@ -1,9 +1,10 @@
 import React from "react";
 import SaveInsightButton from "./SaveInsightButton";
+import SpeakButton from "./SpeakButton";
 import { motion } from "framer-motion";
 import { Sparkles, User } from "lucide-react";
 
-export default function ChatMessage({ message, sessionId, sourceMode }) {
+export default function ChatMessage({ message, sessionId, sourceMode, language }) {
   const isUser = message.role === "user";
   const isSystem = message.role === "system";
   const isAssistant = message.role === "assistant";
