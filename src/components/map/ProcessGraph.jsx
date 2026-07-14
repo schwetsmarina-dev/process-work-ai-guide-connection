@@ -115,16 +115,37 @@ export default function ProcessGraph({ nodes, edges }) {
     });
   };
 
-  // Connected node ids for hover highlight
+  // Focus node: selected takes priority, otherwise hovered
+  const focusId = selectedId || hoverId;
+
+  // Connected node ids for highlight
   const connectedIds = useMemo(() => {
-    if (!hoverId) return null;
-    const ids = new Set([hoverId]);
+    if (!focusId) return null;
+    const ids = new Set([focusId]);
     visibleEdges.forEach((e) => {
-      if (e.source === hoverId) ids.add(e.target);
-      if (e.target === hoverId) ids.add(e.source);
+      if (e.source === focusId) ids.add(e.target);
+      if (e.target === focusId) ids.add(e.source);
     });
     return ids;
-  }, [hoverId, visibleEdges]);
+  }, [focusId, visibleEdges]);
+
+  // Details for the selected node
+  const selectedNode = useMemo(
+    () => visibleNodes.find((nd) => nd.id === selectedId) || null,
+    [visibleNodes, selectedId]
+  );
+  const selectedConnections = useMemo(() => {
+    if (!selectedId) return [];
+    const byId = new Map(nodes.map((nd) => [nd.id, nd]));
+    return visibleEdges
+      .filter((e) => e.source === selectedId || e.target === selectedId)
+      .map((e) => {
+        const otherId = e.source === selectedId ? e.target : e.source;
+        return { node: byId.get(otherId), weight: e.weight };
+      })
+      .filter((c) => c.node)
+      .sort((a, b) => b.weight - a.weight);
+  }, [selectedId, visibleEdges, nodes]);
 
   return (
     <div className="space-y-4">
