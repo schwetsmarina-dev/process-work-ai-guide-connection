@@ -23,6 +23,7 @@ import AdminFeedback from './pages/AdminFeedback';
 import InsightLibrary from './pages/InsightLibrary';
 import InsightAgent from './pages/InsightAgent';
 import LifeProcessMap from './pages/LifeProcessMap';
+import TherapistDashboard from './pages/TherapistDashboard';
 import RequireAuth from './components/layout/RequireAuth';
 import { Navigate } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -38,6 +39,27 @@ function ProtectedAdminRoute({ children }) {
     base44.auth.me().then((user) => {
       const admin = user?.role === "admin" || user?.email === "schwets.marina@gmail.com";
       setStatus(admin ? "ok" : "denied");
+    }).catch(() => setStatus("denied"));
+  }, []);
+
+  if (status === "loading") return null;
+  if (status === "denied") {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Доступ запрещён</p>
+      </div>
+    );
+  }
+  return children;
+}
+
+function ProtectedTherapistRoute({ children }) {
+  const [status, setStatus] = React.useState("loading");
+
+  React.useEffect(() => {
+    base44.auth.me().then((user) => {
+      const ok = user?.role === "therapist" || user?.role === "admin";
+      setStatus(ok ? "ok" : "denied");
     }).catch(() => setStatus("denied"));
   }, []);
 
@@ -94,6 +116,7 @@ const AuthenticatedApp = () => {
             <Route path="/settings" element={<Settings />} />
             <Route path="/insights-library" element={<InsightLibrary />} />
             <Route path="/life-process-map" element={<LifeProcessMap />} />
+            <Route path="/therapist" element={<ProtectedTherapistRoute><TherapistDashboard /></ProtectedTherapistRoute>} />
             <Route path="/insight-agent" element={<InsightAgent />} />
             <Route path="/admin/import" element={<ProtectedAdminRoute><AdminImport /></ProtectedAdminRoute>} />
             <Route path="/admin/status" element={<ProtectedAdminRoute><AdminDataStatus /></ProtectedAdminRoute>} />
