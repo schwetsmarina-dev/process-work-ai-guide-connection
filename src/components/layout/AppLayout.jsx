@@ -93,6 +93,7 @@ export default function AppLayout() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isTherapist, setIsTherapist] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [appUser, setAppUser] = useState(null);
   const [userChecked, setUserChecked] = useState(false);
@@ -102,6 +103,7 @@ export default function AppLayout() {
       const admin = user?.role === "admin" || user?.email === "schwets.marina@gmail.com";
       console.log("[ADMIN_ACCESS]", { email: user?.email, role: user?.role, isAdmin: admin });
       setIsAdmin(admin);
+      setIsTherapist(user?.role === "therapist");
       setCurrentUser(user);
       try {
         const rows = await base44.entities.AppUser.filter({ email: user?.email });
@@ -129,7 +131,7 @@ export default function AppLayout() {
     <div className="min-h-screen flex">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-64 border-r border-border bg-card flex-col fixed h-full">
-        <NavContent currentPath={location.pathname} onNavigate={() => {}} isAdmin={isAdmin} />
+        <NavContent currentPath={location.pathname} onNavigate={() => {}} isAdmin={isAdmin} isTherapist={isTherapist} />
       </aside>
 
       {/* Mobile header */}
