@@ -39,6 +39,11 @@
       "type": "boolean",
       "default": false
     },
+    "research_consent_given": {
+      "type": "boolean",
+      "default": false,
+      "description": "Separate consent to include anonymized data in research exports"
+    },
     "plan": {
       "type": "string",
       "default": "free"
