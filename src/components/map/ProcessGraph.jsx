@@ -82,6 +82,7 @@ function computeLayout(nodes, edges) {
 
 export default function ProcessGraph({ nodes, edges }) {
   const [hoverId, setHoverId] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
   const [activeTypes, setActiveTypes] = useState(new Set(Object.keys(TYPE_STYLE)));
 
   const visibleNodes = useMemo(
