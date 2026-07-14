@@ -1,10 +1,18 @@
 import React, { useState } from "react";
-import { SendHorizontal, Loader2 } from "lucide-react";
+import { SendHorizontal, Loader2, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import useSpeechRecognition from "@/hooks/useSpeechRecognition";
 
 export default function ChatInput({ onSend, isLoading, disabled }) {
   const [text, setText] = useState("");
+
+  const { isSupported, isListening, toggle } = useSpeechRecognition({
+    lang: "ru-RU",
+    onResult: (transcript) => {
+      setText((prev) => (prev ? `${prev} ${transcript}` : transcript));
+    },
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -31,6 +39,19 @@ export default function ChatInput({ onSend, isLoading, disabled }) {
         rows={1}
         disabled={disabled}
       />
+      {isSupported && (
+        <Button
+          type="button"
+          size="icon"
+          variant={isListening ? "default" : "outline"}
+          onClick={toggle}
+          disabled={disabled}
+          title={isListening ? "Остановить запись" : "Говорите"}
+          className={`rounded-xl h-11 w-11 shrink-0 ${isListening ? "animate-pulse" : ""}`}
+        >
+          {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+        </Button>
+      )}
       <Button
         type="submit"
         size="icon"
