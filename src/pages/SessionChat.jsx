@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   checkCrisis,
   checkLowRisk,
-  CRISIS_MESSAGE,
+  getCrisisMessage,
   fetchStep,
   getAIResponse,
   generateSessionSummary,
@@ -368,7 +368,7 @@ export default function SessionChat() {
 
       // Crisis check (high severity)
       if (checkCrisis(text)) {
-        await createMessage({ session_id: sessionId, role: "system", content: CRISIS_MESSAGE });
+        await createMessage({ session_id: sessionId, role: "system", content: getCrisisMessage(language) });
         const created = await base44.entities.RiskEvent.create({
           session_id: sessionId,
           message_id: savedUserMsg?.id,
