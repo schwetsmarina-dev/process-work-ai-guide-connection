@@ -17,6 +17,7 @@ import {
   Network,
   Stethoscope,
   GitCommitVertical,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -25,6 +26,7 @@ import Onboarding from "@/components/onboarding/Onboarding";
 
 const regularNavItems = [
   { path: "/dashboard", label: "Главная", icon: LayoutDashboard },
+  { path: "/progress", label: "Прогресс", icon: TrendingUp },
   { path: "/journal", label: "Дневник", icon: NotebookPen },
   { path: "/history", label: "История", icon: History },
   { path: "/insights-library", label: "Библиотека инсайтов", icon: BookOpen },

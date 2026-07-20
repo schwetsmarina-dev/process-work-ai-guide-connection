@@ -10,6 +10,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
+import Progress from './pages/Progress';
 import SessionChat from './pages/SessionChat';
 import SessionSummary from './pages/SessionSummary';
 import History from './pages/History';
@@ -111,6 +112,7 @@ const AuthenticatedApp = () => {
         <Route element={<RequireAuth />}>
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/progress" element={<Progress />} />
             <Route path="/journal" element={<Journal />} />
             <Route path="/history" element={<History />} />
             <Route path="/insights" element={<Insights />} />
