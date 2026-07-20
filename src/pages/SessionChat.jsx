@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, AlertTriangle, RefreshCw, ShieldAlert } from "lucide-react";
+import { Loader2, AlertTriangle, RefreshCw, ShieldAlert, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   checkCrisis,
@@ -12,7 +12,7 @@ import {
   getAIResponse,
   generateSessionSummary,
 } from "@/lib/sessionAI";
-import { createMessage, listMessages } from "@/lib/messageApi";
+import { createMessage, listMessages, revertLastExchange } from "@/lib/messageApi";
 import {
   loadUserMemories,
   formatMemoriesForPrompt,
@@ -104,6 +104,10 @@ export default function SessionChat() {
   const [isAdminView, setIsAdminView] = useState(false);
   // Optimistic messages shown while backend confirms
   const [optimisticMessages, setOptimisticMessages] = useState([]);
+  // "Step back" (undo last exchange) state
+  const [isUndoing, setIsUndoing] = useState(false);
+  const [seedText, setSeedText] = useState("");
+  const [seedNonce, setSeedNonce] = useState(0);
   const messagesEndRef = useRef(null);
   const initDone = useRef(false);
   const lastFailedMessageRef = useRef(null);
@@ -484,6 +488,37 @@ export default function SessionChat() {
     }
   };
 
+  // ── Step back: undo last exchange (user answer + facilitator reply) ────────
+  const handleUndo = async () => {
+    if (!session || isAdminView || isAiLoading || isUndoing) return;
+    setIsUndoing(true);
+    setSendError(false);
+    setSendErrorMessage(null);
+    try {
+      const res = await revertLastExchange(sessionId);
+      if (res?.reverted) {
+        setSessionComplete(false);
+        setShiftSuggestion(null);
+        if (res.removed_user_text) {
+          setSeedText(res.removed_user_text);
+          setSeedNonce((n) => n + 1);
+        }
+        queryClient.invalidateQueries({ queryKey: ["session", sessionId, currentUser?.email] });
+        queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
+      }
+    } catch (err) {
+      console.error("[UNDO] revert failed:", err?.message || err);
+      setSendError(true);
+      setSendErrorMessage(
+        language === "es"
+          ? "No se pudo volver un paso atrás. Inténtalo de nuevo."
+          : "Не удалось вернуться на шаг назад. Попробуй ещё раз."
+      );
+    } finally {
+      setIsUndoing(false);
+    }
+  };
+
   // ── End session (manual) ──────────────────────────────────────────────────
   const handleEndSession = async () => {
     setIsEnding(true);
@@ -768,6 +803,26 @@ export default function SessionChat() {
 
           <div className="border-t border-border bg-card/80 backdrop-blur-lg px-4 py-3">
             <div className="max-w-3xl mx-auto">
+              {!isAdminView && !sessionComplete && messages.some((m) => m.role === "user") && (
+                <div className="mb-2 flex justify-end">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleUndo}
+                    disabled={isUndoing || isAiLoading || !!shiftSuggestion}
+                    className="gap-1.5 h-8 text-xs text-muted-foreground hover:text-foreground"
+                    title={language === "es" ? "Corregir tu última respuesta" : "Исправить последний ответ"}
+                  >
+                    {isUndoing ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    )}
+                    {language === "es" ? "Volver un paso atrás" : "Вернуться на шаг назад"}
+                  </Button>
+                </div>
+              )}
               {(() => {
                 // Input is disabled ONLY for states where typing makes no sense.
                 // stepError NO LONGER disables input — user must always be able to type.
@@ -785,6 +840,8 @@ export default function SessionChat() {
                     onSend={handleSend}
                     isLoading={isAiLoading}
                     disabled={inputDisabled}
+                    seedText={seedText}
+                    seedNonce={seedNonce}
                   />
                 );
               })()}
