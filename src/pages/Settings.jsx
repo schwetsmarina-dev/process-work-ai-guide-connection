@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Shield, User } from "lucide-react";
 import { normalizeLang, t } from "@/lib/i18n";
 import LanguageSelector from "@/components/settings/LanguageSelector";
+import PrivacyControls from "@/components/settings/PrivacyControls";
 
 export default function Settings() {
   const [user, setUser] = useState(null);
@@ -66,6 +67,8 @@ export default function Settings() {
             {t("privacy_text", lang)}
           </p>
         </Card>
+
+        <PrivacyControls user={user} appUser={appUser} lang={lang} />
 
         <Card className="p-6 border-destructive/20">
           <h3 className="font-semibold text-sm mb-2">{t("logout", lang)}</h3>
