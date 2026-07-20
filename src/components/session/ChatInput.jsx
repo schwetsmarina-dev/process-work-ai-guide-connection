@@ -1,11 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SendHorizontal, Loader2, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import useSpeechRecognition from "@/hooks/useSpeechRecognition";
 
-export default function ChatInput({ onSend, isLoading, disabled }) {
+export default function ChatInput({ onSend, isLoading, disabled, seedText = "", seedNonce = 0 }) {
   const [text, setText] = useState("");
+
+  // When the parent bumps seedNonce (e.g. after "step back"), load the returned
+  // text back into the box so the user can correct it and resend.
+  useEffect(() => {
+    if (seedNonce > 0) setText(seedText || "");
+  }, [seedNonce]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { isSupported, isListening, toggle } = useSpeechRecognition({
     lang: "ru-RU",
