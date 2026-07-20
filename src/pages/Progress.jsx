@@ -18,6 +18,7 @@ import { startOfWeek, subWeeks, format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { normalizeLang } from "@/lib/i18n";
 import { MODE_LABELS } from "@/lib/modeSteps";
+import { generateWeeklyRecap } from "@/lib/progressAI";
 
 const MODE_ICON_COMP = { body: Heart, dream: Moon, conflict: GitBranch, journaling: PenLine };
 const MODE_ORDER = ["body", "dream", "conflict", "journaling"];
@@ -189,12 +190,21 @@ export default function Progress() {
       total: completed.length,
       streak,
       thisWeekCount: thisWeek.length,
+      thisWeekSessions: thisWeek,
       thisWeekModes,
       thisWeekThemes,
       modeCounts,
       topThemes,
     };
   }, [sessions]);
+
+  const weekStartKey = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const { data: recap, isLoading: recapLoading } = useQuery({
+    queryKey: ["weekly-recap", weekStartKey, stats.thisWeekSessions.map((s) => s.id).join(",")],
+    queryFn: () => generateWeeklyRecap({ weekStartKey, sessions: stats.thisWeekSessions, lang }),
+    enabled: stats.thisWeekCount > 0,
+    staleTime: Infinity,
+  });
 
   if (isLoading) {
     return (
@@ -245,6 +255,14 @@ export default function Progress() {
               <p className="text-sm text-muted-foreground">{tx.recap_none}</p>
             ) : (
               <div className="space-y-3 text-sm">
+                {recapLoading ? (
+                  <div className="space-y-2">
+                    <div className="h-4 w-full rounded bg-muted animate-pulse" />
+                    <div className="h-4 w-2/3 rounded bg-muted animate-pulse" />
+                  </div>
+                ) : recap ? (
+                  <p className="text-[15px] leading-relaxed text-foreground/90 italic">{recap}</p>
+                ) : null}
                 <p>
                   <span className="text-2xl font-semibold text-primary mr-1">{stats.thisWeekCount}</span>
                   {tx.recap_sessions}
