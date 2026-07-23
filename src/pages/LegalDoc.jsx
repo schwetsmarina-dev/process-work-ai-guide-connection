@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useParams, Navigate } from "react-router-dom";
+import { Link, useLocation, Navigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { ArrowLeft } from "lucide-react";
 import { getStoredLanguage, t } from "@/lib/i18n";
@@ -22,8 +22,11 @@ const SLUG_TO_KEY = {
  * payment provider need a stable public URL.
  */
 export default function LegalDoc() {
-  const { slug } = useParams();
+  const location = useLocation();
   const lang = getStoredLanguage();
+  // Routes are registered with literal paths rather than a :slug param so that
+  // each document has its own stable, linkable URL.
+  const slug = location.pathname.replace(/^\/+|\/+$/g, "");
   const docKey = SLUG_TO_KEY[slug];
 
   if (!docKey) return <Navigate to="/" replace />;
