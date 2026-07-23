@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Volume2, Square } from "lucide-react";
+import { t } from "@/lib/i18n";
 
 const LANG_MAP = { ru: "ru-RU", es: "es-ES" };
 
@@ -45,11 +46,11 @@ export default function SpeakButton({ text, language = "ru" }) {
     <button
       type="button"
       onClick={toggle}
-      title={isSpeaking ? "Остановить" : "Озвучить"}
+      title={isSpeaking ? t("speak_stop", language) : t("speak_play", language)}
       className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
     >
       {isSpeaking ? <Square className="w-3 h-3" /> : <Volume2 className="w-3.5 h-3.5" />}
-      {isSpeaking ? "Остановить" : "Озвучить"}
+      {isSpeaking ? t("speak_stop", language) : t("speak_play", language)}
     </button>
   );
 }
