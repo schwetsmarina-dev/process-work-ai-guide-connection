@@ -23,7 +23,7 @@ export default function FullSessionReport({ session, messages, lang = "ru" }) {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
-    const modeName = MODE_LABELS_RU[session.mode_id || session.mode] || (session.mode_id || session.mode);
+    const modeName = MODE_LABELS[session.mode_id || session.mode]?.[lang] || (session.mode_id || session.mode);
     const dateStr = session.created_date ? format(new Date(session.created_date), "d MMM yyyy, HH:mm") : "";
 
     const sections = [];
