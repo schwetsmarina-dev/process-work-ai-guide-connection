@@ -381,6 +381,8 @@ export default function SessionChat() {
           status: "open",
         });
         console.log("[RISK_EVENT_CREATED]", { id: created?.id, severity: "high", session_id: sessionId });
+        // Count only. Severity label, nothing else — no trigger text, no ids.
+        track(EVENTS.SAFETY_PAUSE_TRIGGERED, { severity: "high", language });
         await base44.entities.Session.update(sessionId, { risk_flag: true });
         queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
         return;
