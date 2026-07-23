@@ -7,6 +7,7 @@ import { Shield, User } from "lucide-react";
 import { normalizeLang, t } from "@/lib/i18n";
 import LanguageSelector from "@/components/settings/LanguageSelector";
 import PrivacyControls from "@/components/settings/PrivacyControls";
+import SubscriptionCard from "@/components/settings/SubscriptionCard";
 
 export default function Settings() {
   const [user, setUser] = useState(null);
@@ -57,6 +58,8 @@ export default function Settings() {
         </Card>
 
         <LanguageSelector authUser={user} appUser={appUser} lang={lang} onChange={handleLangChange} />
+
+        <SubscriptionCard lang={lang} />
 
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
