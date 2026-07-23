@@ -20,6 +20,7 @@ import SessionHighlights from "@/components/session/SessionHighlights";
 import ExportSessionPdfButton from "@/components/session/ExportSessionPdfButton";
 import BodySignalMatch from "@/components/physio/BodySignalMatch";
 import { normalizeLang, t } from "@/lib/i18n";
+import { isSummaryUnavailable } from "@/lib/summaryFallback";
 
 const iconMap = { Heart, Moon, GitBranch, PenLine };
 
@@ -122,7 +123,7 @@ export default function SessionSummary() {
     }
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">Сессия не найдена</p>
+        <p className="text-muted-foreground">{t("session_not_found", language)}</p>
       </div>
     );
   }
@@ -139,7 +140,7 @@ export default function SessionSummary() {
         <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm text-center">
           {language === "es"
             ? "Modo administrador: vista de la sesión de un usuario. No se realizan cambios."
-            : "Режим администратора: просмотр сессии пользователя. Изменения не вносятся."}
+            : t("admin_view_note", language)}
         </div>
       )}
 
@@ -185,7 +186,7 @@ export default function SessionSummary() {
             <p className="text-sm leading-relaxed text-muted-foreground">
               {session.summary || t("summary_missing", language)}
             </p>
-            {session.confidence_note && session.summary && session.summary !== "Сессия завершена. Резюме недоступно." && (
+            {session.confidence_note && session.summary && !isSummaryUnavailable(session.summary) && (
               <p className="text-xs text-muted-foreground/70 italic mt-3 pt-3 border-t border-border">
                 {session.confidence_note}
               </p>
@@ -194,7 +195,7 @@ export default function SessionSummary() {
         </motion.div>
 
         {/* Quick visual overview of themes + signals */}
-        {session.summary !== "Сессия завершена. Резюме недоступно." && (
+        {!isSummaryUnavailable(session.summary) && (
           <SessionHighlights
             themes={session.themes || []}
             signals={session.signals || []}
@@ -203,7 +204,7 @@ export default function SessionSummary() {
         )}
 
         {/* Themes — only show if summary is not the fallback */}
-        {session.themes?.length > 0 && session.summary !== "Сессия завершена. Резюме недоступно." && (
+        {session.themes?.length > 0 && !isSummaryUnavailable(session.summary) && (
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -226,7 +227,7 @@ export default function SessionSummary() {
         )}
 
         {/* Signals — only show if summary is not the fallback */}
-        {session.signals?.length > 0 && session.summary !== "Сессия завершена. Резюме недоступно." && (
+        {session.signals?.length > 0 && !isSummaryUnavailable(session.summary) && (
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
