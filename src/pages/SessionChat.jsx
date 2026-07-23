@@ -679,6 +679,7 @@ export default function SessionChat() {
         session={session}
         totalSteps={totalSteps}
         onEndSession={handleEndSession}
+        lang={language}
       />
 
       {isEnding && (
