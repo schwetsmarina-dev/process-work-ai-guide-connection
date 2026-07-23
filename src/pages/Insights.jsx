@@ -14,14 +14,15 @@ const MODE_COLORS = {
   journaling: "hsl(280, 20%, 55%)",
 };
 
-const MODE_NAMES = {
-  body: "Тело",
-  dream: "Сны",
-  conflict: "Конфликт",
-  journaling: "Дневник",
+const MODE_NAME_KEYS = {
+  body: "mode_body",
+  dream: "mode_dream",
+  conflict: "mode_conflict",
+  journaling: "mode_journaling",
 };
 
 export default function Insights() {
+  const lang = getStoredLanguage();
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export default function Insights() {
       return acc;
     }, {})
   ).map(([mode, count]) => ({
-    name: MODE_NAMES[mode] || mode,
+    name: MODE_NAME_KEYS[mode] ? t(MODE_NAME_KEYS[mode], lang) : mode,
     value: count,
     color: MODE_COLORS[mode] || "hsl(0, 0%, 50%)",
   }));

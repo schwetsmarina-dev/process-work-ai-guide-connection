@@ -7,6 +7,7 @@ import RecentSessionCard from "@/components/dashboard/RecentSessionCard";
 import RegenerateSummaryButton, { needsRegenerate } from "@/components/history/RegenerateSummaryButton";
 
 export default function History() {
+  const lang = getStoredLanguage();
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {

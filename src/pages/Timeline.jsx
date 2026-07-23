@@ -8,6 +8,7 @@ import TimelineEvent from "@/components/timeline/TimelineEvent";
 import InsightDetailModal from "@/components/insights/InsightDetailModal";
 
 export default function Timeline() {
+  const lang = getStoredLanguage();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedInsight, setSelectedInsight] = useState(null);

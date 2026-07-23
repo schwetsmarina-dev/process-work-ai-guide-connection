@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import ProcessGraph from "@/components/map/ProcessGraph";
 
 export default function LifeProcessMap() {
+  const lang = getStoredLanguage();
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {

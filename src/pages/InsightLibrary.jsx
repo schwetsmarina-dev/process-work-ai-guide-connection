@@ -13,6 +13,7 @@ const IMPORTANCE_OPTS = [1, 2, 3];
 const IMPORTANCE_KEYS = { 1: "importance_num_1", 2: "importance_num_2", 3: "importance_num_3" };
 
 export default function InsightLibrary() {
+  const lang = getStoredLanguage();
   const [search, setSearch] = useState("");
   const [filterFav, setFilterFav] = useState(false);
   const [filterMode, setFilterMode] = useState(null);
