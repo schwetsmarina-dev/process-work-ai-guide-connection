@@ -64,6 +64,78 @@ export const COMPLETION_SIGNALS = [
   "я снова чувствую себя живой", "я снова чувствую себя живым",
   "жизнь возвращается", "я возвращаюсь к себе", "я снова себя чувствую",
   "я снова дышу", "я снова здесь",
+
+  // ══ ESPAÑOL ══════════════════════════════════════════════════════════════
+  // Not a literal translation of the Russian list. Spanish speakers mark
+  // closure differently — more often through "darse cuenta", "soltar" and
+  // bodily calm than through the Russian "я поняла / стало ясно" pattern.
+  // Review these with a native speaker before treating detection rates as real.
+
+  // ── Insight / clarity ────────────────────────────────────────────
+  "ahora lo entiendo", "ahora entiendo", "me he dado cuenta", "me doy cuenta",
+  "ahora lo veo", "ahora lo veo claro", "lo veo más claro", "se me ha aclarado",
+  "todo encaja", "ha encajado", "tiene sentido ahora", "ya tiene sentido",
+  "se me ha abierto algo", "algo se ha aclarado", "lo comprendo",
+
+  // ── Stable, grounded, empowered state ──────────────────────────────
+  "me siento fuerte", "siento fuerza", "me siento firme", "me siento estable",
+  "siento apoyo", "tengo los pies en la tierra", "me siento entera",
+  "me siento entero", "siento plenitud", "me siento completa", "me siento completo",
+  "me siento tranquila", "me siento tranquilo", "siento calma", "estoy en calma",
+  "me siento segura", "me siento seguro", "siento confianza",
+  "siento una dirección", "veo una dirección",
+  "esto ya forma parte de mí", "ya es parte de mí",
+
+  // ── Relief / settling ─────────────────────────────────────────
+  "me siento más ligera", "me siento más ligero", "siento alivio",
+  "he sentido alivio", "se ha soltado", "algo se ha soltado", "he soltado",
+  "la tensión se ha ido", "se me ha quitado la tensión", "respiro mejor",
+  "he respirado", "he podido respirar", "siento calor", "algo cálido",
+
+  // ── Inner conflict resolving ───────────────────────────────────
+  "las partes se han puesto de acuerdo", "hay paz entre ellas",
+  "el conflicto se ha resuelto", "ya no me siento dividida",
+  "ya no me siento dividido", "entiendo las dos partes",
+  "las dos partes importan", "he encontrado un equilibrio",
+  "es más honesto", "soy honesta conmigo", "soy honesto conmigo",
+
+  // ── Agency / self-care ──────────────────────────────────────
+  "puedo protegerme", "sé protegerme", "me protejo",
+  "me hago cargo", "me responsabilizo", "me cuido", "quiero cuidarme",
+  "puedo cuidar de mí", "estoy lista para cuidarme", "estoy listo para cuidarme",
+
+  // ── Direction / decision ─────────────────────────────────────
+  "sé qué hacer", "ya sé qué hacer", "veo el camino", "ha aparecido un camino",
+  "sé cuál es el siguiente paso", "veo el siguiente paso",
+  "el siguiente paso está claro", "estoy lista para", "estoy listo para",
+  "voy hacia delante", "quiero aplicar esto", "estoy saliendo de esto",
+
+  // ── Integration into life ────────────────────────────────────
+  "esto es importante para mi vida", "esto cambia algo en mi vida",
+  "quiero esto en mi vida", "ya está en mi vida", "quiero vivir desde aquí",
+  "esto es importante para mí",
+
+  // ── Body / symptom resolution ─────────────────────────────────
+  "el cuerpo se ha calmado", "mi cuerpo se ha calmado",
+  "la sensación ha cambiado", "el síntoma ha cambiado",
+  "ahora lo miro de otra manera", "lo veo de otra forma",
+  "mi cuerpo me dice", "el cuerpo me ha dicho", "entiendo a mi cuerpo",
+  "algo se ha relajado", "se ha relajado",
+
+  // ── Natural ending / sufficiency ───────────────────────────────
+  "con esto me basta", "esto es suficiente", "ya es suficiente",
+  "he conseguido lo que quería", "por hoy es suficiente",
+  "no quiero seguir escarbando", "no quiero indagar más",
+  "quiero terminar", "quiero cerrar aquí", "siento que está completo",
+
+  // ── Dream mode ─────────────────────────────────────────────
+  "el sueño me dice", "el sueño me dijo", "entiendo este sueño",
+  "el mensaje del sueño", "he escuchado el mensaje", "el sueño iba de",
+
+  // ── Reconnecting with life energy ──────────────────────────────
+  "me siento viva otra vez", "me siento vivo otra vez",
+  "la vida vuelve", "vuelvo a mí", "vuelvo a sentirme",
+  "vuelvo a respirar", "estoy aquí otra vez",
 ];
 
 // Detects if the process has reached a natural completion/closure state.
