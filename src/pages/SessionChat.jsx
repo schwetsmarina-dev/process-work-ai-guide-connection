@@ -529,11 +529,11 @@ export default function SessionChat() {
     await finalizeSession(allMessages);
   };
 
-  const handleEndSessionSilent = async (msgs) => {
-    setIsAiLoading(false);
-    setIsEnding(true);
-    await finalizeSession(msgs);
-  };
+  // Note: an older design auto-finalized the session without user action.
+  // That was replaced by an explicit "end session" button once the final step
+  // is reached (see setSessionComplete below), which is the safer behaviour in
+  // a reflective context — the user decides when the session is over.
+  // Sessions left open are closed by the `abandonStaleSessions` backend job.
 
   const finalizeSession = async (passedMessages) => {
     // Structural counters only — never message content. See telemetry.js.
