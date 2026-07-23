@@ -171,11 +171,11 @@ export default function FullSessionReport({ session, messages, lang = "ru" }) {
 
     try {
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Ты — опытный Process Work фасилитатор. Проанализируй завершённую сессию и создай структурированный отчёт.
+      prompt: `You are an experienced Process Work facilitator. Analyze the completed session and produce a structured report.
 
-Режим сессии: ${session.mode_id || session.mode}
+Session mode: ${session.mode_id || session.mode}
 
-Диалог:
+Transcript:
 ${conversation}
 
 ${lang === "es" ? "Escribe el informe EN ESPAÑOL, con un tono cálido y profesional. Usa las palabras e imágenes concretas de la conversación." : "Напиши отчёт на русском языке, тёплым профессиональным тоном. Используй конкретные слова и образы из разговора."}`,
@@ -184,35 +184,35 @@ ${lang === "es" ? "Escribe el informe EN ESPAÑOL, con un tono cálido y profesi
         properties: {
           key_signals: {
             type: "array",
-            description: "3–5 ключевых сигналов, замеченных в сессии (телесные, образные, эмоциональные)",
+            description: "3-5 key signals noticed in the session (bodily, imaginal, emotional)",
             items: { type: "string" }
           },
           polarities: {
             type: "array",
-            description: "2–3 выявленные полярности или внутренние противоречия",
+            description: "2-3 polarities or inner contradictions identified",
             items: {
               type: "object",
               properties: {
-                primary: { type: "string", description: "Первичный полюс (знакомое, устойчивое)" },
-                secondary: { type: "string", description: "Вторичный полюс (новое, напряжённое, живое)" },
-                tension: { type: "string", description: "Суть напряжения между ними" }
+                primary: { type: "string", description: "Primary pole (familiar, stable)" },
+                secondary: { type: "string", description: "Secondary pole (new, charged, alive)" },
+                tension: { type: "string", description: "The essence of the tension between them" }
               }
             }
           },
           self_work_plan: {
             type: "array",
-            description: "3–5 конкретных практик для самостоятельной работы между сессиями",
+            description: "3-5 concrete practices for self-guided work between sessions",
             items: {
               type: "object",
               properties: {
-                practice: { type: "string", description: "Название практики или упражнения" },
-                how: { type: "string", description: "Как именно это делать (1–2 предложения)" }
+                practice: { type: "string", description: "Name of the practice or exercise" },
+                how: { type: "string", description: "How exactly to do it (1-2 sentences)" }
               }
             }
           },
           closing_reflection: {
             type: "string",
-            description: "Короткое завершающее отражение (2–3 предложения) о главном, что открылось в сессии"
+            description: "A short closing reflection (2-3 sentences) on what mattered most in the session"
           }
         }
       }

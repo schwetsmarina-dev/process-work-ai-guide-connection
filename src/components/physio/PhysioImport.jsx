@@ -98,7 +98,7 @@ export default function PhysioImport({ userId, onImported }) {
                 <SelectContent>
                   {METRIC_OPTIONS.map((m) => (
                     <SelectItem key={m.value} value={m.value}>
-                      {m.label}
+                      {t(m.labelKey, lang)}
                     </SelectItem>
                   ))}
                 </SelectContent>

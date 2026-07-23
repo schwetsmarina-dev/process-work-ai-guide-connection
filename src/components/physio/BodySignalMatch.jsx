@@ -109,7 +109,7 @@ export default function BodySignalMatch({ session, userId }) {
                 className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-muted/50"
               >
                 <span className="font-medium">
-                  {METRIC_LABELS[d.metric_type] || d.metric_type}
+                  {METRIC_LABELS[d.metric_type] ? t(METRIC_LABELS[d.metric_type], lang) : d.metric_type}
                 </span>
                 <span className="text-muted-foreground">
                   {d.value}
