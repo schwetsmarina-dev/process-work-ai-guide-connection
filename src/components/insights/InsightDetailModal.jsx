@@ -13,6 +13,7 @@ import { format } from "date-fns";
 const IMPORTANCE_KEYS = { 1: "importance_1", 2: "importance_2", 3: "importance_3_full" };
 
 export default function InsightDetailModal({ insight, onClose }) {
+  const lang = getStoredLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [note, setNote] = useState(insight?.personal_note || "");
