@@ -103,6 +103,10 @@ export default function AppLayout() {
   const [appUser, setAppUser] = useState(null);
   const [userChecked, setUserChecked] = useState(false);
 
+  // Nav language follows the user's saved preference; falls back to the
+  // browser/stored language before AppUser has loaded.
+  const lang = normalizeLang(appUser?.language || getStoredLanguage());
+
   useEffect(() => {
     base44.auth.me().then(async (user) => {
       const admin = user?.role === "admin" || user?.email === "schwets.marina@gmail.com";
@@ -136,7 +140,7 @@ export default function AppLayout() {
     <div className="min-h-screen flex">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-64 border-r border-border bg-card flex-col fixed h-full">
-        <NavContent currentPath={location.pathname} onNavigate={() => {}} isAdmin={isAdmin} isTherapist={isTherapist} />
+        <NavContent currentPath={location.pathname} onNavigate={() => {}} isAdmin={isAdmin} isTherapist={isTherapist} lang={lang} />
       </aside>
 
       {/* Mobile header */}
@@ -155,7 +159,7 @@ export default function AppLayout() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
-              <NavContent currentPath={location.pathname} onNavigate={() => setOpen(false)} isAdmin={isAdmin} isTherapist={isTherapist} />
+              <NavContent currentPath={location.pathname} onNavigate={() => setOpen(false)} isAdmin={isAdmin} isTherapist={isTherapist} lang={lang} />
             </SheetContent>
           </Sheet>
         </div>
