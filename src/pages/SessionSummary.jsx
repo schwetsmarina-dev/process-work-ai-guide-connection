@@ -324,7 +324,7 @@ export default function SessionSummary() {
           transition={{ duration: 0.5, delay: 0.5 }}
           className="mt-6"
         >
-          <SessionInsightSuggestions suggestions={insightSuggestions} session={session} />
+          <SessionInsightSuggestions suggestions={insightSuggestions} session={session} lang={language} />
         </motion.div>
       )}
 
