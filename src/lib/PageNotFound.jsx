@@ -1,11 +1,13 @@
 import { useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { t, getStoredLanguage } from '@/lib/i18n';
 
 
 export default function PageNotFound({}) {
     const location = useLocation();
     const pageName = location.pathname.substring(1);
+    const lang = getStoredLanguage();
 
     const { data: authData, isFetched } = useQuery({
         queryKey: ['user'],
@@ -32,10 +34,11 @@ export default function PageNotFound({}) {
                     {/* Main Message */}
                     <div className="space-y-3">
                         <h2 className="text-2xl font-medium text-slate-800">
-                            Страница не найдена
+                            {t('notfound_title', lang)}
                         </h2>
                         <p className="text-slate-600 leading-relaxed">
-                            Страница <span className="font-medium text-slate-700">"{pageName}"</span> не существует.
+                            {t('notfound_text', lang)}{' '}
+                            <span className="font-medium text-slate-700">"{pageName}"</span>
                         </p>
                     </div>
                     
@@ -65,7 +68,7 @@ export default function PageNotFound({}) {
                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                             </svg>
-                            На главную
+                            {t('notfound_home', lang)}
                         </button>
                     </div>
                 </div>
