@@ -299,7 +299,7 @@ export default function SessionSummary() {
 
       {/* Full session report */}
       {messages.length > 0 && (
-        <FullSessionReport session={session} messages={messages} />
+        <FullSessionReport session={session} messages={messages} lang={language} />
       )}
 
       {/* Summary actions: regenerate (if fallback) or save to diary */}

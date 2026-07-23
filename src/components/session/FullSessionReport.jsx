@@ -5,19 +5,15 @@ import { Card } from "@/components/ui/card";
 import { Loader2, FileText, Zap, GitBranch, ListChecks, ChevronDown, ChevronUp, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
+import { t } from "@/lib/i18n";
+import { MODE_LABELS } from "@/lib/modeSteps";
+import { isSummaryUnavailable } from "@/lib/summaryFallback";
 import { downloadSummaryTxt } from "@/lib/downloadSummary";
-
-const MODE_LABELS_RU = {
-  body: "Работа с телом",
-  dream: "Работа со сном",
-  conflict: "Работа с конфликтом",
-  journaling: "Свободное письмо",
-};
 
 const escapeHtml = (str) =>
   String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-export default function FullSessionReport({ session, messages }) {
+export default function FullSessionReport({ session, messages, lang = "ru" }) {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(true);
@@ -32,10 +28,10 @@ export default function FullSessionReport({ session, messages }) {
 
     const sections = [];
 
-    if (session.summary && session.summary !== "Сессия завершена. Резюме недоступно.") {
+    if (session.summary && !isSummaryUnavailable(session.summary)) {
       sections.push(`
         <div class="section">
-          <div class="section-title summary">Краткое резюме</div>
+          <div class="section-title summary">${escapeHtml(t("report_summary_short", lang))}</div>
           <div class="section-body">${escapeHtml(session.summary)}</div>
         </div>`);
     }
@@ -43,7 +39,7 @@ export default function FullSessionReport({ session, messages }) {
     if (report.key_signals?.length > 0) {
       sections.push(`
         <div class="section">
-          <div class="section-title signals">Ключевые сигналы</div>
+          <div class="section-title signals">${escapeHtml(t("report_signals", lang))}</div>
           <ul class="section-body">${report.key_signals.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ul>
         </div>`);
     }
@@ -51,7 +47,7 @@ export default function FullSessionReport({ session, messages }) {
     if (report.polarities?.length > 0) {
       sections.push(`
         <div class="section">
-          <div class="section-title polarities">Выявленные полярности</div>
+          <div class="section-title polarities">${escapeHtml(t("report_polarities", lang))}</div>
           ${report.polarities
             .map(
               (p, i) => `
@@ -67,7 +63,7 @@ export default function FullSessionReport({ session, messages }) {
     if (report.self_work_plan?.length > 0) {
       sections.push(`
         <div class="section">
-          <div class="section-title plan">План самостоятельной работы</div>
+          <div class="section-title plan">${escapeHtml(t("report_plan", lang))}</div>
           ${report.self_work_plan
             .map(
               (item, i) => `
@@ -83,7 +79,7 @@ export default function FullSessionReport({ session, messages }) {
     if (report.closing_reflection) {
       sections.push(`
         <div class="section">
-          <div class="section-title reflection">Завершающее отражение</div>
+          <div class="section-title reflection">${escapeHtml(t("report_reflection", lang))}</div>
           <div class="section-body">${escapeHtml(report.closing_reflection)}</div>
         </div>`);
     }
@@ -136,10 +132,10 @@ export default function FullSessionReport({ session, messages }) {
 </head>
 <body>
   <h1>Inner Process Path</h1>
-  <p class="subtitle">Отчёт о сессии</p>
-  <div class="meta">Режим: ${escapeHtml(modeName)} &nbsp;·&nbsp; ${escapeHtml(dateStr)}</div>
+  <p class="subtitle">${escapeHtml(t("report_subtitle", lang))}</p>
+  <div class="meta">${escapeHtml(t("report_mode", lang))}: ${escapeHtml(modeName)} &nbsp;·&nbsp; ${escapeHtml(dateStr)}</div>
   ${sections.join("")}
-  <div class="footer">Inner Process Path · Сгенерировано автоматически</div>
+  <div class="footer">Inner Process Path · ${escapeHtml(t("report_footer", lang))}</div>
 </body>
 </html>`;
 
@@ -170,7 +166,7 @@ export default function FullSessionReport({ session, messages }) {
     const conversation = messages
       .filter((m) => m.role !== "system")
       .slice(-20)
-      .map((m) => `${m.role === "user" ? "П" : "А"}: ${m.content}`)
+      .map((m) => `${m.role === "user" ? "U" : "A"}: ${m.content}`)
       .join("\n");
 
     try {
@@ -182,7 +178,7 @@ export default function FullSessionReport({ session, messages }) {
 Диалог:
 ${conversation}
 
-Напиши отчёт на русском языке, тёплым профессиональным тоном. Используй конкретные слова и образы из разговора.`,
+${lang === "es" ? "Escribe el informe EN ESPAÑOL, con un tono cálido y profesional. Usa las palabras e imágenes concretas de la conversación." : "Напиши отчёт на русском языке, тёплым профессиональным тоном. Используй конкретные слова и образы из разговора."}`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -225,7 +221,7 @@ ${conversation}
       setReport(result);
     } catch (err) {
       console.error("[FullSessionReport] generate failed:", err);
-      setGenerateError("Не удалось сгенерировать отчёт. Попробуйте ещё раз.");
+      setGenerateError(t("report_error", lang));
     } finally {
       setLoading(false);
     }
@@ -240,23 +236,23 @@ ${conversation}
           onClick={generate}
         >
           <FileText className="w-4 h-4 mr-2" />
-          {session.summary === "Сессия завершена. Резюме недоступно."
-            ? "Сгенерировать резюме и PDF"
-            : "Сгенерировать полное резюме сессии"}
+          {isSummaryUnavailable(session.summary)
+            ? t("report_generate_summary_pdf", lang)
+            : t("report_generate_full", lang)}
         </Button>
       )}
 
       {loading && (
         <div className="flex items-center justify-center gap-3 py-6 text-muted-foreground text-sm">
           <Loader2 className="w-4 h-4 animate-spin" />
-          Анализируем сессию…
+          {t("report_analyzing", lang)}
         </div>
       )}
 
       {generateError && !loading && (
         <div className="p-4 rounded-xl border border-destructive/30 bg-destructive/5 flex items-center justify-between">
           <p className="text-sm text-destructive">{generateError}</p>
-          <Button size="sm" variant="outline" onClick={generate}>Повторить</Button>
+          <Button size="sm" variant="outline" onClick={generate}>{t("retry", lang)}</Button>
         </div>
       )}
 
@@ -275,7 +271,7 @@ ${conversation}
             >
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-sm">Полное резюме сессии</span>
+                <span className="font-semibold text-sm">{t("report_full_title", lang)}</span>
               </div>
               {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
             </div>
@@ -287,7 +283,7 @@ ${conversation}
                   <Card className="p-5">
                     <div className="flex items-center gap-2 mb-3">
                       <Zap className="w-4 h-4 text-amber-500" />
-                      <h4 className="font-semibold text-sm">Ключевые сигналы</h4>
+                      <h4 className="font-semibold text-sm">{t("report_signals", lang)}</h4>
                     </div>
                     <ul className="space-y-2">
                       {report.key_signals.map((s, i) => (
@@ -305,7 +301,7 @@ ${conversation}
                   <Card className="p-5">
                     <div className="flex items-center gap-2 mb-3">
                       <GitBranch className="w-4 h-4 text-violet-500" />
-                      <h4 className="font-semibold text-sm">Выявленные полярности</h4>
+                      <h4 className="font-semibold text-sm">{t("report_polarities", lang)}</h4>
                     </div>
                     <div className="space-y-3">
                       {report.polarities.map((p, i) => (
@@ -329,7 +325,7 @@ ${conversation}
                   <Card className="p-5 border-primary/20 bg-primary/5">
                     <div className="flex items-center gap-2 mb-3">
                       <ListChecks className="w-4 h-4 text-primary" />
-                      <h4 className="font-semibold text-sm">План самостоятельной работы</h4>
+                      <h4 className="font-semibold text-sm">{t("report_plan", lang)}</h4>
                     </div>
                     <div className="space-y-3">
                       {report.self_work_plan.map((item, i) => (
@@ -357,10 +353,10 @@ ${conversation}
                     variant="default"
                     size="sm"
                     className="flex-1 rounded-xl"
-                    onClick={() => downloadSummaryTxt(session)}
+                    onClick={() => downloadSummaryTxt(session, lang)}
                   >
                     <Download className="w-3.5 h-3.5 mr-1.5" />
-                    Скачать (TXT)
+                    {t("download_txt", lang)}
                   </Button>
                   <Button
                     variant="outline"
@@ -377,7 +373,7 @@ ${conversation}
                     className="text-muted-foreground text-xs"
                     onClick={generate}
                   >
-                    Заново
+                    {t("again", lang)}
                   </Button>
                 </div>
               </div>
