@@ -382,6 +382,18 @@ export default function SessionChat() {
           status: "open",
         });
         console.log("[RISK_EVENT_CREATED]", { id: created?.id, severity: "high", session_id: sessionId });
+
+        // Escalate to a human. Deliberately NOT awaited: the crisis message and
+        // the resource numbers must appear on screen immediately, and a slow or
+        // failing mail service must never delay or block that. Failures are
+        // logged, not surfaced — the person in front of the screen is not the
+        // right audience for an alerting error.
+        if (created?.id) {
+          base44.functions
+            .invoke("notifyRiskEvent", { riskEventId: created.id })
+            .catch((e) => console.error("[RISK_NOTIFY_FAILED]", created.id, e?.message));
+        }
+
         // Count only. Severity label, nothing else — no trigger text, no ids.
         track(EVENTS.SAFETY_PAUSE_TRIGGERED, { severity: "high", language });
         await base44.entities.Session.update(sessionId, { risk_flag: true });
