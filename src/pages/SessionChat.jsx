@@ -22,6 +22,7 @@ import ChatMessage from "@/components/session/ChatMessage";
 import ChatInput from "@/components/session/ChatInput";
 import StepErrorDebug from "@/components/session/StepErrorDebug";
 import { normalizeLang, t } from "@/lib/i18n";
+import { track, EVENTS } from "@/lib/telemetry";
 
 // Canonical, mode-specific opening question (do NOT use DB step.question for the first greeting)
 function getInitialOpeningQuestion(modeId, language, step) {
@@ -533,6 +534,13 @@ export default function SessionChat() {
   };
 
   const finalizeSession = async (passedMessages) => {
+    // Structural counters only — never message content. See telemetry.js.
+    track(EVENTS.SESSION_COMPLETED, {
+      mode: session?.mode_id || session?.mode || "unknown",
+      steps_reached: session?.current_step || 0,
+      message_count: Array.isArray(passedMessages) ? passedMessages.length : 0,
+      language,
+    });
     const redirectTimer = setTimeout(() => {
       navigate(`/session/${sessionId}/summary`);
     }, 15000);
