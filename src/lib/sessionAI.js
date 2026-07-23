@@ -1348,7 +1348,7 @@ ${userMessage}
 Напиши 1 отражение и 1 вопрос к следующему слою. Строго 2–3 предложения.`;
     try {
       const r = await base44.functions.invoke("invokeAI", { prompt: trimmedPrompt });
-      return r.data?.response || getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold);
+      return r.data?.response || getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold, language);
     } catch (e) {
       console.error("[AI_RUNTIME] InvokeLLM FAILED (trimmed):", e?.message);
       throw e;
@@ -1387,7 +1387,7 @@ ${userMessage}
     const minimalPrompt = `Ты Process Work guide. Задавай один мягкий вопрос.\n\nПоследнее сообщение пользователя: ${userMessage}`;
     try {
       const safeResponse = (await base44.functions.invoke("invokeAI", { prompt: minimalPrompt })).data?.response;
-      return safeResponse || getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold);
+      return safeResponse || getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold, language);
     } catch (e2) {
       console.error("[AI_RUNTIME] Safe-mode retry ALSO FAILED:", e2?.message);
       throw e;
@@ -1409,7 +1409,7 @@ ${userMessage}
     console.log("[AI_RUNTIME] InvokeLLM pass 2 success, response length:", secondResponse?.length);
   } catch (e) {
     console.error("[AI_RUNTIME] InvokeLLM FAILED (pass 2):", e?.message);
-    return getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold);
+    return getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold, language);
   }
 
   const secondValidation = validateAssistantResponse({ responseText: secondResponse, ...validationParams });
@@ -1420,7 +1420,7 @@ ${userMessage}
   }
 
   console.warn("[AI_RUNTIME] Pass 2 also failed validation:", secondValidation.reason);
-  const fallback = getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold);
+  const fallback = getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold, language);
   console.info("[AI_RUNTIME] Using safe fallback:", fallback);
   return fallback;
 }
