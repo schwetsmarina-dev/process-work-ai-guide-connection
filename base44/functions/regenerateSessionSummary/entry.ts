@@ -36,6 +36,24 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No user messages — cannot summarize', messageCount: messages.length });
     }
 
+    // Language must follow the SESSION OWNER, not the admin running this.
+    // Without it, regenerating a Spanish user's summary silently replaced it
+    // with Russian text.
+    let language = 'ru';
+    try {
+      const owners = await base44.asServiceRole.entities.AppUser.filter({
+        email: session.created_by,
+      });
+      if (owners[0]?.language === 'es') language = 'es';
+    } catch (e) {
+      console.warn('[regenerateSessionSummary] could not resolve owner language, defaulting to ru:', e?.message);
+    }
+    const languageRule =
+      language === 'es'
+        ? 'Escribe TODO en español. Sé concreto, nada de generalidades.'
+        : 'Pishi po-russki. Bud konkretnym, ne obshchim.';
+    console.log('[regenerateSessionSummary] language:', language);
+
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: `Ты — процессуально-ориентированный фасилитатор. Проанализируй эту сессию и выдай ТОЛЬКО JSON без markdown:
 {
@@ -44,7 +62,7 @@ Deno.serve(async (req) => {
   "signals": ["телесный или эмоциональный сигнал 1", "сигнал 2"],
   "next_step_suggestion": "одна конкретная рекомендация — что исследовать в следующий раз"
 }
-Пиши на русском языке. Будь конкретным, не общим.
+Пиши на том же языке, на котором шла сессия. ${languageRule}
 
 Режим: ${session.mode_id || session.mode}
 
