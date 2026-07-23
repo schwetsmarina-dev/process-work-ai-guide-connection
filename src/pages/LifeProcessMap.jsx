@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { t, getStoredLanguage } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Network, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,9 +35,9 @@ export default function LifeProcessMap() {
             <Network className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="font-serif text-2xl font-semibold">Карта процесса</h1>
+            <h1 className="font-serif text-2xl font-semibold">{t("map_title", lang)}</h1>
             <p className="text-sm text-muted-foreground">
-              Темы, сигналы и термины из ваших сессий и связи между ними
+              {t("map_subtitle", lang)}
             </p>
           </div>
         </div>
@@ -48,21 +49,21 @@ export default function LifeProcessMap() {
           className="gap-1.5 shrink-0"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} />
-          Обновить
+          {t("refresh", lang)}
         </Button>
       </div>
 
       {isLoading && (
         <div className="flex items-center justify-center gap-3 py-24 text-muted-foreground text-sm">
           <Loader2 className="w-5 h-5 animate-spin" />
-          Строим карту процесса…
+          {t("map_building", lang)}
         </div>
       )}
 
       {isError && !isLoading && (
         <div className="p-6 rounded-xl border border-destructive/30 bg-destructive/5 text-center">
-          <p className="text-sm text-destructive mb-3">Не удалось построить карту.</p>
-          <Button size="sm" variant="outline" onClick={() => refetch()}>Повторить</Button>
+          <p className="text-sm text-destructive mb-3">{t("map_error", lang)}</p>
+          <Button size="sm" variant="outline" onClick={() => refetch()}>{t("retry", lang)}</Button>
         </div>
       )}
 
@@ -70,8 +71,7 @@ export default function LifeProcessMap() {
         <div className="py-24 text-center">
           <Network className="w-10 h-10 text-muted-foreground/40 mx-auto mb-4" />
           <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-            Пока недостаточно данных для карты. Пройдите несколько сессий — темы и сигналы
-            появятся здесь и соединятся в граф.
+            {t("map_empty", lang)}
           </p>
         </div>
       )}
@@ -80,8 +80,7 @@ export default function LifeProcessMap() {
         <>
           <ProcessGraph nodes={nodes} edges={edges} />
           <p className="text-xs text-muted-foreground mt-3">
-            Размер узла — как часто тема встречалась, толщина связи — как часто две темы
-            встречались вместе в одной сессии. Наведите на узел, чтобы подсветить связи.
+            {t("map_legend", lang)}
           </p>
         </>
       )}

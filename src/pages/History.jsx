@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { t, getStoredLanguage } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import RecentSessionCard from "@/components/dashboard/RecentSessionCard";
@@ -20,8 +21,8 @@ export default function History() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
-      <h1 className="font-serif text-3xl font-semibold mb-2">История сессий</h1>
-      <p className="text-muted-foreground mb-8">Все ваши сессии самоисследования</p>
+      <h1 className="font-serif text-3xl font-semibold mb-2">{t("history_title", lang)}</h1>
+      <p className="text-muted-foreground mb-8">{t("history_subtitle", lang)}</p>
 
       {isLoading ? (
         <div className="flex justify-center py-16">
@@ -29,7 +30,7 @@ export default function History() {
         </div>
       ) : sessions.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-muted-foreground">У вас пока нет сессий</p>
+          <p className="text-muted-foreground">{t("history_empty", lang)}</p>
         </div>
       ) : (
         <div className="space-y-2">

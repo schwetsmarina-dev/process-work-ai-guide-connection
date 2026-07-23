@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { t, getStoredLanguage } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Search, BookOpen, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import InsightDetailModal from "@/components/insights/InsightDetailModal";
 
 const MODES = ["body", "dream", "conflict", "journaling"];
 const IMPORTANCE_OPTS = [1, 2, 3];
-const IMPORTANCE_LABELS = { 1: "1 — наблюдение", 2: "2 — значимое", 3: "3 — ключевое" };
+const IMPORTANCE_KEYS = { 1: "importance_num_1", 2: "importance_num_2", 3: "importance_num_3" };
 
 export default function InsightLibrary() {
   const [search, setSearch] = useState("");
@@ -50,10 +51,10 @@ export default function InsightLibrary() {
           <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
             <BookOpen className="w-4 h-4 text-primary" />
           </div>
-          <h1 className="font-serif text-3xl font-semibold">Библиотека инсайтов</h1>
+          <h1 className="font-serif text-3xl font-semibold">{t("library_title", lang)}</h1>
         </div>
         <p className="text-muted-foreground text-sm">
-          Место, где сохраняются важные внутренние открытия из твоих сессий.
+          {t("library_subtitle", lang)}
         </p>
       </div>
 
@@ -61,7 +62,7 @@ export default function InsightLibrary() {
       <div className="relative mb-5">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder="Поиск по названию, тексту, тегам..."
+          placeholder={t("library_search", lang)}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9"
@@ -77,7 +78,7 @@ export default function InsightLibrary() {
           className="gap-1.5"
         >
           <Star className={`w-3.5 h-3.5 ${filterFav ? "fill-primary-foreground" : ""}`} />
-          Избранные
+          {t("library_favorites", lang)}
         </Button>
 
         {MODES.map((m) => (
@@ -115,13 +116,13 @@ export default function InsightLibrary() {
           <BookOpen className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
           <p className="text-muted-foreground">
             {insights.length === 0
-              ? "Пока здесь нет инсайтов. Заверши сессию или сохрани важную мысль из диалога."
-              : "Нет инсайтов по выбранным фильтрам."}
+              ? t("library_empty", lang)
+              : t("library_empty_filtered", lang)}
           </p>
         </div>
       ) : (
         <>
-          <p className="text-xs text-muted-foreground mb-4">{visible.length} инсайтов</p>
+          <p className="text-xs text-muted-foreground mb-4">{visible.length} {t("library_count", lang)}</p>
           <div className="grid gap-3">
             {visible.map((ins) => (
               <InsightCard key={ins.id} insight={ins} onClick={setSelectedInsight} />

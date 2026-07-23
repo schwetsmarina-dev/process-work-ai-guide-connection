@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { t, getStoredLanguage } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, TrendingUp, Brain } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -84,24 +85,24 @@ export default function Insights() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
-      <h1 className="font-serif text-3xl font-semibold mb-2">Инсайты</h1>
-      <p className="text-muted-foreground mb-8">Ваши паттерны и тенденции</p>
+      <h1 className="font-serif text-3xl font-semibold mb-2">{t("insights_title", lang)}</h1>
+      <p className="text-muted-foreground mb-8">{t("insights_subtitle", lang)}</p>
 
       {completedSessions.length === 0 ? (
         <div className="text-center py-16">
           <Brain className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-          <p className="text-muted-foreground">Завершите несколько сессий, чтобы увидеть инсайты</p>
+          <p className="text-muted-foreground">{t("insights_empty", lang)}</p>
         </div>
       ) : (
         <div className="space-y-6">
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4">
             <Card className="p-5">
-              <p className="text-sm text-muted-foreground mb-1">Всего сессий</p>
+              <p className="text-sm text-muted-foreground mb-1">{t("stat_total_sessions", lang)}</p>
               <p className="text-3xl font-serif font-bold">{completedSessions.length}</p>
             </Card>
             <Card className="p-5">
-              <p className="text-sm text-muted-foreground mb-1">Тем обнаружено</p>
+              <p className="text-sm text-muted-foreground mb-1">{t("stat_themes_found", lang)}</p>
               <p className="text-3xl font-serif font-bold">{new Set(allThemes).size}</p>
             </Card>
           </div>
@@ -111,7 +112,7 @@ export default function Insights() {
             <Card className="p-6">
               <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-primary" />
-                Распределение по режимам
+                {t("modes_distribution", lang)}
               </h3>
               <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
@@ -148,7 +149,7 @@ export default function Insights() {
           {/* Themes */}
           {themeFrequency.length > 0 && (
             <Card className="p-6">
-              <h3 className="font-semibold text-sm mb-4">Повторяющиеся темы</h3>
+              <h3 className="font-semibold text-sm mb-4">{t("themes_recurring", lang)}</h3>
               <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={themeFrequency} layout="vertical">
@@ -165,7 +166,7 @@ export default function Insights() {
           {/* Key memories */}
           {memories.length > 0 && (
             <Card className="p-6">
-              <h3 className="font-semibold text-sm mb-4">Ключевые наблюдения</h3>
+              <h3 className="font-semibold text-sm mb-4">{t("key_observations", lang)}</h3>
               <div className="space-y-3">
                 {memories.slice(0, 10).map((mem) => (
                   <div key={mem.id} className="flex items-start gap-3 text-sm">
