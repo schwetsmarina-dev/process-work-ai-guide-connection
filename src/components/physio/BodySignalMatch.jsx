@@ -1,3 +1,4 @@
+import { t, getStoredLanguage } from "@/lib/i18n";
 import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -8,17 +9,18 @@ import { format } from "date-fns";
 import PhysioImport from "./PhysioImport";
 
 const METRIC_LABELS = {
-  heart_rate: "Пульс",
-  hrv: "ВСР",
-  sleep_hours: "Сон",
-  steps: "Шаги",
-  respiratory_rate: "Дыхание",
-  stress: "Стресс",
+  heart_rate: "metric_short_heart_rate",
+  hrv: "metric_short_hrv",
+  sleep_hours: "metric_short_sleep_hours",
+  steps: "metric_short_steps",
+  respiratory_rate: "metric_short_respiratory_rate",
+  stress: "metric_short_stress",
 };
 
 // Pairs the body-mode session's signals with physiological data recorded in the
 // same period (±12h window around the session). Body mode only.
 export default function BodySignalMatch({ session, userId }) {
+  const lang = getStoredLanguage();
   const [physioData, setPhysioData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showImport, setShowImport] = useState(false);
@@ -56,16 +58,15 @@ export default function BodySignalMatch({ session, userId }) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-primary" />
-          <h3 className="font-semibold text-sm">Телесные сигналы и физиология</h3>
+          <h3 className="font-semibold text-sm">{t("body_signals_title", lang)}</h3>
         </div>
         <Button variant="ghost" size="sm" onClick={() => setShowImport((v) => !v)}>
-          {showImport ? "Скрыть" : "Добавить данные"}
+          {showImport ? t("body_signals_hide", lang) : t("body_signals_add", lang)}
         </Button>
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Сопоставь телесные сигналы этой сессии с физиологическими данными за тот же
-        период (±12 часов).
+        {t("body_signals_hint", lang)}
       </p>
 
       {/* Session signals */}
@@ -79,7 +80,7 @@ export default function BodySignalMatch({ session, userId }) {
         </div>
       ) : (
         <p className="text-xs text-muted-foreground italic">
-          В этой сессии не отмечены телесные сигналы.
+          {t("body_signals_none", lang)}
         </p>
       )}
 
@@ -88,7 +89,7 @@ export default function BodySignalMatch({ session, userId }) {
         <div className="flex items-center gap-2 mb-3">
           <Link2 className="w-3.5 h-3.5 text-muted-foreground" />
           <span className="text-xs font-medium text-muted-foreground">
-            Физиология за период сессии
+            {t("body_signals_period", lang)}
           </span>
         </div>
 
@@ -98,7 +99,7 @@ export default function BodySignalMatch({ session, userId }) {
           </div>
         ) : physioData.length === 0 ? (
           <p className="text-xs text-muted-foreground italic">
-            Нет физиологических данных за этот период. Добавь их, чтобы сопоставить с сигналами.
+            {t("body_signals_no_data", lang)}
           </p>
         ) : (
           <ul className="space-y-2">

@@ -1,3 +1,4 @@
+import { t, getStoredLanguage } from "@/lib/i18n";
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -14,12 +15,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, Watch, Apple, Loader2, Info, Plus } from "lucide-react";
 
 const METRIC_OPTIONS = [
-  { value: "heart_rate", label: "Пульс (bpm)", unit: "bpm" },
-  { value: "hrv", label: "ВСР / HRV (ms)", unit: "ms" },
-  { value: "sleep_hours", label: "Сон (часы)", unit: "hours" },
-  { value: "steps", label: "Шаги", unit: "steps" },
-  { value: "respiratory_rate", label: "Частота дыхания", unit: "br/min" },
-  { value: "stress", label: "Стресс (индекс)", unit: "" },
+  { value: "heart_rate", labelKey: "metric_heart_rate", unit: "bpm" },
+  { value: "hrv", labelKey: "metric_hrv", unit: "ms" },
+  { value: "sleep_hours", labelKey: "metric_sleep_hours", unit: "hours" },
+  { value: "steps", labelKey: "metric_steps", unit: "steps" },
+  { value: "respiratory_rate", labelKey: "metric_respiratory_rate", unit: "br/min" },
+  { value: "stress", labelKey: "metric_stress", unit: "" },
 ];
 
 // OAuth integration stub: Apple HealthKit / Garmin Connect.
@@ -27,6 +28,7 @@ const METRIC_OPTIONS = [
 // This component provides the working paths available today: manual entry + a
 // clearly-labeled placeholder for provider connection.
 export default function PhysioImport({ userId, onImported }) {
+  const lang = getStoredLanguage();
   const [metricType, setMetricType] = useState("heart_rate");
   const [value, setValue] = useState("");
   const [recordedAt, setRecordedAt] = useState(() =>
@@ -59,7 +61,7 @@ export default function PhysioImport({ userId, onImported }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Activity className="w-4 h-4 text-primary" />
-          Физиологические данные
+          {t("physio_title", lang)}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -68,9 +70,7 @@ export default function PhysioImport({ userId, onImported }) {
           <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/60 text-xs text-muted-foreground">
             <Info className="w-4 h-4 shrink-0 mt-0.5" />
             <span>
-              Прямое подключение Apple HealthKit и Garmin Connect требует нативного
-              приложения или партнёрского OAuth-доступа и пока недоступно из
-              веб-версии. Пока используйте ручной ввод или загрузку файла экспорта.
+              {t("physio_note", lang)}
             </span>
           </div>
           <div className="flex gap-2">
@@ -87,10 +87,10 @@ export default function PhysioImport({ userId, onImported }) {
 
         {/* Manual entry */}
         <div className="space-y-3 pt-2 border-t border-border">
-          <p className="text-sm font-medium">Добавить показатель вручную</p>
+          <p className="text-sm font-medium">{t("physio_add_manual", lang)}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Метрика</Label>
+              <Label className="text-xs">{t("physio_metric", lang)}</Label>
               <Select value={metricType} onValueChange={setMetricType}>
                 <SelectTrigger>
                   <SelectValue />
@@ -105,7 +105,7 @@ export default function PhysioImport({ userId, onImported }) {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Значение</Label>
+              <Label className="text-xs">{t("physio_value", lang)}</Label>
               <Input
                 type="number"
                 value={value}
@@ -115,7 +115,7 @@ export default function PhysioImport({ userId, onImported }) {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Время измерения</Label>
+            <Label className="text-xs">{t("physio_measured_at", lang)}</Label>
             <Input
               type="datetime-local"
               value={recordedAt}
@@ -124,7 +124,7 @@ export default function PhysioImport({ userId, onImported }) {
           </div>
           <Button onClick={handleAdd} disabled={saving || !value} className="gap-2 w-full">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-            Добавить
+            {t("physio_add", lang)}
           </Button>
         </div>
       </CardContent>

@@ -1,3 +1,4 @@
+import { t, getStoredLanguage } from "@/lib/i18n";
 import React, { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, Sparkles, Send, Loader2, BookOpen } from "lucide-react";
@@ -8,6 +9,7 @@ import MessageBubble from "@/components/agent/MessageBubble";
 const AGENT_NAME = "insight_guide";
 
 export default function InsightAgent() {
+  const lang = getStoredLanguage();
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -27,7 +29,7 @@ export default function InsightAgent() {
     setLoading(true);
     const convo = await base44.agents.createConversation({
       agent_name: AGENT_NAME,
-      metadata: { name: "Интеграция инсайтов" },
+      metadata: { name: t("agent_meta_name", lang) },
     });
     setConversation(convo);
     setMessages(convo.messages || []);
@@ -72,14 +74,14 @@ export default function InsightAgent() {
           <Sparkles className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h1 className="font-semibold text-sm leading-tight">Гид по инсайтам</h1>
-          <p className="text-xs text-muted-foreground">Исследование и интеграция</p>
+          <h1 className="font-semibold text-sm leading-tight">{t("agent_title", lang)}</h1>
+          <p className="text-xs text-muted-foreground">{t("agent_subtitle", lang)}</p>
         </div>
         <div className="ml-auto">
           <Link to="/insights">
             <Button variant="ghost" size="sm" className="gap-1.5 text-xs">
               <BookOpen className="w-3.5 h-3.5" />
-              Библиотека
+              {t("agent_library", lang)}
             </Button>
           </Link>
         </div>
@@ -97,17 +99,16 @@ export default function InsightAgent() {
               <Sparkles className="w-8 h-8 text-primary" />
             </div>
             <div>
-              <h2 className="font-serif text-xl font-semibold mb-2">Гид по инсайтам</h2>
+              <h2 className="font-serif text-xl font-semibold mb-2">{t("agent_title", lang)}</h2>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                Я помогу тебе исследовать и интегрировать инсайты из твоих сессий.
-                Поделись тем, что сейчас актуально, или спроси меня показать твои последние открытия.
+                {t("agent_intro", lang)}
               </p>
             </div>
             <div className="flex flex-col gap-2 items-center pt-2">
               {[
-                "Покажи мои последние инсайты",
-                "Что объединяет мои открытия?",
-                "Хочу глубже исследовать один инсайт",
+                t("agent_prompt_1", lang),
+                t("agent_prompt_2", lang),
+                t("agent_prompt_3", lang),
               ].map((suggestion) => (
                 <button
                   key={suggestion}
@@ -134,7 +135,7 @@ export default function InsightAgent() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Напиши здесь…"
+            placeholder={t("agent_placeholder", lang)}
             rows={1}
             className="flex-1 resize-none rounded-xl border border-input bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring min-h-[42px] max-h-32"
             style={{ height: "auto" }}
