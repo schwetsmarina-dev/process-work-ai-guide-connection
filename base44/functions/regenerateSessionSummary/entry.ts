@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     const languageRule =
       language === 'es'
         ? 'Escribe TODO en español. Sé concreto, nada de generalidades.'
-        : 'Pishi po-russki. Bud konkretnym, ne obshchim.';
+        : 'Пиши на русском языке. Будь конкретным, не общим.';
     console.log('[regenerateSessionSummary] language:', language);
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
