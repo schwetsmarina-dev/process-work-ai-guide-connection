@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Star, Archive, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
+import { t, getStoredLanguage } from "@/lib/i18n";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 
-const IMPORTANCE_LABELS = { 1: "наблюдение", 2: "значимое", 3: "ключевое" };
+const IMPORTANCE_KEYS = { 1: "importance_1", 2: "importance_2", 3: "importance_3" };
 const IMPORTANCE_COLORS = {
   1: "bg-secondary text-secondary-foreground",
   2: "bg-primary/10 text-primary",
@@ -75,7 +76,7 @@ export default function InsightCard({ insight, onClick }) {
       <div className="flex flex-wrap gap-2 items-center">
         {insight.importance && (
           <Badge className={`text-xs ${IMPORTANCE_COLORS[insight.importance] || IMPORTANCE_COLORS[2]}`}>
-            {IMPORTANCE_LABELS[insight.importance] || "значимое"}
+            {t(IMPORTANCE_KEYS[insight.importance] || "importance_2", getStoredLanguage())}
           </Badge>
         )}
         {insight.source_mode && (

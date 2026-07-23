@@ -3,9 +3,10 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { Lightbulb } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { t, getStoredLanguage } from "@/lib/i18n";
 import { getModeIcon, getModeLabel } from "@/components/journal/modeVisual";
 
-const IMPORTANCE_LABELS = { 1: "наблюдение", 2: "значимое", 3: "ключевой инсайт" };
+const IMPORTANCE_KEYS = { 1: "importance_1", 2: "importance_2", 3: "importance_3_full" };
 
 export default function TimelineEvent({ event, side, onClick }) {
   const isSession = event.kind === "session";
@@ -54,7 +55,7 @@ export default function TimelineEvent({ event, side, onClick }) {
               <p className="text-sm font-medium leading-snug">{event.title}</p>
               {event.importance && (
                 <Badge variant="secondary" className="text-xs mt-2">
-                  {IMPORTANCE_LABELS[event.importance] || "значимое"}
+                  {t(IMPORTANCE_KEYS[event.importance] || "importance_2", getStoredLanguage())}
                 </Badge>
               )}
             </>

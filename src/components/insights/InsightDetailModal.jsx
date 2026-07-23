@@ -5,11 +5,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { t, getStoredLanguage } from "@/lib/i18n";
 import { Textarea } from "@/components/ui/textarea";
 import { ExternalLink, Save } from "lucide-react";
 import { format } from "date-fns";
 
-const IMPORTANCE_LABELS = { 1: "наблюдение", 2: "значимое", 3: "ключевой инсайт" };
+const IMPORTANCE_KEYS = { 1: "importance_1", 2: "importance_2", 3: "importance_3_full" };
 
 export default function InsightDetailModal({ insight, onClose }) {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ export default function InsightDetailModal({ insight, onClose }) {
           {/* Meta */}
           <div className="flex flex-wrap gap-2">
             {insight.importance && (
-              <Badge variant="secondary">{IMPORTANCE_LABELS[insight.importance] || "значимое"}</Badge>
+              <Badge variant="secondary">{t(IMPORTANCE_KEYS[insight.importance] || "importance_2", lang)}</Badge>
             )}
             {insight.source_mode && <Badge variant="outline">{insight.source_mode}</Badge>}
             {insight.process_layer && <Badge variant="outline">{insight.process_layer}</Badge>}
@@ -62,7 +63,7 @@ export default function InsightDetailModal({ insight, onClose }) {
           {/* State keywords */}
           {insight.state_keywords && (
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Ключевые состояния</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">{t("insight_key_states", lang)}</p>
               <p className="text-sm">{insight.state_keywords}</p>
             </div>
           )}
@@ -78,19 +79,19 @@ export default function InsightDetailModal({ insight, onClose }) {
 
           {/* Reflection prompt */}
           <div className="border-t border-border pt-4">
-            <p className="text-sm font-medium mb-1">Рефлексия</p>
+            <p className="text-sm font-medium mb-1">{t("insight_reflection", lang)}</p>
             <p className="text-sm text-muted-foreground italic">
-              «Как этот инсайт проявляется в твоей жизни сейчас?»
+              {t("insight_reflection_q", lang)}
             </p>
           </div>
 
           {/* Personal note */}
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Личная заметка</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">{t("insight_personal_note", lang)}</p>
             <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Добавь свою мысль или наблюдение..."
+              placeholder={t("insight_note_placeholder", lang)}
               className="min-h-[80px] resize-none text-sm"
             />
             <Button
@@ -101,7 +102,7 @@ export default function InsightDetailModal({ insight, onClose }) {
               disabled={saving}
             >
               <Save className="w-3.5 h-3.5 mr-1.5" />
-              {saved ? "Сохранено" : saving ? "Сохраняю..." : "Сохранить заметку"}
+              {saved ? t("saved", lang) : saving ? t("insight_saving", lang) : t("insight_save_note", lang)}
             </Button>
           </div>
 
@@ -115,7 +116,7 @@ export default function InsightDetailModal({ insight, onClose }) {
                 onClick={() => { navigate(`/session/${insight.session_id}/summary`); onClose(); }}
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
-                Открыть сессию
+                {t("open_session", lang)}
               </Button>
             </div>
           )}
