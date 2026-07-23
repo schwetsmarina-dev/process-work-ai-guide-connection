@@ -853,6 +853,7 @@ export default function SessionChat() {
                     disabled={inputDisabled}
                     seedText={seedText}
                     seedNonce={seedNonce}
+                    lang={language}
                   />
                 );
               })()}
