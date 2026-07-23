@@ -19,16 +19,31 @@ export async function loadUserMemories(userId) {
 }
 
 // ─── 2. Format memories block for the system prompt ──────────────────────────
-export function formatMemoriesForPrompt(memories) {
+// The wrapper text is part of the prompt, so it must be written in the session
+// language — a Russian instruction block inside a Spanish conversation nudges
+// the model to drift back into Russian.
+const MEMORY_PREAMBLE = {
+  ru: {
+    intro: "Вот что известно об этом пользователе из прошлых сессий:",
+    rule:
+      "Учитывай это при работе, но не упоминай явно что ты «помнишь» — " +
+      "просто используй как контекст.",
+  },
+  es: {
+    intro: "Esto es lo que se sabe de esta persona por sesiones anteriores:",
+    rule:
+      "Tenlo en cuenta durante la sesión, pero no menciones explícitamente que lo " +
+      "«recuerdas» — úsalo solo como contexto.",
+  },
+};
+
+export function formatMemoriesForPrompt(memories, language = "ru") {
   if (!memories || memories.length === 0) return "";
+  const copy = MEMORY_PREAMBLE[language] || MEMORY_PREAMBLE.ru;
   const lines = memories
     .map((m) => `${m.memory_key}: ${m.memory_value}`)
     .join("\n");
-  return (
-    `\n\nВот что известно об этом пользователе из прошлых сессий:\n${lines}\n` +
-    `Учитывай это при работе, но не упоминай явно что ты «помнишь» — ` +
-    `просто используй как контекст.`
-  );
+  return `\n\n${copy.intro}\n${lines}\n${copy.rule}`;
 }
 
 // ─── 3. Save memories: dedupe by memory_key, deactivate oldest over limit ────
