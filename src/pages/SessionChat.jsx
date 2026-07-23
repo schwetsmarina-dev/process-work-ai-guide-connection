@@ -574,7 +574,7 @@ export default function SessionChat() {
         await base44.entities.Session.update(sessionId, {
           status: "completed",
           ended_at: new Date().toISOString(),
-          summary: summaryData.summary || "Сессия завершена.",
+          summary: summaryData.summary || t("session_completed_short", language),
           themes: summaryData.themes || [],
           signals: summaryData.signals || [],
           next_step_suggestion: summaryData.next_step_suggestion || "",
@@ -651,7 +651,7 @@ export default function SessionChat() {
   if (!currentUser) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">Необходима авторизация</p>
+        <p className="text-muted-foreground">{t("auth_required", language)}</p>
       </div>
     );
   }
@@ -667,7 +667,7 @@ export default function SessionChat() {
   if (accessDenied || (!sessionLoading && !session)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">Сессия не найдена</p>
+        <p className="text-muted-foreground">{t("session_not_found", language)}</p>
       </div>
     );
   }
@@ -678,7 +678,7 @@ export default function SessionChat() {
       {isAdminView && (
         <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border-b border-amber-200 text-amber-800 text-xs">
           <ShieldAlert className="w-4 h-4 shrink-0" />
-          <span>Режим разработчика: просмотр чужой сессии (только чтение)</span>
+          <span>{t("dev_view_note", language)}</span>
         </div>
       )}
 
@@ -693,7 +693,7 @@ export default function SessionChat() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-muted-foreground">Создаём резюме сессии...</p>
+            <p className="text-muted-foreground">{t("creating_summary", language)}</p>
           </div>
         </div>
       )}
@@ -733,10 +733,10 @@ export default function SessionChat() {
                 <div className="flex items-start gap-3 p-4 rounded-xl border border-destructive/30 bg-destructive/5">
                   <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-destructive">{sendErrorMessage || "Ошибка отправки. Попробуй ещё раз."}</p>
+                    <p className="text-sm font-medium text-destructive">{sendErrorMessage || t("send_error", language)}</p>
                     <Button size="sm" variant="outline" className="mt-2 gap-1.5" onClick={handleReload}>
                       <RefreshCw className="w-3.5 h-3.5" />
-                      Перезагрузить чат
+                      {t("reload_chat", language)}
                     </Button>
                   </div>
                 </div>
@@ -761,11 +761,11 @@ export default function SessionChat() {
                   <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-destructive">
-                      Произошла ошибка загрузки шага. Попробуйте обновить страницу.
+                      {t("err_step_load", language)}
                     </p>
                     <Button size="sm" variant="outline" className="mt-2 gap-1.5" onClick={handleReload}>
                       <RefreshCw className="w-3.5 h-3.5" />
-                      Перезагрузить чат
+                      {t("reload_chat", language)}
                     </Button>
                   </div>
                 </div>
@@ -789,17 +789,17 @@ export default function SessionChat() {
               {shiftSuggestion && (
                 <div className="flex flex-col gap-3 p-4 rounded-xl border border-primary/20 bg-primary/5">
                   <p className="text-sm font-medium">
-                    Похоже, разговор движется в другом направлении. Хотите переключиться?
+                    {t("shift_question", language)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Предложенный режим: <span className="font-semibold">{shiftSuggestion.suggestedMode}</span>
+                    {t("shift_suggested", language)}: <span className="font-semibold">{shiftSuggestion.suggestedMode}</span>
                   </p>
                   <div className="flex gap-2 flex-wrap">
                     <Button size="sm" variant="outline" onClick={handleContinueMode}>
-                      Продолжить текущий режим
+                      {t("shift_keep", language)}
                     </Button>
                     <Button size="sm" onClick={handleSwitchMode}>
-                      Переключиться
+                      {t("shift_switch", language)}
                     </Button>
                   </div>
                 </div>
