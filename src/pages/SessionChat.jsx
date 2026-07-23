@@ -22,6 +22,7 @@ import ChatMessage from "@/components/session/ChatMessage";
 import ChatInput from "@/components/session/ChatInput";
 import StepErrorDebug from "@/components/session/StepErrorDebug";
 import { normalizeLang, t } from "@/lib/i18n";
+import { getSummaryUnavailableText } from "@/lib/summaryFallback";
 import { track, EVENTS } from "@/lib/telemetry";
 
 // Canonical, mode-specific opening question (do NOT use DB step.question for the first greeting)
@@ -563,7 +564,7 @@ export default function SessionChat() {
         await base44.entities.Session.update(sessionId, {
           status: "completed",
           ended_at: new Date().toISOString(),
-          summary: "Сессия завершена. Резюме недоступно.",
+          summary: getSummaryUnavailableText(language),
           themes: [],
           signals: [],
           next_step_suggestion: "",
@@ -597,7 +598,7 @@ export default function SessionChat() {
       await base44.entities.Session.update(sessionId, {
         status: "completed",
         ended_at: new Date().toISOString(),
-        summary: "Сессия завершена. Резюме недоступно.",
+        summary: getSummaryUnavailableText(language),
         themes: [],
         signals: [],
         next_step_suggestion: "",
