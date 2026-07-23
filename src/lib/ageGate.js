@@ -30,10 +30,17 @@ export function isOldEnough(birthYear) {
   return age !== null && age >= MIN_AGE;
 }
 
-/** Selectable years, newest first. Upper bound is the youngest allowed year. */
+/**
+ * Selectable years, newest first.
+ *
+ * The list deliberately includes years BELOW the minimum age. Offering only
+ * eligible years would hide the rule and quietly teach people to pick a false
+ * year; showing every plausible year lets someone answer honestly and receive
+ * a real explanation and real support numbers instead of a silent dead end.
+ */
 export function birthYearOptions() {
   const currentYear = new Date().getFullYear();
-  const newest = currentYear - MIN_AGE;
+  const newest = currentYear - 5;
   const oldest = currentYear - 100;
   const years = [];
   for (let y = newest; y >= oldest; y--) years.push(y);
