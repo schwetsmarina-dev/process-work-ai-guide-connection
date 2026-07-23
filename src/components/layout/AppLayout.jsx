@@ -22,29 +22,30 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { queryClientInstance } from "@/lib/query-client";
+import { normalizeLang, t, getStoredLanguage } from "@/lib/i18n";
 import Onboarding from "@/components/onboarding/Onboarding";
 
 const regularNavItems = [
-  { path: "/dashboard", label: "Главная", icon: LayoutDashboard },
-  { path: "/progress", label: "Прогресс", icon: TrendingUp },
-  { path: "/journal", label: "Дневник", icon: NotebookPen },
-  { path: "/history", label: "История", icon: History },
-  { path: "/insights-library", label: "Библиотека инсайтов", icon: BookOpen },
-  { path: "/life-process-map", label: "Карта процесса", icon: Network },
-  { path: "/timeline", label: "Timeline личности", icon: GitCommitVertical },
-  { path: "/insights", label: "Аналитика", icon: BarChart3 },
-  { path: "/settings", label: "Настройки", icon: Settings },
+  { path: "/dashboard", labelKey: "nav_home", icon: LayoutDashboard },
+  { path: "/progress", labelKey: "nav_progress", icon: TrendingUp },
+  { path: "/journal", labelKey: "nav_journal", icon: NotebookPen },
+  { path: "/history", labelKey: "nav_history", icon: History },
+  { path: "/insights-library", labelKey: "nav_insights_library", icon: BookOpen },
+  { path: "/life-process-map", labelKey: "nav_process_map", icon: Network },
+  { path: "/timeline", labelKey: "nav_timeline", icon: GitCommitVertical },
+  { path: "/insights", labelKey: "nav_analytics", icon: BarChart3 },
+  { path: "/settings", labelKey: "nav_settings", icon: Settings },
 ];
 
-const therapistNavItem = { path: "/therapist", label: "Кабинет терапевта", icon: Stethoscope };
+const therapistNavItem = { path: "/therapist", labelKey: "nav_therapist", icon: Stethoscope };
 
 const adminNavItems = [
-  { path: "/admin/import", label: "Импорт данных", icon: Upload },
-  { path: "/admin/status", label: "Статус данных", icon: ShieldAlert },
-  { path: "/admin/feedback", label: "Отзывы beta", icon: MessageSquare },
+  { path: "/admin/import", labelKey: "nav_admin_import", icon: Upload },
+  { path: "/admin/status", labelKey: "nav_admin_status", icon: ShieldAlert },
+  { path: "/admin/feedback", labelKey: "nav_admin_feedback", icon: MessageSquare },
 ];
 
-function NavContent({ currentPath, onNavigate, isAdmin, isTherapist }) {
+function NavContent({ currentPath, onNavigate, isAdmin, isTherapist, lang }) {
   let items = [...regularNavItems];
   if (isTherapist || isAdmin) items = [...items, therapistNavItem];
   if (isAdmin) items = [...items, ...adminNavItems];
@@ -74,7 +75,7 @@ function NavContent({ currentPath, onNavigate, isAdmin, isTherapist }) {
               }`}
             >
               <item.icon className="w-5 h-5" />
-              {item.label}
+              {t(item.labelKey, lang)}
             </Link>
           );
         })}
@@ -86,7 +87,7 @@ function NavContent({ currentPath, onNavigate, isAdmin, isTherapist }) {
           className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all w-full"
         >
           <LogOut className="w-5 h-5" />
-          Выйти
+          {t("nav_logout", lang)}
         </button>
       </div>
     </div>
