@@ -24,7 +24,7 @@ export default function RegenerateSummaryButton({ session, onUpdated }) {
       if (messages.filter((m) => m.role === "user").length === 0) return;
 
       const data = await generateSessionSummary(session, messages);
-      if (!data.summary || data.summary === FALLBACK) return;
+      if (isSummaryUnavailable(data.summary)) return;
 
       await base44.entities.Session.update(session.id, {
         summary: data.summary,

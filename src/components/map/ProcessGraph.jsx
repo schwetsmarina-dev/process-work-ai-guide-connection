@@ -1,11 +1,12 @@
+import { t, getStoredLanguage } from "@/lib/i18n";
 import React, { useMemo, useState } from "react";
 
 // Node type visual config
 const TYPE_STYLE = {
-  theme: { color: "#326ea0", label: "Тема" },
-  signal: { color: "#c89632", label: "Сигнал" },
-  tag: { color: "#46825f", label: "Тег инсайта" },
-  term: { color: "#6e50a0", label: "Термин" },
+  theme: { color: "#326ea0", labelKey: "node_theme" },
+  signal: { color: "#c89632", labelKey: "node_signal" },
+  tag: { color: "#46825f", labelKey: "node_tag" },
+  term: { color: "#6e50a0", labelKey: "node_term" },
 };
 
 const WIDTH = 900;
@@ -81,6 +82,7 @@ function computeLayout(nodes, edges) {
 }
 
 export default function ProcessGraph({ nodes, edges }) {
+  const lang = getStoredLanguage();
   const [hoverId, setHoverId] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [activeTypes, setActiveTypes] = useState(new Set(Object.keys(TYPE_STYLE)));
@@ -245,7 +247,7 @@ export default function ProcessGraph({ nodes, edges }) {
                 <h3 className="font-semibold text-sm leading-snug">{selectedNode.label}</h3>
                 <p className="text-xs text-muted-foreground">
                   {(TYPE_STYLE[selectedNode.type] || {}).label || selectedNode.type} ·
-                  {" "}встречается в {selectedNode.count || 1} сесс.
+                  {" "}{t("graph_occurs_in", lang)} {selectedNode.count || 1} {t("graph_sessions_short", lang)}
                 </p>
               </div>
             </div>
@@ -253,16 +255,16 @@ export default function ProcessGraph({ nodes, edges }) {
               onClick={() => setSelectedId(null)}
               className="text-xs text-muted-foreground hover:text-foreground shrink-0"
             >
-              Закрыть
+              {t("close", lang)}
             </button>
           </div>
 
           <div className="mt-4">
             <p className="text-xs font-medium text-muted-foreground mb-2">
-              Связано с ({selectedConnections.length})
+              {t("graph_connected", lang)} ({selectedConnections.length})
             </p>
             {selectedConnections.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Нет связей с другими узлами.</p>
+              <p className="text-xs text-muted-foreground">{t("graph_no_links", lang)}</p>
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {selectedConnections.map((c) => (
