@@ -44,6 +44,24 @@
       "default": false,
       "description": "Separate consent to include anonymized data in research exports"
     },
+    "ai_disclosure_ack": {
+      "type": "boolean",
+      "default": false,
+      "description": "EU AI Act Art. 50: user explicitly acknowledged interacting with an AI system, not a human"
+    },
+    "consent_version": {
+      "type": "string",
+      "description": "Version of the consent text accepted, e.g. '2026-07-a'. Required for auditability under GDPR Art. 7(1)"
+    },
+    "consent_given_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of consent acceptance"
+    },
+    "consent_locale": {
+      "type": "string",
+      "description": "Language in which consent was presented and accepted"
+    },
     "plan": {
       "type": "string",
       "default": "free"
