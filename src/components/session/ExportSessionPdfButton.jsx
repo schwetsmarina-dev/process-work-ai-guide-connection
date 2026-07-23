@@ -1,3 +1,4 @@
+import { isSummaryUnavailable } from "@/lib/summaryFallback";
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
@@ -16,7 +17,6 @@ export default function ExportSessionPdfButton({ session, messages = [], languag
     const resolvedMode = session.mode_id || session.mode || "journaling";
     const modeName = MODE_LABELS[resolvedMode]?.[language] || MODE_LABELS[resolvedMode]?.ru || resolvedMode;
     const dateStr = session.created_date ? format(new Date(session.created_date), "d MMM yyyy, HH:mm") : "";
-    const fallback = "Сессия завершена. Резюме недоступно.";
     const dialog = messages.filter((m) => m.role !== "system");
 
     const roleLabel = (role) =>
@@ -24,7 +24,7 @@ export default function ExportSessionPdfButton({ session, messages = [], languag
 
     const sections = [];
 
-    if (session.summary && session.summary !== fallback) {
+    if (session.summary && !isSummaryUnavailable(session.summary)) {
       sections.push(`
         <div class="section">
           <div class="section-title summary">${escapeHtml(t("export_pdf_section_summary", language))}</div>
@@ -32,7 +32,7 @@ export default function ExportSessionPdfButton({ session, messages = [], languag
         </div>`);
     }
 
-    if (session.themes?.length > 0 && session.summary !== fallback) {
+    if (session.themes?.length > 0 && !isSummaryUnavailable(session.summary)) {
       sections.push(`
         <div class="section">
           <div class="section-title themes">${escapeHtml(t("export_pdf_section_themes", language))}</div>
@@ -40,7 +40,7 @@ export default function ExportSessionPdfButton({ session, messages = [], languag
         </div>`);
     }
 
-    if (session.signals?.length > 0 && session.summary !== fallback) {
+    if (session.signals?.length > 0 && !isSummaryUnavailable(session.summary)) {
       sections.push(`
         <div class="section">
           <div class="section-title signals">${escapeHtml(t("export_pdf_section_signals", language))}</div>

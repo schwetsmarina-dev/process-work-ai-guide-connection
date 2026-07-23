@@ -1,3 +1,4 @@
+import { t, getStoredLanguage } from "@/lib/i18n";
 import React, { useState } from "react";
 import { Bookmark, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,7 @@ export default function SaveInsightButton({ messageContent, sessionId, sourceMod
       disabled={saving}
     >
       {saved ? <Check className="w-3 h-3" /> : <Bookmark className="w-3 h-3" />}
-      {saved ? "Сохранено" : "Сохранить инсайт"}
+      {saved ? t("saved", getStoredLanguage()) : t("save_insight", getStoredLanguage())}
     </Button>
   );
 }

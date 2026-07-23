@@ -1,3 +1,5 @@
+import { t, getStoredLanguage } from "@/lib/i18n";
+import { isSummaryUnavailable } from "@/lib/summaryFallback";
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -5,10 +7,9 @@ import { Loader2, Sparkles } from "lucide-react";
 import { generateSessionSummary } from "@/lib/sessionAI";
 import { listMessages } from "@/lib/messageApi";
 
-const FALLBACK = "Сессия завершена. Резюме недоступно.";
 
 export function needsRegenerate(session) {
-  return !session?.summary || session.summary === FALLBACK;
+  return !session?.summary || isSummaryUnavailable(session.summary);
 }
 
 export default function RegenerateSummaryButton({ session, onUpdated }) {
@@ -42,7 +43,7 @@ export default function RegenerateSummaryButton({ session, onUpdated }) {
   return (
     <Button size="sm" variant="outline" onClick={regenerate} disabled={generating} className="gap-1.5">
       {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-      Сгенерировать резюме
+      {t("summary_generate", getStoredLanguage())}
     </Button>
   );
 }

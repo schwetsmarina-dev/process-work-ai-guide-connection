@@ -1,3 +1,4 @@
+import { t, getStoredLanguage } from "@/lib/i18n";
 import React from "react"
 import { Toaster } from "@/components/ui/toaster"
 import { base44 } from "@/api/base44Client"
@@ -48,7 +49,7 @@ function ProtectedAdminRoute({ children }) {
   if (status === "denied") {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">Доступ запрещён</p>
+        <p className="text-muted-foreground">{t("access_denied", getStoredLanguage())}</p>
       </div>
     );
   }
@@ -69,7 +70,7 @@ function ProtectedTherapistRoute({ children }) {
   if (status === "denied") {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">Доступ запрещён</p>
+        <p className="text-muted-foreground">{t("access_denied", getStoredLanguage())}</p>
       </div>
     );
   }

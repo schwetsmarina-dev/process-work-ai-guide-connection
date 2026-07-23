@@ -1,3 +1,4 @@
+import { t, getStoredLanguage } from "@/lib/i18n";
 import React from "react";
 import { Link } from "react-router-dom";
 import { Heart, Moon, GitBranch, PenLine, ArrowRight } from "lucide-react";
@@ -24,7 +25,7 @@ export default function RecentSessionCard({ session }) {
           <span className="font-medium text-sm">{label}</span>
           {isActive && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-              Активна
+              {t("active", getStoredLanguage())}
             </span>
           )}
         </div>
