@@ -4,15 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, BookmarkPlus, Check } from "lucide-react";
 import { generateSessionSummary } from "@/lib/sessionAI";
 import { listMessages } from "@/lib/messageApi";
-
-const FALLBACK = "Сессия завершена. Резюме недоступно.";
+import { t } from "@/lib/i18n";
+import { isSummaryUnavailable } from "@/lib/summaryFallback";
 
 export default function SummaryActions({ session, onUpdated, language = "ru" }) {
   const [generating, setGenerating] = useState(false);
   const [savedToDiary, setSavedToDiary] = useState(false);
   const retryTimer = useRef(null);
 
-  const needsSummary = !session?.summary || session.summary === FALLBACK;
+  const needsSummary = isSummaryUnavailable(session?.summary);
 
   const regenerate = useCallback(async () => {
     if (generating || !session) return;
@@ -60,7 +60,7 @@ export default function SummaryActions({ session, onUpdated, language = "ru" }) 
       user_id: session.user_id,
       session_id: session.id,
       source_mode: session.mode_id || session.mode,
-      title: "Резюме сессии",
+      title: t("summary_title", language),
       insight_text: session.summary,
       tags: (session.themes || []).join(", "),
       created_at: new Date().toISOString(),
@@ -72,11 +72,11 @@ export default function SummaryActions({ session, onUpdated, language = "ru" }) 
     return (
       <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          {generating ? "Резюме формируется..." : "Резюме пока не сформировано."}
+          {generating ? t("summary_generating", language) : t("summary_absent", language)}
         </p>
         <Button size="sm" onClick={regenerate} disabled={generating} className="gap-1.5 shrink-0">
           {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-          Сформировать резюме
+          {t("summary_generate", language)}
         </Button>
       </div>
     );
@@ -86,7 +86,7 @@ export default function SummaryActions({ session, onUpdated, language = "ru" }) 
     <div className="mt-4 flex justify-center">
       <Button variant="outline" onClick={saveToDiary} disabled={savedToDiary} className="gap-2 rounded-xl">
         {savedToDiary ? <Check className="w-4 h-4 text-green-600" /> : <BookmarkPlus className="w-4 h-4" />}
-        {savedToDiary ? "Сохранено в дневник" : "Сохранить в дневник"}
+        {savedToDiary ? t("saved_to_diary", language) : t("save_to_diary", language)}
       </Button>
     </div>
   );
