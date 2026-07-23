@@ -46,6 +46,16 @@ export default function SessionFeedbackForm({ session, user, language }) {
       comment,
       created_at: new Date().toISOString(),
     });
+    // Ratings and flags only — the free-text comment is never transmitted.
+    track(EVENTS.FEEDBACK_SUBMITTED, {
+      mode: session.mode_id || session.mode || "unknown",
+      language: lang,
+      rating: rating || 0,
+      useful: Boolean(useful),
+      confusing: Boolean(confusing),
+      would_use_again: Boolean(wouldUseAgain),
+      has_comment: Boolean(comment && comment.trim()),
+    });
     console.log("[SESSION_FEEDBACK_SAVED]", {
       session_id: session.id,
       user_email: user.email,
