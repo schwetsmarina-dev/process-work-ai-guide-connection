@@ -156,6 +156,10 @@ const translations = {
     notfound_text: "Такой страницы не существует.",
     notfound_home: "На главную",
     profile_not_loaded: "Профиль пользователя ещё не загружен. Обновите страницу и попробуйте снова.",
+    err_step_load: "Произошла ошибка загрузки шага. Попробуйте обновить страницу.",
+    err_ai_generic: "Ошибка ИИ",
+    err_save_generic: "Ошибка сохранения ответа",
+    err_undo_failed: "Не удалось вернуться на шаг назад. Попробуй ещё раз.",
     onb_step4_button: "Продолжить",
     onb_step5_title: "Всё готово",
     onb_step5_text:
@@ -388,6 +392,10 @@ const translations = {
     notfound_text: "Esta página no existe.",
     notfound_home: "Ir al inicio",
     profile_not_loaded: "El perfil de usuario aún no se ha cargado. Actualiza la página e inténtalo de nuevo.",
+    err_step_load: "Se ha producido un error al cargar el paso. Prueba a recargar la página.",
+    err_ai_generic: "Error de la IA",
+    err_save_generic: "Error al guardar la respuesta",
+    err_undo_failed: "No se pudo volver un paso atrás. Inténtalo de nuevo.",
     onb_step4_button: "Continuar",
     onb_step5_title: "Todo listo",
     onb_step5_text:
