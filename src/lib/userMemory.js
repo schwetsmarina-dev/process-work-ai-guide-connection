@@ -108,59 +108,9 @@ export async function saveUserMemories(userId, items, { sessionId, modeId } = {}
   }
 }
 
-// ─── 4. Analyze the session via Claude and extract memory items ──────────────
-export async function extractMemoriesFromSession(messages) {
-  const conversation = messages
-    .filter((m) => m.role !== "system")
-    .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
-    .join("\n");
-
-  if (!conversation.trim()) return [];
-
-  const result = await base44.integrations.Core.InvokeLLM({
-    model: "claude_sonnet_4_6",
-    prompt: `Проанализируй эту сессию процессуально-ориентированной психологии.
-Выдай ТОЛЬКО JSON, без пояснений, без markdown:
-{
-  "insights": ["ключевое открытие 1", "ключевое открытие 2"],
-  "patterns": ["паттерн поведения или реакции"],
-  "themes": ["повторяющаяся тема"],
-  "body_signals": ["телесные сигналы если упоминались"],
-  "edge": "описание края если был обнаружен или null",
-  "progress": "в чём продвинулся пользователь одной фразой"
-}
-
-Сессия:
-${conversation}`,
-    response_json_schema: {
-      type: "object",
-      properties: {
-        insights: { type: "array", items: { type: "string" } },
-        patterns: { type: "array", items: { type: "string" } },
-        themes: { type: "array", items: { type: "string" } },
-        body_signals: { type: "array", items: { type: "string" } },
-        edge: { type: ["string", "null"] },
-        progress: { type: "string" },
-      },
-    },
-  });
-
-  if (!result) return [];
-
-  const items = [];
-  const join = (arr) => (Array.isArray(arr) ? arr.filter(Boolean).join("; ") : "");
-
-  const insights = join(result.insights);
-  const patterns = join(result.patterns);
-  const themes = join(result.themes);
-  const bodySignals = join(result.body_signals);
-
-  if (insights) items.push({ memory_type: "insight", memory_key: "insights", memory_value: insights });
-  if (patterns) items.push({ memory_type: "pattern", memory_key: "patterns", memory_value: patterns });
-  if (themes) items.push({ memory_type: "theme", memory_key: "themes", memory_value: themes });
-  if (bodySignals) items.push({ memory_type: "body_signal", memory_key: "body_signals", memory_value: bodySignals });
-  if (result.edge && result.edge !== "null") items.push({ memory_type: "edge", memory_key: "edge", memory_value: result.edge });
-  if (result.progress) items.push({ memory_type: "progress", memory_key: "progress", memory_value: result.progress });
-
-  return items;
-}
+// ─── 4. (removed) Client-side session analysis ───────────────────────────────
+// `extractMemoriesFromSession` used to analyze the transcript here and had no
+// callers — the live implementation is the `persistSessionMemory` backend
+// function, which already handles both languages and strips the subject from
+// each phrase. Keeping a second copy on the client meant two prompts drifting
+// apart, with only the backend one actually running.

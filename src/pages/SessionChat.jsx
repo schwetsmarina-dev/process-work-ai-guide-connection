@@ -433,7 +433,7 @@ export default function SessionChat() {
 
       // Load user memory and format it for the prompt
       const memories = await loadUserMemories(currentUser?.id);
-      const memoriesBlock = formatMemoriesForPrompt(memories);
+      const memoriesBlock = formatMemoriesForPrompt(memories, language);
 
       // Get AI response
       let rawResponse;
