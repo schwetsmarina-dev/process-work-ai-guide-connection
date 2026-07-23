@@ -1,10 +1,11 @@
 import React from "react";
 import { captureError } from "@/lib/telemetry";
+import { t, getStoredLanguage } from "@/lib/i18n";
 
 // Global error boundary. Catches render-time errors anywhere in the tree and
 // shows a calm fallback instead of a white screen, while reporting the error
-// through the telemetry seam. Bilingual (ru/es) neutral copy — it can't read
-// the user's language preference from here, so it shows both briefly.
+// through the telemetry seam. Language comes from localStorage, since this
+// renders outside the React data layer and cannot read AppUser.
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -26,23 +27,21 @@ export default class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
+      const lang = getStoredLanguage();
       return (
         <div className="min-h-screen flex items-center justify-center px-6">
           <div className="max-w-md text-center">
             <h1 className="font-serif text-2xl font-semibold mb-3">
-              Что-то пошло не так
+              {t("error_title", lang)}
             </h1>
-            <p className="text-muted-foreground text-sm mb-1">
-              Произошла ошибка. Твои данные в безопасности — попробуй обновить страницу.
-            </p>
             <p className="text-muted-foreground text-sm mb-6">
-              Algo salió mal. Tus datos están a salvo — intenta recargar la página.
+              {t("error_text", lang)}
             </p>
             <button
               onClick={this.handleReload}
               className="h-10 px-5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
             >
-              Обновить · Recargar
+              {t("error_reload", lang)}
             </button>
           </div>
         </div>
