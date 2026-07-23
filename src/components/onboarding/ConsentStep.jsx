@@ -1,7 +1,7 @@
 import React from "react";
 import { Check, Bot, CalendarDays, ShieldAlert } from "lucide-react";
 import { t } from "@/lib/i18n";
-import { MIN_AGE, birthYearOptions, isOldEnough } from "@/lib/ageGate";
+import { birthYearOptions, isOldEnough } from "@/lib/ageGate";
 
 function ConsentCheckbox({ checked, onToggle, label }) {
   return (
