@@ -4,13 +4,13 @@ import { format } from "date-fns";
 import { AlertTriangle } from "lucide-react";
 
 const SEVERITY_STYLE = {
-  critical: { bg: "bg-red-50", border: "border-red-300", text: "text-red-700", labelKey: "risk_critical", label: "Критично" },
-  high: { bg: "bg-orange-50", border: "border-orange-300", text: "text-orange-700", labelKey: "risk_high", label: "Высокая" },
-  medium: { bg: "bg-amber-50", border: "border-amber-300", text: "text-amber-700", labelKey: "risk_medium", label: "Средняя" },
-  low: { bg: "bg-slate-50", border: "border-slate-200", text: "text-slate-600", labelKey: "risk_low", label: "Низкая" },
+  critical: { bg: "bg-red-50", border: "border-red-300", text: "text-red-700", labelKey: "risk_critical" },
+  high: { bg: "bg-orange-50", border: "border-orange-300", text: "text-orange-700", labelKey: "risk_high" },
+  medium: { bg: "bg-amber-50", border: "border-amber-300", text: "text-amber-700", labelKey: "risk_medium" },
+  low: { bg: "bg-slate-50", border: "border-slate-200", text: "text-slate-600", labelKey: "risk_low" },
 };
 
-const RISK_TYPE_LABELS = {
+const RISK_TYPE_KEYS = {
   suicide_mention: "risk_suicide_mention",
   self_harm: "risk_self_harm",
   violence: "risk_violence",
@@ -20,6 +20,7 @@ const RISK_TYPE_LABELS = {
 };
 
 export default function RiskEventCard({ event, clientName }) {
+  const lang = getStoredLanguage();
   const sev = SEVERITY_STYLE[event.severity] || SEVERITY_STYLE.low;
   return (
     <div className={`rounded-xl border ${sev.border} ${sev.bg} p-4`}>
@@ -27,10 +28,10 @@ export default function RiskEventCard({ event, clientName }) {
         <div className="flex items-center gap-2">
           <AlertTriangle className={`w-4 h-4 ${sev.text} shrink-0`} />
           <span className={`text-xs font-semibold ${sev.text} uppercase tracking-wide`}>
-            {sev.label}
+            {t(sev.labelKey, lang)}
           </span>
           <span className="text-xs text-muted-foreground">
-            · {RISK_TYPE_LABELS[event.risk_type] || event.risk_type}
+            · {RISK_TYPE_KEYS[event.risk_type] ? t(RISK_TYPE_KEYS[event.risk_type], lang) : event.risk_type}
           </span>
         </div>
         {event.detected_at && (

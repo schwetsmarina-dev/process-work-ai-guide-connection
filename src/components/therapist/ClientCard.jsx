@@ -1,8 +1,10 @@
+import { t, getStoredLanguage } from "@/lib/i18n";
 import React from "react";
 import { format } from "date-fns";
 import { User, MessageSquare, AlertTriangle } from "lucide-react";
 
 export default function ClientCard({ client, active, onClick }) {
+  const lang = getStoredLanguage();
   return (
     <button
       onClick={onClick}
@@ -18,7 +20,7 @@ export default function ClientCard({ client, active, onClick }) {
           <p className="text-sm font-medium truncate">{client.name}</p>
           {client.last_seen_at && (
             <p className="text-xs text-muted-foreground">
-              Был(а): {format(new Date(client.last_seen_at), "d MMM yyyy")}
+              {t("th_last_seen", lang)}: {format(new Date(client.last_seen_at), "d MMM yyyy")}
             </p>
           )}
         </div>
@@ -27,12 +29,12 @@ export default function ClientCard({ client, active, onClick }) {
       <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
           <MessageSquare className="w-3.5 h-3.5" />
-          {client.session_count} сесс.
+          {client.session_count} {t("th_sessions_short", lang)}
         </span>
         {client.flagged_count > 0 && (
           <span className="flex items-center gap-1 text-destructive font-medium">
             <AlertTriangle className="w-3.5 h-3.5" />
-            {client.flagged_count} на проверку
+            {client.flagged_count} {t("th_flagged_short", lang)}
           </span>
         )}
       </div>
