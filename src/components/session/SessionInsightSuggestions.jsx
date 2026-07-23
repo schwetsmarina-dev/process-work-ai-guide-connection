@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Lightbulb, Check, Loader2 } from "lucide-react";
 import { saveInsight } from "@/lib/insightAI";
+import { t } from "@/lib/i18n";
 
-const IMPORTANCE_LABELS = { 1: "наблюдение", 2: "значимое", 3: "ключевое" };
+const IMPORTANCE_KEYS = { 1: "importance_1", 2: "importance_2", 3: "importance_3" };
 
-export default function SessionInsightSuggestions({ suggestions, session }) {
+export default function SessionInsightSuggestions({ suggestions, session, lang = "ru" }) {
   const [savedIds, setSavedIds] = useState(new Set());
   const [savingIdx, setSavingIdx] = useState(null);
 
@@ -28,8 +29,8 @@ export default function SessionInsightSuggestions({ suggestions, session }) {
     <Card className="p-6 border-primary/20">
       <div className="flex items-center gap-2 mb-4">
         <Lightbulb className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-sm">Возможные инсайты</h3>
-        <span className="text-xs text-muted-foreground">Сохрани важные для тебя</span>
+        <h3 className="font-semibold text-sm">{t("insights_possible", lang)}</h3>
+        <span className="text-xs text-muted-foreground">{t("insights_save_hint", lang)}</span>
       </div>
 
       <div className="space-y-4">
@@ -41,7 +42,7 @@ export default function SessionInsightSuggestions({ suggestions, session }) {
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {insight.importance && (
                   <Badge variant="secondary" className="text-xs">
-                    {IMPORTANCE_LABELS[insight.importance] || "значимое"}
+                    {t(IMPORTANCE_KEYS[insight.importance] || "importance_2", lang)}
                   </Badge>
                 )}
                 {insight.tags && insight.tags.split(",").slice(0, 2).map((tag, i) => (
@@ -59,9 +60,9 @@ export default function SessionInsightSuggestions({ suggestions, session }) {
               {savingIdx === idx ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : savedIds.has(idx) ? (
-                <><Check className="w-3.5 h-3.5 mr-1" /> Сохранено</>
+                <><Check className="w-3.5 h-3.5 mr-1" /> {t("saved", lang)}</>
               ) : (
-                "Сохранить"
+                t("save", lang)
               )}
             </Button>
           </div>
@@ -71,7 +72,7 @@ export default function SessionInsightSuggestions({ suggestions, session }) {
       {savedIds.size > 0 && (
         <p className="text-xs text-primary mt-3 flex items-center gap-1">
           <Check className="w-3 h-3" />
-          Инсайты сохранены в библиотеку
+          {t("insights_saved_to_library", lang)}
         </p>
       )}
     </Card>
