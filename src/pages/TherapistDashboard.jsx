@@ -1,3 +1,5 @@
+import { t, getStoredLanguage } from "@/lib/i18n";
+import { MODE_LABELS } from "@/lib/modeSteps";
 import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +17,7 @@ const MODE_LABELS = {
 };
 
 export default function TherapistDashboard() {
+  const lang = getStoredLanguage();
   const [selectedClientId, setSelectedClientId] = useState(null);
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -58,7 +61,7 @@ export default function TherapistDashboard() {
     return (
       <div className="flex items-center justify-center gap-3 py-24 text-muted-foreground text-sm">
         <Loader2 className="w-5 h-5 animate-spin" />
-        Загружаем данные…
+        {t("th_loading", lang)}
       </div>
     );
   }
@@ -66,9 +69,9 @@ export default function TherapistDashboard() {
   if (isError) {
     return (
       <div className="p-6 md:p-10 max-w-2xl mx-auto text-center">
-        <p className="text-sm text-destructive mb-3">Не удалось загрузить дашборд.</p>
+        <p className="text-sm text-destructive mb-3">{t("th_load_error", lang)}</p>
         <button className="text-sm text-primary underline" onClick={() => refetch()}>
-          Повторить
+          {t("retry", lang)}
         </button>
       </div>
     );
@@ -81,9 +84,9 @@ export default function TherapistDashboard() {
           <Stethoscope className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h1 className="font-serif text-2xl font-semibold">Кабинет терапевта</h1>
+          <h1 className="font-serif text-2xl font-semibold">{t("th_title", lang)}</h1>
           <p className="text-sm text-muted-foreground">
-            Клиенты, давшие согласие · {clients.length}
+            {t("th_clients_consented", lang)} · {clients.length}
           </p>
         </div>
       </div>
@@ -92,7 +95,7 @@ export default function TherapistDashboard() {
       <section className="mb-8">
         <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
           <AlertTriangle className="w-4 h-4 text-destructive" />
-          Требуют проверки ({flaggedRiskEvents.length})
+          {t("th_needs_review", lang)} ({flaggedRiskEvents.length})
         </h2>
         {flaggedRiskEvents.length === 0 ? (
           <p className="text-sm text-muted-foreground rounded-xl border border-border bg-card p-4">
@@ -114,9 +117,9 @@ export default function TherapistDashboard() {
       <div className="grid md:grid-cols-[320px_1fr] gap-6">
         {/* Client list */}
         <div className="space-y-2">
-          <h2 className="text-sm font-semibold mb-2">Клиенты</h2>
+          <h2 className="text-sm font-semibold mb-2">{t("th_clients", lang)}</h2>
           {clients.length === 0 && (
-            <p className="text-sm text-muted-foreground">Пока нет клиентов с согласием.</p>
+            <p className="text-sm text-muted-foreground">{t("th_no_clients", lang)}</p>
           )}
           {clients.map((c) => (
             <ClientCard
@@ -132,7 +135,7 @@ export default function TherapistDashboard() {
         <div>
           {!selectedClient ? (
             <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-              Выберите клиента, чтобы увидеть его сессии и события.
+              {t("th_pick_client", lang)}
             </div>
           ) : (
             <div className="space-y-5">
@@ -145,7 +148,7 @@ export default function TherapistDashboard() {
                 <div>
                   <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
                     <AlertTriangle className="w-4 h-4 text-destructive" />
-                    События на проверку ({clientRisks.length})
+                    {t("th_client_events", lang)} ({clientRisks.length})
                   </h4>
                   <div className="grid gap-3">
                     {clientRisks.map((e) => (
@@ -158,10 +161,10 @@ export default function TherapistDashboard() {
               <div>
                 <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
                   <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                  Сессии ({clientSessions.length})
+                  {t("th_sessions", lang)} ({clientSessions.length})
                 </h4>
                 {clientSessions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Нет сессий.</p>
+                  <p className="text-sm text-muted-foreground">{t("th_no_sessions", lang)}</p>
                 ) : (
                   <div className="space-y-2">
                     {clientSessions.map((s) => (
@@ -188,14 +191,14 @@ export default function TherapistDashboard() {
                         <div className="flex items-center gap-2 mt-2">
                           <span className="text-xs text-muted-foreground">
                             {s.status === "completed"
-                              ? "Завершена"
+                              ? t("th_status_completed", lang)
                               : s.status === "active"
-                              ? "Активна"
-                              : "Прервана"}
+                              ? t("th_status_active", lang)
+                              : t("th_status_abandoned", lang)}
                           </span>
                           {s.risk_flag && (
                             <span className="text-xs text-destructive font-medium flex items-center gap-1">
-                              <AlertTriangle className="w-3 h-3" /> риск
+                              <AlertTriangle className="w-3 h-3" /> {t("th_risk", lang)}
                             </span>
                           )}
                         </div>
