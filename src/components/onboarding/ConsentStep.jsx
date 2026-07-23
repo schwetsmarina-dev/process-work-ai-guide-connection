@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { Check, Bot, CalendarDays, ShieldAlert } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { birthYearOptions, isOldEnough } from "@/lib/ageGate";
@@ -102,6 +103,31 @@ export default function ConsentStep({
             <ConsentCheckbox checked={check2} onToggle={onToggle2} label={t("onb_step4_check2", lang)} />
             <ConsentCheckbox checked={check3} onToggle={onToggle3} label={t("onb_step4_check3", lang)} />
           </div>
+
+          {/* GDPR art. 13: the documents must be reachable BEFORE consent is
+              given, not only afterwards from a settings screen. They open in a
+              new tab so a half-finished onboarding is not lost. */}
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {t("legal_consent_intro", lang)}{" "}
+            <Link
+              to="/terminos"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              {t("legal_terms", lang)}
+            </Link>{" "}
+            {t("legal_and", lang)}{" "}
+            <Link
+              to="/privacidad"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              {t("legal_privacy", lang)}
+            </Link>
+            .
+          </p>
         </>
       )}
     </div>
