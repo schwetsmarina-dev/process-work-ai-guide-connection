@@ -1,4 +1,5 @@
 import { t, getStoredLanguage } from "@/lib/i18n";
+import { isAdmin as hasAdminRole } from "@/lib/roles";
 import React from "react"
 import { Toaster } from "@/components/ui/toaster"
 import { base44 } from "@/api/base44Client"
@@ -40,7 +41,7 @@ function ProtectedAdminRoute({ children }) {
 
   React.useEffect(() => {
     base44.auth.me().then((user) => {
-      const admin = user?.role === "admin" || user?.email === "schwets.marina@gmail.com";
+      const admin = hasAdminRole(user);
       setStatus(admin ? "ok" : "denied");
     }).catch(() => setStatus("denied"));
   }, []);

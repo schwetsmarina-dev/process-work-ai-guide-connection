@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { isAdmin as hasAdminRole } from "@/lib/roles";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import {
@@ -109,7 +110,7 @@ export default function AppLayout() {
 
   useEffect(() => {
     base44.auth.me().then(async (user) => {
-      const admin = user?.role === "admin" || user?.email === "schwets.marina@gmail.com";
+      const admin = hasAdminRole(user);
       console.log("[ADMIN_ACCESS]", { email: user?.email, role: user?.role, isAdmin: admin });
       setIsAdmin(admin);
       setIsTherapist(user?.role === "therapist");

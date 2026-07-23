@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { isAdmin as hasAdminRole } from "@/lib/roles";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -53,7 +54,7 @@ export default function Dashboard() {
     enabled: !!currentUser?.email,
   });
 
-  const isAdmin = currentUser?.role === "admin" || currentUser?.email === "schwets.marina@gmail.com";
+  const isAdmin = hasAdminRole(currentUser);
   const activeSession = sessions.find((s) => s.status === "active");
   const recentSessions = sessions.filter((s) => s.status !== "active").slice(0, 5);
 

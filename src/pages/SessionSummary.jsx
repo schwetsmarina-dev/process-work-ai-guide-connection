@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { isAdmin as hasAdminRole } from "@/lib/roles";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -51,7 +52,7 @@ export default function SessionSummary() {
       const found = sessions[0];
       const isAdmin =
         currentUser?.role === "admin" ||
-        currentUser?.email === "schwets.marina@gmail.com";
+        hasAdminRole(currentUser);
 
       if (!found) {
         const params = new URLSearchParams(window.location.search);
@@ -112,7 +113,7 @@ export default function SessionSummary() {
   if (accessDenied || (!isLoading && currentUser && !session)) {
     const params = new URLSearchParams(window.location.search);
     const fromFeedback = params.get("from") === "feedback";
-    const isAdmin = currentUser?.role === "admin" || currentUser?.email === "schwets.marina@gmail.com";
+    const isAdmin = hasAdminRole(currentUser);
     if (fromFeedback && isAdmin) {
       return (
         <SessionNotFoundDiagnostic
@@ -131,7 +132,7 @@ export default function SessionSummary() {
   const resolvedMode = session.mode_id || session.mode || "journaling";
   const Icon = iconMap[MODE_ICONS[resolvedMode]] || Heart;
   const label = MODE_LABELS[resolvedMode]?.ru || resolvedMode;
-  const isAdmin = currentUser?.role === "admin" || currentUser?.email === "schwets.marina@gmail.com";
+  const isAdmin = hasAdminRole(currentUser);
   const isAdminViewing = isAdmin && session.created_by !== currentUser.email;
 
   return (
