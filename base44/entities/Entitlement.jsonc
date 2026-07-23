@@ -1,0 +1,92 @@
+{
+  "name": "Entitlement",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Owner of this entitlement. Matched against the authenticated user's email."
+    },
+    "plan": {
+      "type": "string",
+      "enum": [
+        "free",
+        "beta",
+        "paid"
+      ],
+      "default": "free",
+      "description": "beta = granted access (testers, invited therapists); paid = active Stripe subscription"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "canceled",
+        "past_due",
+        "revoked"
+      ],
+      "default": "active"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When access ends. NULL means lifetime \u2014 this is how founding testers are recorded."
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "beta_grant",
+        "stripe",
+        "admin",
+        "migration"
+      ],
+      "description": "Where this entitlement came from, for audit"
+    },
+    "note": {
+      "type": "string",
+      "description": "Free-text reason, e.g. 'founding tester', 'invited therapist \u2014 Tenerife pilot'"
+    },
+    "granted_by": {
+      "type": "string",
+      "description": "Email of the admin who granted it, empty for Stripe"
+    },
+    "stripe_customer_id": {
+      "type": "string"
+    },
+    "stripe_subscription_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_email",
+    "plan"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
