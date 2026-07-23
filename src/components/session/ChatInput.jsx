@@ -3,8 +3,9 @@ import { SendHorizontal, Loader2, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import useSpeechRecognition from "@/hooks/useSpeechRecognition";
+import { t } from "@/lib/i18n";
 
-export default function ChatInput({ onSend, isLoading, disabled, seedText = "", seedNonce = 0 }) {
+export default function ChatInput({ onSend, isLoading, disabled, seedText = "", seedNonce = 0, lang = "ru" }) {
   const [text, setText] = useState("");
 
   // When the parent bumps seedNonce (e.g. after "step back"), load the returned
@@ -40,7 +41,7 @@ export default function ChatInput({ onSend, isLoading, disabled, seedText = "", 
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={disabled ? "Ответьте на предложение выше..." : "Напишите здесь..."}
+        placeholder={disabled ? t("chat_placeholder_disabled", lang) : t("chat_placeholder", lang)}
         className="min-h-[44px] max-h-32 resize-none rounded-xl border-border bg-card text-sm"
         rows={1}
         disabled={disabled}
@@ -52,7 +53,7 @@ export default function ChatInput({ onSend, isLoading, disabled, seedText = "", 
           variant={isListening ? "default" : "outline"}
           onClick={toggle}
           disabled={disabled}
-          title={isListening ? "Остановить запись" : "Говорите"}
+          title={isListening ? t("chat_mic_stop", lang) : t("chat_mic_start", lang)}
           className={`rounded-xl h-11 w-11 shrink-0 ${isListening ? "animate-pulse" : ""}`}
         >
           {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
