@@ -65,7 +65,12 @@ const INTEGRATION_INVALID_PHRASES = [
   "la voz de la parte",
 ];
 
-export const SAFE_FALLBACKS = {
+// Safe fallbacks are shown verbatim to the user when the facilitator's own
+// answer fails validation. They must therefore exist per language — a Russian
+// fallback appearing mid-conversation to a Spanish user is a visible break of
+// the therapeutic frame, not just a cosmetic bug.
+const SAFE_FALLBACKS_BY_LANG = {
+  ru: {
   awaiting_dream: "Расскажи мне свой сон так, как ты его помнишь. Какие моменты или чувства в нём самые заметные?",
   awaiting_body_signal: "Что в теле ты хочешь исследовать сейчас? Это может быть симптом, напряжение, ощущение, боль, усталость или любой телесный сигнал.",
   awaiting_conflict_material: "Опиши, пожалуйста, конфликт, который ты хочешь исследовать. Какие стороны, желания или позиции в нём сталкиваются?",
@@ -81,7 +86,34 @@ export const SAFE_FALLBACKS = {
   conflict: "Если дать место обеим сторонам одновременно — что становится заметнее?",
   journaling: "Давай возьмём то, что уже проявилось, и свяжем это с жизнью. Где это сейчас особенно откликается?",
   dream_mapping: "Давай продолжим намечать карту. Что в этом сне кажется более знакомым или устойчивым — а что удивляет или тянет, как будто что-то новое?",
+  },
+
+  es: {
+    awaiting_dream: "Cuéntame tu sueño tal y como lo recuerdas. ¿Qué momentos o sensaciones destacan más en él?",
+    awaiting_body_signal: "¿Qué quieres explorar ahora en tu cuerpo? Puede ser un síntoma, una tensión, una sensación, un dolor, cansancio o cualquier señal corporal.",
+    awaiting_conflict_material: "Describe, por favor, el conflicto que quieres explorar. ¿Qué partes, deseos o posturas chocan dentro de él?",
+    awaiting_journaling_topic: "¿Sobre qué quieres indagar hoy? Puede ser una situación, un sentimiento, una pregunta, un pensamiento o un tema que ahora ocupa tu atención.",
+    awaiting_primary: "Si miras este sueño en su conjunto, ¿qué resuena más con tu vida real, con tus sentimientos habituales o con estados que ya conoces?",
+    awaiting_secondary: "¿Y qué te parece lo más inusual, extraño o nuevo en este sueño, lo que menos se parece a ti?",
+    mismatch_dream: "Tienes razón, me he adelantado. Primero es importante escuchar el sueño entero. Cuéntamelo tal y como lo recuerdas.",
+    transformation: "Quedémonos justo en el momento de la acción. ¿Qué está pasando ahora mismo? ¿Hay algo inesperado o que esté cambiando?",
+    immersion: "¿Qué te ayuda ahora a seguir en contacto contigo misma o contigo mismo?",
+    integration: "Parece que aquí ya se ha abierto un estado importante. ¿Hasta qué punto está presente en tu vida ahora, y dónde todavía falta?",
+    conflict_integration: "Parece que dentro aparece más calma y más apoyo. ¿Cómo influye esto en lo que sientes? ¿Qué se vuelve más honesto contigo?",
+    body: "Si le das a esta sensación un poco más de espacio, ¿qué cambia?",
+    conflict: "Si das espacio a las dos partes a la vez, ¿qué se hace más visible?",
+    journaling: "Tomemos lo que ya ha aparecido y conectémoslo con tu vida. ¿Dónde resuena esto ahora con más fuerza?",
+    dream_mapping: "Sigamos trazando el mapa. ¿Qué te resulta más familiar o estable en este sueño, y qué te sorprende o te atrae como algo nuevo?",
+  },
 };
+
+// Backward-compatible default export (Russian), kept so existing imports and
+// any external references keep working.
+export const SAFE_FALLBACKS = SAFE_FALLBACKS_BY_LANG.ru;
+
+function fallbacksFor(language) {
+  return SAFE_FALLBACKS_BY_LANG[language] || SAFE_FALLBACKS_BY_LANG.ru;
+}
 
 export function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue, userSelectedFocus, completionDetected, coveredLayers, resistanceCount, step, hasValidStep, sessionId, userAlreadyAnswered, mappingStageObj, sessionState, userChangedFocus }, validationContext) {
   if (!validationContext) validationContext = { completionDetected };
