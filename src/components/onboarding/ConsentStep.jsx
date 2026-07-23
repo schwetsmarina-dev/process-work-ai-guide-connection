@@ -1,5 +1,5 @@
 import React from "react";
-import { Check } from "lucide-react";
+import { Check, Bot } from "lucide-react";
 import { t } from "@/lib/i18n";
 
 function ConsentCheckbox({ checked, onToggle, label }) {
@@ -20,7 +20,7 @@ function ConsentCheckbox({ checked, onToggle, label }) {
   );
 }
 
-export default function ConsentStep({ lang, check1, check2, onToggle1, onToggle2 }) {
+export default function ConsentStep({ lang, check1, check2, check3, onToggle1, onToggle2, onToggle3 }) {
   return (
     <div className="space-y-5">
       <div>
@@ -28,9 +28,21 @@ export default function ConsentStep({ lang, check1, check2, onToggle1, onToggle2
         <p className="text-muted-foreground leading-relaxed">{t("onb_step4_text", lang)}</p>
       </div>
 
+      {/* EU AI Act Art. 50(1): the user must be informed, before interacting,
+          that the counterpart is an AI system. Shown as prominent text, not
+          buried in the checkbox label alone. */}
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+        <div className="flex items-center gap-2 mb-1.5">
+          <Bot className="w-4 h-4 text-primary shrink-0" />
+          <span className="text-sm font-semibold">{t("ai_disclosure_title", lang)}</span>
+        </div>
+        <p className="text-sm text-muted-foreground leading-relaxed">{t("ai_disclosure_text", lang)}</p>
+      </div>
+
       <div className="space-y-3">
         <ConsentCheckbox checked={check1} onToggle={onToggle1} label={t("onb_step4_check1", lang)} />
         <ConsentCheckbox checked={check2} onToggle={onToggle2} label={t("onb_step4_check2", lang)} />
+        <ConsentCheckbox checked={check3} onToggle={onToggle3} label={t("onb_step4_check3", lang)} />
       </div>
     </div>
   );
