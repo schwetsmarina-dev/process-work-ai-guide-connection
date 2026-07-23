@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { normalizeLang, t } from "@/lib/i18n";
+import { buildConsentRecord } from "@/lib/consent";
 import OnboardingShell from "./OnboardingShell";
 import ModeSelectStep from "./ModeSelectStep";
 import ConsentStep from "./ConsentStep";
@@ -15,6 +16,7 @@ export default function Onboarding({ appUser, currentUser, onComplete }) {
   const [selectedMode, setSelectedMode] = useState(null);
   const [check1, setCheck1] = useState(false);
   const [check2, setCheck2] = useState(false);
+  const [check3, setCheck3] = useState(false);
   const [finishing, setFinishing] = useState(false);
 
   const { data: modes = [], isLoading: modesLoading } = useQuery({
@@ -37,7 +39,7 @@ export default function Onboarding({ appUser, currentUser, onComplete }) {
       if (appUser?.id) {
         await base44.entities.AppUser.update(appUser.id, {
           onboarding_completed: true,
-          consent_given: true,
+          ...buildConsentRecord(lang),
           current_mode: selectedMode?.mode_id || "",
         });
       }
@@ -117,15 +119,17 @@ export default function Onboarding({ appUser, currentUser, onComplete }) {
         onBack={back}
         onNext={next}
         nextLabel={t("onb_step4_button", lang)}
-        nextDisabled={!(check1 && check2)}
+        nextDisabled={!(check1 && check2 && check3)}
         backLabel={t("onb_back", lang)}
       >
         <ConsentStep
           lang={lang}
           check1={check1}
           check2={check2}
+          check3={check3}
           onToggle1={() => setCheck1((v) => !v)}
           onToggle2={() => setCheck2((v) => !v)}
+          onToggle3={() => setCheck3((v) => !v)}
         />
       </OnboardingShell>
     );
