@@ -470,7 +470,7 @@ export default function SessionChat() {
       if (nextStep) {
         await base44.entities.Session.update(sessionId, { current_step: nextStep });
       } else {
-        // No next step — final closing message shown; reveal "Завершить сессию" button instead of auto-redirect
+        // No next step — final closing message shown; reveal the "end session" button instead of auto-redirect
         setSessionComplete(true);
       }
 
