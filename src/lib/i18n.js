@@ -109,6 +109,12 @@ const translations = {
       "Твои ответы сохраняются только для улучшения твоего персонального опыта. Мы не передаём данные третьим лицам. Ты можешь удалить все данные в любой момент в настройках.",
     onb_step4_check1: "Я понимаю, что это не психотерапия и не замена профессиональной помощи",
     onb_step4_check2: "Я согласен(а) на хранение моих ответов для персонализации опыта",
+    onb_step4_check3: "Я понимаю, что беседу ведёт система искусственного интеллекта, а не человек",
+    ai_badge: "Отвечает ИИ",
+    ai_disclosure_title: "Вы общаетесь с искусственным интеллектом",
+    ai_disclosure_text:
+      "Собеседник в этом приложении — система искусственного интеллекта. Это не человек, не психолог и не врач. Приложение помогает вам самостоятельно исследовать свой опыт и не является психотерапией, диагностикой или лечением. Если вам тяжело и нужна поддержка человека, обратитесь к специалисту или к экстренным службам.",
+    ai_disclosure_ok: "Понятно",
     onb_step4_button: "Продолжить",
     onb_step5_title: "Всё готово",
     onb_step5_text:
@@ -294,6 +300,12 @@ const translations = {
       "Tus respuestas se guardan solo para mejorar tu experiencia personal. No compartimos datos con terceros. Puedes eliminar todos tus datos en cualquier momento en los ajustes.",
     onb_step4_check1: "Entiendo que esto no es psicoterapia ni un sustituto de la ayuda profesional",
     onb_step4_check2: "Acepto el almacenamiento de mis respuestas para personalizar la experiencia",
+    onb_step4_check3: "Entiendo que la conversación la conduce un sistema de inteligencia artificial, no una persona",
+    ai_badge: "Responde una IA",
+    ai_disclosure_title: "Estás interactuando con una inteligencia artificial",
+    ai_disclosure_text:
+      "Quien te responde en esta aplicación es un sistema de inteligencia artificial. No es una persona, ni un psicólogo, ni un profesional sanitario. La aplicación te acompaña en tu propia exploración y no constituye psicoterapia, diagnóstico ni tratamiento. Si estás pasando por un momento difícil y necesitas apoyo humano, acude a un profesional o a los servicios de emergencia.",
+    ai_disclosure_ok: "Entendido",
     onb_step4_button: "Continuar",
     onb_step5_title: "Todo listo",
     onb_step5_text:
