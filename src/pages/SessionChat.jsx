@@ -419,7 +419,7 @@ export default function SessionChat() {
         console.error("[CHAT_FLOW] step not found — soft fallback, input stays enabled:", stepKey);
         setOptimisticMessages([]);
         setIsAiLoading(false);
-        setSendErrorMessage("Произошла ошибка загрузки шага. Попробуйте обновить страницу.");
+        setSendErrorMessage(t("err_step_load", language));
         setSendError(true);
         return;
       }
@@ -443,7 +443,7 @@ export default function SessionChat() {
       } catch (aiErr) {
         console.error("[CHAT_FLOW] AI generation failed:", aiErr);
         rawResponse = t("ai_error_fallback", language);
-        setSendErrorMessage(`Ошибка AI: ${aiErr?.message || String(aiErr)}`);
+        setSendErrorMessage(`${t("err_ai_generic", language)}: ${aiErr?.message || String(aiErr)}`);
       }
 
       const { cleanText, suggestedMode } = parseShiftSuggestion(rawResponse);
@@ -455,7 +455,7 @@ export default function SessionChat() {
         console.log("[CHAT_FLOW] 6. assistant message save success");
       } catch (saveErr) {
         console.error("[CHAT_FLOW] assistant message save failed:", saveErr);
-        setSendErrorMessage(`Ошибка сохранения ответа: ${saveErr?.message || String(saveErr)}`);
+        setSendErrorMessage(`${t("err_save_generic", language)}: ${saveErr?.message || String(saveErr)}`);
         setIsAiLoading(false);
         queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
         return;
@@ -512,11 +512,7 @@ export default function SessionChat() {
     } catch (err) {
       console.error("[UNDO] revert failed:", err?.message || err);
       setSendError(true);
-      setSendErrorMessage(
-        language === "es"
-          ? "No se pudo volver un paso atrás. Inténtalo de nuevo."
-          : "Не удалось вернуться на шаг назад. Попробуй ещё раз."
-      );
+      setSendErrorMessage(t("err_undo_failed", language));
     } finally {
       setIsUndoing(false);
     }
