@@ -9,20 +9,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { t } from "@/lib/i18n";
 
-export default function ExistingSessionDialog({ open, onContinue, onStartNew, onOpenChange }) {
+export default function ExistingSessionDialog({ open, onContinue, onStartNew, onOpenChange, lang = "ru" }) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>У тебя есть незавершённая сессия</AlertDialogTitle>
+          <AlertDialogTitle>{t("existing_session_title", lang)}</AlertDialogTitle>
           <AlertDialogDescription>
-            В этом режиме уже есть активная сессия. Продолжить её или начать новую?
+            {t("existing_session_text", lang)}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onStartNew}>Начать новую</AlertDialogCancel>
-          <AlertDialogAction onClick={onContinue}>Продолжить</AlertDialogAction>
+          <AlertDialogCancel onClick={onStartNew}>{t("existing_session_new", lang)}</AlertDialogCancel>
+          <AlertDialogAction onClick={onContinue}>{t("existing_session_continue", lang)}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
