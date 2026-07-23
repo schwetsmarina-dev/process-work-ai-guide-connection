@@ -74,20 +74,20 @@ export default function SessionHeader({ session, totalSteps, onEndSession, lang 
           <AlertDialogTrigger asChild>
             <Button variant="ghost" size="sm" className="text-muted-foreground">
               <X className="w-4 h-4 mr-1" />
-              Завершить
+              {t("session_end", lang)}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Завершить сессию?</AlertDialogTitle>
+              <AlertDialogTitle>{t("session_end_confirm_title", lang)}</AlertDialogTitle>
               <AlertDialogDescription>
-                Будет сгенерировано резюме вашей сессии.
+                {t("session_end_confirm_text", lang)}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Отмена</AlertDialogCancel>
+              <AlertDialogCancel>{t("cancel", lang)}</AlertDialogCancel>
               <AlertDialogAction onClick={onEndSession}>
-                Завершить
+                {t("session_end", lang)}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
