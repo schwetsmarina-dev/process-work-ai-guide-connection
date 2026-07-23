@@ -7,25 +7,44 @@ import {
   detectLastInterventionType,
 } from "@/lib/stageLocks";
 
+// The phrase gates below are substring matches against the ASSISTANT's own
+// output. They must therefore exist in every language the facilitator speaks,
+// otherwise the guardrails silently pass everything through in that language.
 const FORBIDDEN_PHRASES = [
+  // RU
   "этот образ", "этот элемент", "данный объект",
   "это означает", "это указывает на", "это говорит о том", "это связано с",
   "давайте", "давайте начнём",
   "как образ", "каким образом это могло бы проявиться", "какой метафорой",
+  // ES
+  "esta imagen", "este elemento", "este objeto",
+  "esto significa", "esto indica", "esto nos dice que", "esto está relacionado con",
+  "vamos a empezar", "vamos a comenzar",
+  "como imagen", "de qué manera podría manifestarse", "con qué metáfora",
 ];
 
 const TRANSFORMATION_VALID_KEYWORDS = [
+  // RU
   "что происходит", "что меняется", "что изменяется",
   "неожиданн", "удивительн", "странн",
   "хочется продолжить", "хочется остановиться", "что тянет",
+  // ES
+  "qué está pasando", "qué ocurre ahora", "qué cambia", "qué se transforma",
+  "inesperad", "sorprend", "extrañ",
+  "quieres continuar", "quieres parar", "qué te atrae",
 ];
 
 const TRANSFORMATION_INVALID_PHRASES = [
+  // RU
   "что это значит", "что он хочет сказать", "что это показывает",
   "какое послание", "где это в жизни", "каким образом это связано",
+  // ES
+  "qué significa esto", "qué quiere decirte", "qué te muestra esto",
+  "qué mensaje", "dónde está esto en tu vida", "cómo se relaciona esto con",
 ];
 
 const INTEGRATION_INVALID_PHRASES = [
+  // RU
   "каким образом это стало бы образом", "если бы это было метафорой",
   "что этот образ хочет сказать", "какое движение появляется", "где в теле",
   "каким образом это могло бы проявиться", "какой метафорой",
@@ -35,6 +54,15 @@ const INTEGRATION_INVALID_PHRASES = [
   "что говорит часть", "что хочет часть", "вернёмся к части", "вернись к части",
   "что чувствует та часть", "та часть говорит", "другая часть говорит",
   "что хочет сказать часть", "голос части",
+  // ES
+  "si esto fuera una metáfora", "si esto se convirtiera en una imagen",
+  "qué quiere decir esta imagen", "qué movimiento aparece", "dónde en el cuerpo",
+  "de qué manera podría manifestarse", "con qué metáfora",
+  "si se convirtiera en imagen", "qué imagen", "imagina una imagen",
+  "metáfor", "símbolo", "corporal",
+  "qué dice esa parte", "qué quiere esa parte", "volvamos a la parte",
+  "qué siente esa parte", "esa parte dice", "la otra parte dice",
+  "la voz de la parte",
 ];
 
 export const SAFE_FALLBACKS = {
