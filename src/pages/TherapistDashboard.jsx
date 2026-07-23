@@ -9,13 +9,6 @@ import { format } from "date-fns";
 import ClientCard from "@/components/therapist/ClientCard";
 import RiskEventCard from "@/components/therapist/RiskEventCard";
 
-const MODE_LABELS = {
-  body: "Работа с телом",
-  dream: "Работа со сном",
-  conflict: "Работа с конфликтом",
-  journaling: "Свободное письмо",
-};
-
 export default function TherapistDashboard() {
   const lang = getStoredLanguage();
   const [selectedClientId, setSelectedClientId] = useState(null);
@@ -99,7 +92,7 @@ export default function TherapistDashboard() {
         </h2>
         {flaggedRiskEvents.length === 0 ? (
           <p className="text-sm text-muted-foreground rounded-xl border border-border bg-card p-4">
-            Нет событий, требующих проверки.
+            {t("th_no_review_events", lang)}
           </p>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
@@ -175,7 +168,7 @@ export default function TherapistDashboard() {
                       >
                         <div className="flex items-center justify-between gap-3">
                           <span className="text-sm font-medium">
-                            {MODE_LABELS[s.mode_id] || s.mode_id}
+                            {MODE_LABELS[s.mode_id]?.[lang] || s.mode_id}
                           </span>
                           <span className="text-xs text-muted-foreground shrink-0">
                             {s.created_date
