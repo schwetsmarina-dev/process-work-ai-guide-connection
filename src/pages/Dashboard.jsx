@@ -138,7 +138,7 @@ export default function Dashboard() {
 
     if (!currentUser?.id) {
       console.error("[SessionFlow] Cannot create session — current user not loaded");
-      alert("Профиль пользователя ещё не загружен. Обновите страницу и попробуйте снова.");
+      alert(t("profile_not_loaded", lang));
       return;
     }
 
@@ -187,6 +187,7 @@ export default function Dashboard() {
         onContinue={handleContinueExisting}
         onStartNew={handleStartNew}
         onOpenChange={(o) => { if (!o) { setExistingActive(null); setPendingMode(null); } }}
+        lang={lang}
       />
 
       {/* Active session banner */}
