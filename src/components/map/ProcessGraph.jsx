@@ -164,7 +164,7 @@ export default function ProcessGraph({ nodes, edges }) {
               }`}
             >
               <span className="w-3 h-3 rounded-full" style={{ backgroundColor: cfg.color }} />
-              {cfg.label}
+              {t(cfg.labelKey, lang)}
             </button>
           );
         })}
@@ -246,7 +246,7 @@ export default function ProcessGraph({ nodes, edges }) {
               <div>
                 <h3 className="font-semibold text-sm leading-snug">{selectedNode.label}</h3>
                 <p className="text-xs text-muted-foreground">
-                  {(TYPE_STYLE[selectedNode.type] || {}).label || selectedNode.type} ·
+                  {TYPE_STYLE[selectedNode.type] ? t(TYPE_STYLE[selectedNode.type].labelKey, lang) : selectedNode.type} ·
                   {" "}{t("graph_occurs_in", lang)} {selectedNode.count || 1} {t("graph_sessions_short", lang)}
                 </p>
               </div>
