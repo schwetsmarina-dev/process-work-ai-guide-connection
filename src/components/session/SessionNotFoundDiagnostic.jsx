@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 
 // Admin-friendly diagnostic shown when a session opened from the feedback admin
-// cannot be found, instead of dead-ending on "Сессия не найдена".
+// cannot be found, instead of dead-ending on a bare "session not found".
 export default function SessionNotFoundDiagnostic({ sessionId, fromFeedback }) {
   const navigate = useNavigate();
 
@@ -22,10 +22,10 @@ export default function SessionNotFoundDiagnostic({ sessionId, fromFeedback }) {
       <Card className="p-6 border-amber-200 bg-amber-50/60 space-y-4">
         <div className="flex items-center gap-2 text-amber-800">
           <AlertTriangle className="w-5 h-5" />
-          <h2 className="font-semibold">Сессия не найдена</h2>
+          <h2 className="font-semibold">Session not found</h2>
         </div>
         <p className="text-sm text-muted-foreground">
-          Сессия из этого отзыва недоступна (возможно, удалена или принадлежит другому пользователю).
+          The session referenced by this feedback is unavailable — it may have been deleted, or it belongs to another user.
         </p>
         <div className="text-xs font-mono bg-background/60 rounded-lg p-3 space-y-1 border border-amber-200">
           <div>session_id: {sessionId || "—"}</div>
@@ -34,7 +34,7 @@ export default function SessionNotFoundDiagnostic({ sessionId, fromFeedback }) {
         </div>
         <Button variant="outline" onClick={() => navigate("/admin/feedback")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Назад к отзывам
+          Back to feedback
         </Button>
       </Card>
     </div>

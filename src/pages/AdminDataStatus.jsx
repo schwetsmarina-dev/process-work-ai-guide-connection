@@ -192,7 +192,7 @@ export default function AdminDataStatus() {
       <div className="flex items-start justify-between mb-2 gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <Database className="w-6 h-6 text-primary" />
-          <h1 className="font-serif text-3xl font-semibold">Статус данных</h1>
+          <h1 className="font-serif text-3xl font-semibold">Data status</h1>
         </div>
 
         <div className="flex gap-2 flex-wrap">
@@ -238,29 +238,29 @@ export default function AdminDataStatus() {
             }}
           >
             <RefreshCw className="w-4 h-4 mr-2" />
-            Обновить
+            Refresh
           </Button>
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm" disabled={clearing}>
                 {clearing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                Очистить справочники
+                Clear reference tables
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Очистить справочные таблицы?</AlertDialogTitle>
+                <AlertDialogTitle>Clear reference tables?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Будут удалены все записи из <strong>MODES</strong>, <strong>MODE_STEPS</strong> и <strong>TERMS</strong>.<br /><br />
-                  Сессии, сообщения, пользователи и память — не затрагиваются.<br /><br />
-                  После очистки загрузите файлы заново через «Импорт данных».
+                  All records in <strong>MODES</strong>, <strong>MODE_STEPS</strong> and <strong>TERMS</strong> will be deleted.<br /><br />
+                  Sessions, messages, users and memory are not affected.<br /><br />
+                  After clearing, re-upload the files via "Data import".
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleClearReferenceData} className="bg-destructive hover:bg-destructive/90">
-                  Да, удалить
+                  Yes, delete
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -269,11 +269,11 @@ export default function AdminDataStatus() {
       </div>
 
       <p className="text-muted-foreground mb-8 text-sm">
-        Состояние базы данных · то, что видит публичное приложение
+        Database state — what the public app actually sees
       </p>
 
       {/* Notifications */}
-      {cleared && <Ok text="Справочные таблицы очищены. Загрузите данные через «Импорт данных»." />}
+      {cleared && <Ok text="Reference tables cleared. Upload data via Data import." />}
       {patchResult && (
         <div className="mt-3">
           {patchResult.success
@@ -285,8 +285,8 @@ export default function AdminDataStatus() {
       {repairResult && (
         <div className="mt-3">
           {repairResult.total === 0
-            ? <Ok text="Все step_key уже заполнены — ничего не исправлено." />
-            : <Ok text={`Исправлено step_key: ${repairResult.fixed} из ${repairResult.total}. Ошибок: ${repairResult.failed}.`} />
+            ? <Ok text="All step_key values already present — nothing repaired." />
+            : <Ok text={`step_key repaired: ${repairResult.fixed} of ${repairResult.total}. Failed: ${repairResult.failed}.`} />
           }
         </div>
       )}
@@ -316,14 +316,14 @@ export default function AdminDataStatus() {
 
       {/* Counts */}
       <div className="grid grid-cols-3 gap-4 my-8">
-        <StatCard label="Режимов (MODES)" count={modes.length} isLoading={modesLoading} />
-        <StatCard label="Шагов (MODE_STEPS)" count={steps.length} isLoading={stepsLoading} />
-        <StatCard label="Терминов (TERMS)" count={terms.length} isLoading={termsLoading} />
+        <StatCard label="Modes (MODES)" count={modes.length} isLoading={modesLoading} />
+        <StatCard label="Steps (MODE_STEPS)" count={steps.length} isLoading={stepsLoading} />
+        <StatCard label="Terms (TERMS)" count={terms.length} isLoading={termsLoading} />
       </div>
 
       {isLoading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin" /> Загружаем...
+          <Loader2 className="w-4 h-4 animate-spin" /> Loading...
         </div>
       ) : (
         <div className="space-y-6">
@@ -333,14 +333,14 @@ export default function AdminDataStatus() {
             <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-1">
               <div className="flex items-center gap-2 text-sm font-semibold text-red-700">
                 <AlertTriangle className="w-4 h-4" />
-                {duplicateStepKeys.length} дублирующихся step_key — могут сломать сессии:
+                {duplicateStepKeys.length} duplicate step_key values — these can break sessions:
               </div>
               <div className="text-xs font-mono text-red-600 ml-6 flex flex-wrap gap-1 mt-1">
                 {duplicateStepKeys.map((k) => (
                   <span key={k} className="bg-red-100 border border-red-200 rounded px-2 py-0.5">{k} ×{stepKeyCount[k]}</span>
                 ))}
               </div>
-              <p className="text-xs text-red-600 ml-6">Нажмите «Patch process mapping» — дубликаты будут удалены автоматически.</p>
+              <p className="text-xs text-red-600 ml-6">Click "Patch process mapping" — duplicates are removed automatically.</p>
             </div>
           )}
 
@@ -349,56 +349,56 @@ export default function AdminDataStatus() {
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-1">
               <div className="flex items-center gap-2 text-sm font-semibold text-blue-700">
                 <GitMerge className="w-4 h-4" />
-                Отсутствуют шаги картирования процесса (process_mapping):
+                Missing process mapping steps (process_mapping):
               </div>
               <div className="text-xs font-mono text-blue-600 ml-6 flex flex-wrap gap-1 mt-1">
                 {mappingStepsMissing.map((m) => (
                   <span key={m} className="bg-blue-100 border border-blue-200 rounded px-2 py-0.5">{m}_1 (process mapping)</span>
                 ))}
               </div>
-              <p className="text-xs text-blue-600 ml-6">Нажмите «Patch process mapping» чтобы добавить их и сдвинуть существующие шаги.</p>
+              <p className="text-xs text-blue-600 ml-6">Click "Patch process mapping" to add them and shift the existing steps.</p>
             </div>
           )}
 
           {mappingStepsMissing.length === 0 && steps.length > 0 && (
-            <Ok text="Все шаги картирования процесса (process_mapping) установлены на позиции _1." />
+            <Ok text="All process mapping steps are set at position _1." />
           )}
 
           {/* Critical: missing first steps */}
           {steps.length === 0 && (
-            <Warning text="⛔ Таблица MODE_STEPS ПУСТА. Публичное приложение не сможет вести сессии. Импортируйте mode_steps.csv." />
+            <Warning text="⛔ MODE_STEPS is EMPTY. The public app cannot run sessions. Import mode_steps.csv." />
           )}
 
           {firstStepsMissing.length > 0 && steps.length > 0 && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-2">
               <div className="flex items-center gap-2 text-sm font-semibold text-red-700">
                 <AlertTriangle className="w-4 h-4" />
-                Отсутствуют первые шаги — сессии заблокированы:
+                Missing first steps — sessions are blocked:
               </div>
               {firstStepsMissing.map((mode) => (
                 <p key={mode} className="text-sm font-mono text-red-700 ml-6">✗ Missing: {mode}_1</p>
               ))}
               <p className="text-xs text-red-600 ml-6">
-                DB mode_ids: {dbModeIds.join(", ") || "(пусто)"}
+                DB mode_ids: {dbModeIds.join(", ") || "(empty)"}
               </p>
             </div>
           )}
 
           {firstStepsMissing.length === 0 && steps.length > 0 && (
-            <Ok text={`Все первые шаги (${EXPECTED_MODES.map((m) => m + "_1").join(", ")}) найдены.`} />
+            <Ok text={`All first steps (${EXPECTED_MODES.map((m) => m + "_1").join(", ")}) found.`} />
           )}
 
           {brokenSteps.length > 0 && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-1">
               <div className="flex items-center gap-2 text-sm font-medium text-amber-700">
                 <AlertTriangle className="w-4 h-4" />
-                {brokenSteps.length} записей без step_key — нажмите «Repair step keys»
+                {brokenSteps.length} records without step_key — click "Repair step keys"
               </div>
               <div className="text-xs font-mono text-amber-600 ml-6 space-y-0.5">
                 {brokenSteps.slice(0, 5).map((s) => (
                   <p key={s.id}>id={s.id} mode_id={s.mode_id} step_number={s.step_number}</p>
                 ))}
-                {brokenSteps.length > 5 && <p>...и ещё {brokenSteps.length - 5}</p>}
+                {brokenSteps.length > 5 && <p>...and {brokenSteps.length - 5} more</p>}
               </div>
             </div>
           )}
@@ -406,7 +406,7 @@ export default function AdminDataStatus() {
           {/* Per-mode step breakdown */}
           <div>
             <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">
-              Шаги по режимам
+              Steps by mode
             </h2>
             <div className="space-y-4">
               {EXPECTED_MODES.map((mode) => {
@@ -422,13 +422,13 @@ export default function AdminDataStatus() {
                       <div className="flex items-center gap-2">
                         <span className="font-mono font-semibold text-sm">{mode}</span>
                         <Badge variant={modeSteps.length > 0 ? "secondary" : "destructive"} className="text-xs">
-                          {modeSteps.length} шагов
+                          {modeSteps.length} steps
                         </Badge>
                         {!hasFirst && modeSteps.length > 0 && (
-                          <Badge variant="destructive" className="text-xs">нет {mode}_1</Badge>
+                          <Badge variant="destructive" className="text-xs">no {mode}_1</Badge>
                         )}
                         {!hasFirst && modeSteps.length === 0 && (
-                          <Badge variant="destructive" className="text-xs">нет данных</Badge>
+                          <Badge variant="destructive" className="text-xs">no data</Badge>
                         )}
                         {hasFirst && (
                           <Badge className="text-xs bg-green-100 text-green-700 border-green-200">✓ {mode}_1</Badge>
@@ -451,7 +451,7 @@ export default function AdminDataStatus() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-red-600">⛔ Нет шагов для этого режима. Импортируйте mode_steps.csv.</p>
+                      <p className="text-xs text-red-600">⛔ No steps for this mode. Import mode_steps.csv.</p>
                     )}
                   </Card>
                 );
@@ -463,27 +463,27 @@ export default function AdminDataStatus() {
           {dbModeIds.some((id) => !EXPECTED_MODES.includes(id)) && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
               <p className="text-sm font-medium text-amber-700 mb-1">
-                Обнаружены неожиданные mode_id в MODE_STEPS:
+                Unexpected mode_id values found in MODE_STEPS:
               </p>
               <p className="text-xs font-mono text-amber-600">
                 {dbModeIds.filter((id) => !EXPECTED_MODES.includes(id)).join(", ")}
               </p>
               <p className="text-xs text-amber-600 mt-1">
-                Ожидаются: {EXPECTED_MODES.join(", ")}. Проверьте колонку mode_id в CSV.
+                Expected: {EXPECTED_MODES.join(", ")}. Check the mode_id column in the CSV.
               </p>
             </div>
           )}
 
           {/* Terms status */}
           {terms.length === 0
-            ? <Warning text="Таблица TERMS пуста. AI не будет использовать концепции Process Work." />
-            : <Ok text={`TERMS: ${terms.length} терминов доступно.`} />
+            ? <Warning text="TERMS is empty. The AI will not use Process Work concepts." />
+            : <Ok text={`TERMS: ${terms.length} terms available.`} />
           }
 
           {/* Modes status */}
           {modes.length === 0
-            ? <Warning text="Таблица MODES пуста. Dashboard не покажет режимы." />
-            : <Ok text={`MODES: ${modes.length} режимов: ${modes.map((m) => m.mode_id).join(", ")}`} />
+            ? <Warning text="MODES is empty. The dashboard will show no modes." />
+            : <Ok text={`MODES: ${modes.length} modes: ${modes.map((m) => m.mode_id).join(", ")}`} />
           }
         </div>
       )}

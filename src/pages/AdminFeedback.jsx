@@ -55,12 +55,12 @@ export default function AdminFeedback() {
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center gap-2 mb-6">
         <MessageSquare className="w-6 h-6 text-primary" />
-        <h1 className="text-2xl font-serif font-semibold">Отзывы beta-тестеров</h1>
+        <h1 className="text-2xl font-serif font-semibold">Beta tester feedback</h1>
       </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center gap-2 py-20 text-muted-foreground">
-          <Loader2 className="w-5 h-5 animate-spin" /> Загрузка…
+          <Loader2 className="w-5 h-5 animate-spin" /> Loading…
         </div>
       ) : (
         <>
@@ -70,9 +70,9 @@ export default function AdminFeedback() {
             <FilterSelect
               value={language}
               onChange={setLanguage}
-              placeholder="Язык"
+              placeholder="Language"
               options={[
-                { value: "all", label: "Все языки" },
+                { value: "all", label: "All languages" },
                 { value: "ru", label: "RU" },
                 { value: "es", label: "ES" },
               ]}
@@ -80,38 +80,38 @@ export default function AdminFeedback() {
             <FilterSelect
               value={rating}
               onChange={setRating}
-              placeholder="Оценка"
+              placeholder="Rating"
               options={[
-                { value: "all", label: "Все оценки" },
+                { value: "all", label: "All ratings" },
                 ...[1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: `${n} ★` })),
               ]}
             />
             <FilterSelect
               value={wouldUseAgain}
               onChange={setWouldUseAgain}
-              placeholder="Повторно"
+              placeholder="Would use again"
               options={[
-                { value: "all", label: "Повторно: все" },
-                { value: "yes", label: "Да" },
-                { value: "no", label: "Нет" },
+                { value: "all", label: "Would use again: all" },
+                { value: "yes", label: "Yes" },
+                { value: "no", label: "No" },
               ]}
             />
             <FilterSelect
               value={modeId}
               onChange={setModeId}
-              placeholder="Режим"
+              placeholder="Mode"
               options={[
-                { value: "all", label: "Все режимы" },
-                { value: "dream", label: "Сон" },
-                { value: "body", label: "Тело" },
-                { value: "conflict", label: "Конфликт" },
-                { value: "journaling", label: "Дневник" },
+                { value: "all", label: "All modes" },
+                { value: "dream", label: "Dream" },
+                { value: "body", label: "Body" },
+                { value: "conflict", label: "Conflict" },
+                { value: "journaling", label: "Journaling" },
               ]}
             />
           </div>
 
           <div className="text-sm text-muted-foreground mb-3">
-            Показано: {filtered.length} из {feedback.length}
+            Showing {filtered.length} of {feedback.length}
           </div>
 
           <div className="space-y-3">
@@ -130,7 +130,7 @@ export default function AdminFeedback() {
             ))}
             {filtered.length === 0 && (
               <div className="text-center py-16 text-muted-foreground text-sm">
-                Отзывов не найдено
+                No feedback found
               </div>
             )}
           </div>

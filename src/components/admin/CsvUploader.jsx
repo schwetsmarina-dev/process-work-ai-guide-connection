@@ -73,7 +73,7 @@ export default function CsvUploader({ onParsed, disabled }) {
       ) : (
         <div className="flex flex-col items-center gap-2">
           <Upload className="w-8 h-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Перетащите CSV или <span className="text-primary font-medium">нажмите для выбора</span></p>
+          <p className="text-sm text-muted-foreground">Drop a CSV here or <span className="text-primary font-medium">click to choose a file</span></p>
         </div>
       )}
     </div>

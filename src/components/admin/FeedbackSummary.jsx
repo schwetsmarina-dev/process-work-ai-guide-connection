@@ -3,10 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Star, MessageSquare, ThumbsUp, Languages, Layers } from "lucide-react";
 
 const MODE_LABELS = {
-  dream: "Сон",
-  body: "Тело",
-  conflict: "Конфликт",
-  journaling: "Дневник",
+  dream: "Dream",
+  body: "Body",
+  conflict: "Conflict",
+  journaling: "Journaling",
 };
 
 export default function FeedbackSummary({ feedback }) {
@@ -44,12 +44,12 @@ export default function FeedbackSummary({ feedback }) {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-      <Stat icon={MessageSquare} label="Всего отзывов" value={total} />
-      <Stat icon={Star} label="Средняя оценка" value={avgRating} sub={`${rated.length} с оценкой`} />
-      <Stat icon={ThumbsUp} label="Попробует снова" value={`${yesCount} / ${noCount}`} sub="да / нет" />
+      <Stat icon={MessageSquare} label="Total feedback" value={total} />
+      <Stat icon={Star} label="Average rating" value={avgRating} sub={`${rated.length} rated`} />
+      <Stat icon={ThumbsUp} label="Would use again" value={`${yesCount} / ${noCount}`} sub="yes / no" />
       <Stat
         icon={Languages}
-        label="Языки"
+        label="Languages"
         value={
           <span className="text-base font-medium">
             {Object.entries(langCounts).map(([l, c]) => `${l.toUpperCase()}: ${c}`).join("  ") || "—"}
@@ -59,7 +59,7 @@ export default function FeedbackSummary({ feedback }) {
       <Card className="p-4 col-span-2 md:col-span-4">
         <div className="flex items-center gap-2 text-muted-foreground text-xs mb-2">
           <Layers className="w-4 h-4" />
-          По режимам
+          By mode
         </div>
         <div className="flex flex-wrap gap-2">
           {Object.entries(modeCounts).map(([m, c]) => (

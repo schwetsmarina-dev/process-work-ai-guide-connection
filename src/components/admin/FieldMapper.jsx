@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export default function FieldMapper({ dbFields, csvHeaders, mapping, onChange }) {
   return (
     <div className="space-y-3">
-      <p className="text-sm font-medium text-muted-foreground">Сопоставление полей</p>
+      <p className="text-sm font-medium text-muted-foreground">Field mapping</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {dbFields.map((field) => (
           <div key={field} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
@@ -14,10 +14,10 @@ export default function FieldMapper({ dbFields, csvHeaders, mapping, onChange })
               onValueChange={(val) => onChange({ ...mapping, [field]: val === "__skip__" ? "" : val })}
             >
               <SelectTrigger className="h-8 text-xs flex-1">
-                <SelectValue placeholder="— пропустить —" />
+                <SelectValue placeholder="— skip —" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__skip__">— пропустить —</SelectItem>
+                <SelectItem value="__skip__">— skip —</SelectItem>
                 {csvHeaders.map((h) => (
                   <SelectItem key={h} value={h}>{h}</SelectItem>
                 ))}

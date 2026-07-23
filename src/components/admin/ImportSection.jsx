@@ -49,7 +49,7 @@ export default function ImportSection({ title, entityName, dbFields }) {
     const records = applyMapping(parsed.rows, mapping).filter((r) => Object.keys(r).length > 0);
     if (records.length === 0) {
       setStatus("error");
-      setResult({ error: "Нет данных для импорта после применения маппинга." });
+      setResult({ error: "No data to import after applying the mapping." });
       return;
     }
     try {
@@ -58,7 +58,7 @@ export default function ImportSection({ title, entityName, dbFields }) {
       setResult({ count: records.length });
     } catch (e) {
       setStatus("error");
-      setResult({ error: e.message || "Ошибка при импорте" });
+      setResult({ error: e.message || "Import failed" });
     }
   };
 
@@ -73,7 +73,7 @@ export default function ImportSection({ title, entityName, dbFields }) {
       {hasData && (
         <>
           <p className="text-sm text-muted-foreground">
-            Найдено строк: <span className="font-medium text-foreground">{parsed.rows.length}</span>
+            Rows found: <span className="font-medium text-foreground">{parsed.rows.length}</span>
           </p>
           <FieldMapper
             dbFields={dbFields}
@@ -87,9 +87,9 @@ export default function ImportSection({ title, entityName, dbFields }) {
             className="w-full sm:w-auto"
           >
             {status === "importing" ? (
-              <><Loader2 className="w-4 h-4 animate-spin mr-2" />Импортируем...</>
+              <><Loader2 className="w-4 h-4 animate-spin mr-2" />Importing...</>
             ) : (
-              "Импортировать"
+              "Import"
             )}
           </Button>
         </>
@@ -98,7 +98,7 @@ export default function ImportSection({ title, entityName, dbFields }) {
       {status === "done" && (
         <div className="flex items-center gap-2 text-sm text-green-600">
           <CheckCircle2 className="w-4 h-4" />
-          Успешно импортировано {result.count} записей
+          Successfully imported {result.count} records
         </div>
       )}
       {status === "error" && (

@@ -6,10 +6,10 @@ import { Star, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 
 const MODE_LABELS = {
-  dream: "Сон",
-  body: "Тело",
-  conflict: "Конфликт",
-  journaling: "Дневник",
+  dream: "Dream",
+  body: "Body",
+  conflict: "Conflict",
+  journaling: "Journaling",
 };
 
 export default function FeedbackCard({ item, onOpenSession }) {
@@ -32,26 +32,26 @@ export default function FeedbackCard({ item, onOpenSession }) {
               {item.rating}
             </span>
           )}
-          {item.would_use_again === true && <Badge className="bg-green-600">Да</Badge>}
-          {item.would_use_again === false && <Badge variant="destructive">Нет</Badge>}
+          {item.would_use_again === true && <Badge className="bg-green-600">Yes</Badge>}
+          {item.would_use_again === false && <Badge variant="destructive">No</Badge>}
         </div>
       </div>
 
       {item.useful && (
         <div>
-          <div className="text-xs text-muted-foreground mb-0.5">Что было полезным</div>
+          <div className="text-xs text-muted-foreground mb-0.5">What was useful</div>
           <p className="text-sm">{item.useful}</p>
         </div>
       )}
       {item.confusing && (
         <div>
-          <div className="text-xs text-muted-foreground mb-0.5">Что было непонятным</div>
+          <div className="text-xs text-muted-foreground mb-0.5">What was confusing</div>
           <p className="text-sm">{item.confusing}</p>
         </div>
       )}
       {item.comment && (
         <div>
-          <div className="text-xs text-muted-foreground mb-0.5">Комментарий</div>
+          <div className="text-xs text-muted-foreground mb-0.5">Comment</div>
           <p className="text-sm italic">{item.comment}</p>
         </div>
       )}
@@ -61,7 +61,7 @@ export default function FeedbackCard({ item, onOpenSession }) {
         {item.session_id && (
           <Button variant="outline" size="sm" onClick={() => onOpenSession(item.session_id)}>
             <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-            Открыть сессию
+            Open session
           </Button>
         )}
       </div>

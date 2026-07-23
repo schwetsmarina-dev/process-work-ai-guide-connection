@@ -38,13 +38,13 @@ export default function StepErrorDebug({ session, stepDebugInfo, navigate, onGre
   const handleUseFoundStep = async () => {
     if (!testResult?.found || !testResult.step) return;
     if (!session?.id) {
-      alert("Ошибка: session.id не определён — сессия не загружена.");
+      alert("Error: session.id is undefined — the session has not loaded.");
       return;
     }
     setRecovering(true);
     setCreateError(null);
     try {
-      const greeting = `Давай начнём.\n\n${testResult.step.question}`;
+      const greeting = `${testResult.step.question}`;
       console.log("[StepErrorDebug] Creating greeting message:", { session_id: session.id, modeId, stepNum });
       await createMessage({ session_id: session.id, mode_id: modeId, step_number: stepNum, role: "assistant", content: greeting });
       if (onGreetingCreated) onGreetingCreated();
@@ -72,7 +72,7 @@ export default function StepErrorDebug({ session, stepDebugInfo, navigate, onGre
 
       <div className="flex items-center gap-2">
         <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
-        <p className="text-sm font-semibold text-destructive">Шаг не найден (MODE_STEPS)</p>
+        <p className="text-sm font-semibold text-destructive">Step not found (MODE_STEPS)</p>
       </div>
 
       {stepDebugInfo ? (
@@ -137,7 +137,7 @@ ${stepDebugInfo.sampleRows?.join("\n") || "  (empty)"}`}
             disabled={recovering}
             onClick={handleUseFoundStep}
           >
-            {recovering ? "Создаём приветствие…" : "Создать первый вопрос и продолжить"}
+            {recovering ? "Creating opening message…" : "Create the first question and continue"}
           </Button>
         )}
 
@@ -157,11 +157,11 @@ ${stepDebugInfo.sampleRows?.join("\n") || "  (empty)"}`}
       <RlsDiagnostic session={session} />
 
       <p className="text-xs text-muted-foreground">
-        Откройте /admin/import и загрузите mode_steps.csv.
+        Open /admin/import and upload mode_steps.csv.
       </p>
       <div className="flex gap-2">
-        <Button size="sm" variant="outline" onClick={() => navigate("/dashboard")}>На главную</Button>
-        <Button size="sm" variant="outline" onClick={() => navigate("/admin/status")}>Статус данных</Button>
+        <Button size="sm" variant="outline" onClick={() => navigate("/dashboard")}>Dashboard</Button>
+        <Button size="sm" variant="outline" onClick={() => navigate("/admin/status")}>Data status</Button>
       </div>
     </div>
   );

@@ -126,13 +126,13 @@ export default function Dashboard() {
         `[SessionFlow] First step not found!\n  mode_id = ${modeId}\n  step_key = ${stepKey}\n  steps for mode = ${allKeys}\n  DB mode_ids = ${allModeIds.join(", ")}\n  ModeStep rows readable = ${allSample.length}`
       );
       alert(
-        `Первый шаг не найден для режима «${modeId}».\n\n` +
+        `First step not found for mode "${modeId}".\n\n` +
         `step_key: ${stepKey}\n` +
-        `Шаги для этого режима: ${allKeys}\n` +
-        `Все mode_id в DB: ${allModeIds.join(", ") || "(пусто)"}\n` +
-        `ModeStep записей, доступных пользователю: ${allSample.length}\n\n` +
-        `→ Откройте /admin/status → «Test step lookup» для диагностики.\n` +
-        `→ Или откройте /admin/import и загрузите mode_steps.csv.`
+        `Steps for this mode: ${allKeys}\n` +
+        `All mode_id values in DB: ${allModeIds.join(", ") || "(empty)"}\n` +
+        `ModeStep records visible to this user: ${allSample.length}\n\n` +
+        `→ Open /admin/status → "Test step lookup" to diagnose.\n` +
+        `→ Or open /admin/import and upload mode_steps.csv.`
       );
       return;
     }
