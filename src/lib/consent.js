@@ -16,8 +16,10 @@ export const CONSENT_VERSION = "2026-07-a";
  * Fields to persist on AppUser when the user accepts the consent step.
  * @param {string} lang - locale the consent text was displayed in ("ru" | "es")
  */
-export function buildConsentRecord(lang) {
+export function buildConsentRecord(lang, birthYear) {
   return {
+    birth_year: birthYear || null,
+    age_confirmed_at: new Date().toISOString(),
     consent_given: true,
     ai_disclosure_ack: true,
     consent_version: CONSENT_VERSION,

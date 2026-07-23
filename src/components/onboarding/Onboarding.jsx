@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { normalizeLang, t } from "@/lib/i18n";
 import { buildConsentRecord } from "@/lib/consent";
+import { isOldEnough } from "@/lib/ageGate";
 import { track, EVENTS } from "@/lib/telemetry";
 import OnboardingShell from "./OnboardingShell";
 import ModeSelectStep from "./ModeSelectStep";
@@ -18,6 +19,7 @@ export default function Onboarding({ appUser, currentUser, onComplete }) {
   const [check1, setCheck1] = useState(false);
   const [check2, setCheck2] = useState(false);
   const [check3, setCheck3] = useState(false);
+  const [birthYear, setBirthYear] = useState(null);
   const [finishing, setFinishing] = useState(false);
 
   const { data: modes = [], isLoading: modesLoading } = useQuery({
@@ -40,7 +42,7 @@ export default function Onboarding({ appUser, currentUser, onComplete }) {
       if (appUser?.id) {
         await base44.entities.AppUser.update(appUser.id, {
           onboarding_completed: true,
-          ...buildConsentRecord(lang),
+          ...buildConsentRecord(lang, birthYear),
           current_mode: selectedMode?.mode_id || "",
         });
       }
@@ -122,7 +124,7 @@ export default function Onboarding({ appUser, currentUser, onComplete }) {
         onBack={back}
         onNext={next}
         nextLabel={t("onb_step4_button", lang)}
-        nextDisabled={!(check1 && check2 && check3)}
+        nextDisabled={!(isOldEnough(birthYear) && check1 && check2 && check3)}
         backLabel={t("onb_back", lang)}
       >
         <ConsentStep
@@ -133,6 +135,8 @@ export default function Onboarding({ appUser, currentUser, onComplete }) {
           onToggle1={() => setCheck1((v) => !v)}
           onToggle2={() => setCheck2((v) => !v)}
           onToggle3={() => setCheck3((v) => !v)}
+          birthYear={birthYear}
+          onBirthYearChange={setBirthYear}
         />
       </OnboardingShell>
     );

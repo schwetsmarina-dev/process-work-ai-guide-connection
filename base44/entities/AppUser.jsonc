@@ -58,6 +58,15 @@
       "format": "date-time",
       "description": "Timestamp of consent acceptance"
     },
+    "birth_year": {
+      "type": "integer",
+      "description": "Year of birth only. Used solely to enforce the minimum age (see src/lib/ageGate.js). Full date of birth is deliberately not collected."
+    },
+    "age_confirmed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the user confirmed meeting the minimum age"
+    },
     "consent_locale": {
       "type": "string",
       "description": "Language in which consent was presented and accepted"
