@@ -31,6 +31,7 @@ import TherapistDashboard from './pages/TherapistDashboard';
 import RequireAuth from './components/layout/RequireAuth';
 import { Navigate } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import LegalDoc from '@/pages/LegalDoc';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -104,6 +105,12 @@ const AuthenticatedApp = () => {
       <Route path="/" element={<Landing />} />
 
       {/* Public custom auth pages */}
+      {/* Public legal documents. Must stay outside ProtectedRoute — GDPR
+          art. 13 requires them to be readable before any data is handed over. */}
+      <Route path="/privacidad" element={<LegalDoc />} />
+      <Route path="/terminos" element={<LegalDoc />} />
+      <Route path="/aviso-legal" element={<LegalDoc />} />
+
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />

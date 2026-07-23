@@ -356,6 +356,11 @@ const translations = {
     age_question: "Год рождения",
     age_hint: "Приложение доступно людям от 16 лет. Мы спрашиваем только год — дата рождения не сохраняется.",
     age_select: "Выбери год",
+    legal_privacy: "Политика конфиденциальности",
+    legal_terms: "Условия использования",
+    legal_notice: "Правовая информация",
+    legal_consent_intro: "Регистрируясь, ты принимаешь",
+    legal_and: "и",
     age_too_young_title: "Пока это приложение не для тебя",
     age_too_young_text:
       "Приложение рассчитано на людей от 16 лет, поэтому продолжить не получится. Это не значит, что твои переживания менее важны — наоборот. Поговори с тем, кому доверяешь: родителем, школьным психологом или врачом. Если тяжело прямо сейчас, в Испании работает бесплатная линия 024, круглосуточно. В России — 8-800-2000-122, линия для детей и подростков.",
@@ -791,6 +796,11 @@ const translations = {
     age_question: "Año de nacimiento",
     age_hint: "La aplicación está disponible a partir de los 16 años. Solo preguntamos el año — no guardamos la fecha de nacimiento.",
     age_select: "Elige el año",
+    legal_privacy: "Política de privacidad",
+    legal_terms: "Términos de uso",
+    legal_notice: "Aviso legal",
+    legal_consent_intro: "Al registrarte aceptas",
+    legal_and: "y",
     age_too_young_title: "Esta aplicación todavía no es para ti",
     age_too_young_text:
       "La aplicación está pensada para personas a partir de 16 años, así que no es posible continuar. Eso no significa que lo que sientes importe menos — al contrario. Habla con alguien de confianza: un familiar, el orientador de tu centro o tu médico. Si lo estás pasando mal ahora mismo, en España el 024 atiende gratis las 24 horas.",
