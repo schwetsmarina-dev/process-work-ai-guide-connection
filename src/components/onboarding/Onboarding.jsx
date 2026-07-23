@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { normalizeLang, t } from "@/lib/i18n";
 import { buildConsentRecord } from "@/lib/consent";
+import { track, EVENTS } from "@/lib/telemetry";
 import OnboardingShell from "./OnboardingShell";
 import ModeSelectStep from "./ModeSelectStep";
 import ConsentStep from "./ConsentStep";
@@ -47,6 +48,7 @@ export default function Onboarding({ appUser, currentUser, onComplete }) {
       // Create first session in the selected mode
       const modeId = selectedMode?.mode_id;
       if (modeId) {
+        track(EVENTS.ONBOARDING_COMPLETED, { mode: modeId, language: lang });
         const session = await base44.entities.Session.create({
           user_id: currentUser?.id,
           mode_id: modeId,
@@ -58,6 +60,7 @@ export default function Onboarding({ appUser, currentUser, onComplete }) {
         if (appUser?.id) {
           await base44.entities.AppUser.update(appUser.id, { last_session_id: session.id }).catch(() => {});
         }
+        track(EVENTS.SESSION_STARTED, { mode: modeId, language: lang, is_first: true });
         onComplete?.();
         navigate(`/session/${session.id}`);
         return;
