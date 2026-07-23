@@ -1,5 +1,5 @@
 import { t, getStoredLanguage } from "@/lib/i18n";
-import { isAdmin as hasAdminRole } from "@/lib/roles";
+import { isAdmin as hasAdminRole, canViewTherapistDashboard } from "@/lib/roles";
 import React from "react"
 import { Toaster } from "@/components/ui/toaster"
 import { base44 } from "@/api/base44Client"
@@ -62,7 +62,7 @@ function ProtectedTherapistRoute({ children }) {
 
   React.useEffect(() => {
     base44.auth.me().then((user) => {
-      const ok = user?.role === "therapist" || user?.role === "admin";
+      const ok = canViewTherapistDashboard(user);
       setStatus(ok ? "ok" : "denied");
     }).catch(() => setStatus("denied"));
   }, []);
