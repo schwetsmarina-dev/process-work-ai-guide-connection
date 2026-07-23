@@ -156,7 +156,6 @@ async function initSentry() {
     sentry = Sentry;
   } catch (e) {
     // Monitoring must never break the app.
-    // eslint-disable-next-line no-console
     console.warn("[telemetry] Sentry init failed:", e?.message);
   }
 }
@@ -173,7 +172,6 @@ function initAnalytics() {
   script.setAttribute("data-domain", ANALYTICS_DOMAIN);
   script.setAttribute("data-telemetry", "analytics");
   script.onerror = () => {
-    // eslint-disable-next-line no-console
     console.warn("[telemetry] analytics script blocked or unavailable");
   };
   document.head.appendChild(script);
@@ -192,7 +190,6 @@ export function initTelemetry() {
   initSentry();
   initAnalytics();
   if (IS_DEV) {
-    // eslint-disable-next-line no-console
     console.info(
       `[telemetry] sentry=${SENTRY_DSN ? "on" : "off"} analytics=${
         ANALYTICS_DOMAIN ? "on" : "off"
@@ -203,7 +200,6 @@ export function initTelemetry() {
 
 /** Report a caught error. Always logs locally; forwards when configured. */
 export function captureError(error, context = {}) {
-  // eslint-disable-next-line no-console
   console.error("[telemetry] error:", error?.message || error, context);
   if (sentry) {
     sentry.captureException(error, { extra: sanitizeProps(context) });
@@ -218,7 +214,6 @@ export function captureError(error, context = {}) {
 export function track(event, props = {}) {
   if (!ALLOWED_EVENTS.has(event)) {
     if (IS_DEV) {
-      // eslint-disable-next-line no-console
       console.warn(
         `[telemetry] blocked unknown event "${event}" — add it to EVENTS first`,
       );
@@ -229,7 +224,6 @@ export function track(event, props = {}) {
   const safeProps = sanitizeProps(props);
 
   if (IS_DEV) {
-    // eslint-disable-next-line no-console
     console.info("[telemetry] event:", event, safeProps);
   }
 
