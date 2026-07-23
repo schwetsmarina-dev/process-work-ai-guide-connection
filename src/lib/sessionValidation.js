@@ -706,28 +706,29 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
   return { isValid: true, reason: "", correctedInstruction: "" };
 }
 
-export function getSafeFallback(currentMode, forcedNextLayer, integrationLock, mappingStage, isMismatch, isDreamAlreadyTold) {
+export function getSafeFallback(currentMode, forcedNextLayer, integrationLock, mappingStage, isMismatch, isDreamAlreadyTold, language = "ru") {
+  const F = fallbacksFor(language);
   const modeKey = (currentMode || "").toLowerCase();
   if (integrationLock) {
-    if (modeKey.includes("conflict")) return SAFE_FALLBACKS.conflict_integration;
-    return SAFE_FALLBACKS.integration;
+    if (modeKey.includes("conflict")) return F.conflict_integration;
+    return F.integration;
   }
-  if (isDreamAlreadyTold) return SAFE_FALLBACKS.awaiting_primary;
+  if (isDreamAlreadyTold) return F.awaiting_primary;
   if (isMismatch && mappingStage) {
-    if (mappingStage.stage === "awaiting_dream") return SAFE_FALLBACKS.mismatch_dream;
-    if (mappingStage.stage === "awaiting_primary") return SAFE_FALLBACKS.awaiting_primary;
-    if (mappingStage.stage === "awaiting_secondary") return SAFE_FALLBACKS.awaiting_secondary;
+    if (mappingStage.stage === "awaiting_dream") return F.mismatch_dream;
+    if (mappingStage.stage === "awaiting_primary") return F.awaiting_primary;
+    if (mappingStage.stage === "awaiting_secondary") return F.awaiting_secondary;
   }
-  if (mappingStage?.stage === "awaiting_dream") return SAFE_FALLBACKS.awaiting_dream;
-  if (mappingStage?.stage === "awaiting_body_signal") return SAFE_FALLBACKS.awaiting_body_signal;
-  if (mappingStage?.stage === "awaiting_conflict_material") return SAFE_FALLBACKS.awaiting_conflict_material;
-  if (mappingStage?.stage === "awaiting_journaling_topic") return SAFE_FALLBACKS.awaiting_journaling_topic;
-  if (mappingStage?.stage === "awaiting_primary") return SAFE_FALLBACKS.awaiting_primary;
-  if (mappingStage?.stage === "awaiting_secondary") return SAFE_FALLBACKS.awaiting_secondary;
-  if (forcedNextLayer === "transformation") return SAFE_FALLBACKS.transformation;
-  if (forcedNextLayer === "immersion") return SAFE_FALLBACKS.immersion;
-  if (modeKey.includes("body")) return SAFE_FALLBACKS.body;
-  if (modeKey.includes("conflict")) return SAFE_FALLBACKS.conflict;
-  if (modeKey.includes("journal")) return SAFE_FALLBACKS.journaling;
-  return SAFE_FALLBACKS.integration;
+  if (mappingStage?.stage === "awaiting_dream") return F.awaiting_dream;
+  if (mappingStage?.stage === "awaiting_body_signal") return F.awaiting_body_signal;
+  if (mappingStage?.stage === "awaiting_conflict_material") return F.awaiting_conflict_material;
+  if (mappingStage?.stage === "awaiting_journaling_topic") return F.awaiting_journaling_topic;
+  if (mappingStage?.stage === "awaiting_primary") return F.awaiting_primary;
+  if (mappingStage?.stage === "awaiting_secondary") return F.awaiting_secondary;
+  if (forcedNextLayer === "transformation") return F.transformation;
+  if (forcedNextLayer === "immersion") return F.immersion;
+  if (modeKey.includes("body")) return F.body;
+  if (modeKey.includes("conflict")) return F.conflict;
+  if (modeKey.includes("journal")) return F.journaling;
+  return F.integration;
 }
