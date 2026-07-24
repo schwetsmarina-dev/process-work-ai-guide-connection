@@ -24,6 +24,7 @@ import StepErrorDebug from "@/components/session/StepErrorDebug";
 import { normalizeLang, t } from "@/lib/i18n";
 import { getSummaryUnavailableText } from "@/lib/summaryFallback";
 import { track, EVENTS } from "@/lib/telemetry";
+import useEntitlement from "@/hooks/useEntitlement";
 
 // Canonical, mode-specific opening question (do NOT use DB step.question for the first greeting)
 function getInitialOpeningQuestion(modeId, language, step, carryOverContext) {
@@ -94,6 +95,11 @@ function parseShiftSuggestion(text) {
 }
 
 export default function SessionChat() {
+  // Read once into a ref so the send handler does not need it as a dependency.
+  const entitlement = useEntitlement();
+  const entitlementRef = useRef(entitlement);
+  entitlementRef.current = entitlement;
+
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathParts = window.location.pathname.split("/");
@@ -456,7 +462,11 @@ export default function SessionChat() {
 
       // Load user memory and format it for the prompt
       const memories = await loadUserMemories(currentUser?.id);
-      const memoriesBlock = formatMemoriesForPrompt(memories, language);
+      // Cross-session memory is a subscription feature: the free trial is a
+      // single session per mode, so continuity has nothing to build on anyway.
+      const memoriesBlock = entitlementRef.current?.hasAccess
+        ? formatMemoriesForPrompt(memories, language)
+        : "";
 
       // Get AI response
       let rawResponse;
