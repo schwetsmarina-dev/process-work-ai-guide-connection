@@ -65,9 +65,9 @@ function getInitialOpeningQuestion(modeId, language, step, carryOverContext) {
 
 // Last-resort canonical greeting — used when fetchStep returns null or a greeting
 // create fails. Never leaves the user with an empty chat. Throws if create fails.
-async function createFallbackGreeting({ sessionId, modeId, stepNum, language, reason }) {
+async function createFallbackGreeting({ sessionId, modeId, stepNum, language, reason, carryOverContext }) {
   const fallbackOpening =
-    getInitialOpeningQuestion(modeId, language, null, null) ||
+    getInitialOpeningQuestion(modeId, language, null, carryOverContext) ||
     (language === "es" ? "¿Qué quieres explorar hoy?" : "О чём ты хочешь поисследовать сегодня?");
 
   await createMessage({
@@ -228,7 +228,7 @@ export default function SessionChat() {
 
     // Runs the shared fallback greeting + clears error state. Throws if create fails.
     const runFallback = async (reason) => {
-      await createFallbackGreeting({ sessionId, modeId, stepNum, language, reason });
+      await createFallbackGreeting({ sessionId, modeId, stepNum, language, reason, carryOverContext: session.carry_over_context });
       if (cancelled) return;
       initDone.current = true;
       setStepError(false);
@@ -327,7 +327,7 @@ export default function SessionChat() {
       } catch (createErr) {
         if (cancelled) return;
         console.error("[SESSION_AUTORECOVERY] greeting create failed — trying fallback:", createErr?.message);
-        await createFallbackGreeting({ sessionId, modeId, stepNum, language, reason: "autorecovery greeting create failed" });
+        await createFallbackGreeting({ sessionId, modeId, stepNum, language, reason: "autorecovery greeting create failed", carryOverContext: session.carry_over_context });
       }
       if (cancelled) return;
       initDone.current = true;
