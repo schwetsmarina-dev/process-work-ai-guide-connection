@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { canUseFeature } from "@/lib/entitlement";
 
 /**
  * Reads the authoritative entitlement from the server.
@@ -22,14 +23,27 @@ export default function useEntitlement() {
     retry: 1,
   });
 
+  const entitlement = data
+    ? {
+        plan: data.plan,
+        status: data.status,
+        expires_at: data.expiresAt,
+      }
+    : null;
+
   return {
     isLoading,
     error,
     refetch,
+    entitlement,
+    usageByMode: data?.usageByMode || {},
     hasAccess: isLoading ? undefined : Boolean(data?.hasAccess),
     plan: data?.plan || "free",
     isLifetime: Boolean(data?.isLifetime),
     isGranted: data?.plan === "beta",
     expiresAt: data?.expiresAt || null,
+    /** Gate a screen: can(FEATURES.SUMMARY). Undefined while loading. */
+    can: (feature) =>
+      isLoading ? undefined : canUseFeature(entitlement, feature),
   };
 }

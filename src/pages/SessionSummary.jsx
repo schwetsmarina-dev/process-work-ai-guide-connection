@@ -21,11 +21,15 @@ import SessionHighlights from "@/components/session/SessionHighlights";
 import ExportSessionPdfButton from "@/components/session/ExportSessionPdfButton";
 import BodySignalMatch from "@/components/physio/BodySignalMatch";
 import { normalizeLang, t } from "@/lib/i18n";
+import useEntitlement from "@/hooks/useEntitlement";
+import { FEATURES } from "@/lib/entitlement";
+import UpgradePrompt from "@/components/billing/UpgradePrompt";
 import { isSummaryUnavailable } from "@/lib/summaryFallback";
 
 const iconMap = { Heart, Moon, GitBranch, PenLine };
 
 export default function SessionSummary() {
+  const { can } = useEntitlement();
   const navigate = useNavigate();
   const pathParts = window.location.pathname.split("/");
   const sessionId = pathParts[2];
