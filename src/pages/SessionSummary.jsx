@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listMessages } from "@/lib/messageApi";
+import { startSession } from "@/lib/sessionApi";
 import { Heart, Moon, GitBranch, PenLine, ArrowLeft, Sparkles, Tag, Zap, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -360,6 +361,12 @@ export default function SessionSummary() {
 
       {can(FEATURES.REPORT) && messages.length > 0 && (
         <FullSessionReport session={session} messages={messages} lang={language} />
+      )}
+
+      {continueBlocked && (
+        <div className="mt-6">
+          <UpgradePrompt lang={language} variant="quota" onDismiss={() => setContinueBlocked(false)} />
+        </div>
       )}
 
       {/* One prompt, once, rather than a lock icon beside every hidden block. */}
