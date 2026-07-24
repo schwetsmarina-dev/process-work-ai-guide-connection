@@ -67,7 +67,7 @@ function getInitialOpeningQuestion(modeId, language, step, carryOverContext) {
 // create fails. Never leaves the user with an empty chat. Throws if create fails.
 async function createFallbackGreeting({ sessionId, modeId, stepNum, language, reason }) {
   const fallbackOpening =
-    getInitialOpeningQuestion(modeId, language, null) ||
+    getInitialOpeningQuestion(modeId, language, null, null) ||
     (language === "es" ? "¿Qué quieres explorar hoy?" : "О чём ты хочешь поисследовать сегодня?");
 
   await createMessage({
@@ -270,7 +270,7 @@ export default function SessionChat() {
       // Step found — create greeting, THEN mark init done
       console.log("[SESSION_INIT] step found:", step.step_key || step._stepKey, "session.id:", sessionId);
       // Use canonical, mode-specific opening question (never DB step.question for first greeting)
-      const openingQuestion = getInitialOpeningQuestion(modeId, language, step);
+      const openingQuestion = getInitialOpeningQuestion(modeId, language, step, session.carry_over_context);
       console.log("[CANONICAL_OPENING_USED]", { modeId, language, openingQuestion });
       const greeting = `${t("greeting_start", language)}\n\n${openingQuestion}`;
       try {
@@ -319,7 +319,7 @@ export default function SessionChat() {
     fetchStep(modeId, stepNum).then(async (step) => {
       if (cancelled || !step) return;
       console.log("[SESSION_AUTORECOVERY] fetchStep succeeded — creating greeting, session.id:", sessionId);
-      const recoveryQuestion = getInitialOpeningQuestion(modeId, language, step);
+      const recoveryQuestion = getInitialOpeningQuestion(modeId, language, step, session.carry_over_context);
       console.log("[CANONICAL_OPENING_USED]", { modeId, language, openingQuestion: recoveryQuestion });
       const greeting = `${t("greeting_start", language)}\n\n${recoveryQuestion}`;
       try {
