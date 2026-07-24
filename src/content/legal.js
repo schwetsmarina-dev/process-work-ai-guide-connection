@@ -18,7 +18,7 @@ export const CONTROLLER = {
   taxId: "", // NIE / NIF
   address: "", // full postal address
   email: "processworkmarina@gmail.com",
-  site: "https://pwguide.uwu.ai",
+  site: "https://talvira.app",
   lastUpdated: "2026-07-23",
 };
 

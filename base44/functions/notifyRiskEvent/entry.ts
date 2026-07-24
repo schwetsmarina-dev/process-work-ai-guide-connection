@@ -122,7 +122,7 @@ Automated safety notification. This mailbox is not monitored by the user.`;
       to: teamEmail,
       subject,
       body,
-      from_name: 'Process Work Safety Monitor',
+      from_name: 'Talvira Safety Monitor',
     });
 
     // Mark the event so a delivered alert is distinguishable from an unsent one.

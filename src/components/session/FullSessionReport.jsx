@@ -88,7 +88,7 @@ export default function FullSessionReport({ session, messages, lang = "ru" }) {
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Inner Process Path — ${escapeHtml(modeName)}</title>
+  <title>Talvira — ${escapeHtml(modeName)}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
@@ -131,11 +131,11 @@ export default function FullSessionReport({ session, messages, lang = "ru" }) {
   </style>
 </head>
 <body>
-  <h1>Inner Process Path</h1>
+  <h1>Talvira</h1>
   <p class="subtitle">${escapeHtml(t("report_subtitle", lang))}</p>
   <div class="meta">${escapeHtml(t("report_mode", lang))}: ${escapeHtml(modeName)} &nbsp;·&nbsp; ${escapeHtml(dateStr)}</div>
   ${sections.join("")}
-  <div class="footer">Inner Process Path · ${escapeHtml(t("report_footer", lang))}</div>
+  <div class="footer">Talvira · ${escapeHtml(t("report_footer", lang))}</div>
 </body>
 </html>`;
 

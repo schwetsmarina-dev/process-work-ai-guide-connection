@@ -111,7 +111,7 @@ export default function Landing() {
             <div className="absolute inset-0 blur-3xl opacity-20 bg-primary/40 rounded-3xl scale-95" />
             <img
               src={heroImage}
-              alt={lang === "es" ? "Process Work AI Guide — Español" : "Process Work AI Guide — Русский"}
+              alt={lang === "es" ? "Talvira — Español" : "Talvira — Русский"}
               className="relative w-full h-auto rounded-2xl shadow-2xl shadow-primary/10 object-contain mx-auto"
             />
           </motion.div>
@@ -183,7 +183,7 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
-        <p>© {new Date().getFullYear()} Process Work AI Guide</p>
+        <p>© {new Date().getFullYear()} Talvira</p>
         <p className="mt-2 font-mono text-xs text-amber-600 bg-amber-50 inline-block px-3 py-1 rounded-full border border-amber-200">
 LANDING BUILD: language switcher active v2
         </p>

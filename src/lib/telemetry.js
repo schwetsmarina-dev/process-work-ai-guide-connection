@@ -26,7 +26,7 @@
 // Configuration (Base44 app settings → env):
 //   VITE_SENTRY_DSN        — enables error monitoring. Absent → no-op.
 //   VITE_ANALYTICS_DOMAIN  — site domain registered with the analytics
-//                            provider, e.g. "pwguide.uwu.ai". Absent → no-op.
+//                            provider, e.g. "talvira.app". Absent → no-op.
 //   VITE_ANALYTICS_SRC     — script URL of the analytics provider.
 //                            Defaults to Plausible cloud (EU-hosted).
 //   VITE_APP_VERSION       — optional release tag for Sentry.

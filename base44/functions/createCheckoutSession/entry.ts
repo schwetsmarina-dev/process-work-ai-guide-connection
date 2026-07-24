@@ -7,7 +7,7 @@ import Stripe from 'npm:stripe@17';
  * Environment:
  *   STRIPE_SECRET_KEY   sk_test_... while testing, sk_live_... in production
  *   STRIPE_PRICE_ID     the recurring price to sell
- *   APP_URL             e.g. https://pwguide.uwu.ai  (no trailing slash)
+ *   APP_URL             e.g. https://talvira.app  (no trailing slash)
  *
  * Two decisions worth keeping:
  *

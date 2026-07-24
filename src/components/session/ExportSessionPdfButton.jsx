@@ -76,7 +76,7 @@ export default function ExportSessionPdfButton({ session, messages = [], languag
 <html lang="${language}">
 <head>
   <meta charset="UTF-8">
-  <title>Inner Process Path — ${escapeHtml(modeName)}</title>
+  <title>Talvira — ${escapeHtml(modeName)}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
@@ -119,7 +119,7 @@ export default function ExportSessionPdfButton({ session, messages = [], languag
   </style>
 </head>
 <body>
-  <h1>Inner Process Path</h1>
+  <h1>Talvira</h1>
   <p class="subtitle">${escapeHtml(t("export_pdf_report_title", language))}</p>
   <div class="meta">${escapeHtml(modeName)} &nbsp;·&nbsp; ${escapeHtml(dateStr)}</div>
   ${sections.join("")}
