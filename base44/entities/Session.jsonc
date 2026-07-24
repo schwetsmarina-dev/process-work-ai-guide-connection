@@ -82,7 +82,13 @@
   ],
   "rls": {
     "create": {
-      "created_by_id": "{{user.id}}"
+      // Sessions are created ONLY by the startSession backend function, which
+      // enforces the free-trial quota. A paywall checked in the browser is
+      // decoration — anyone can open the console and insert rows. Service-role
+      // calls bypass this rule; ordinary users cannot.
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "read": {
       "$or": [

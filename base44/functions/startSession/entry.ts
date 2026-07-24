@@ -13,7 +13,11 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  * Free trial: one session per mode (FREE_SESSIONS_PER_MODE in
  * src/lib/entitlement.js — keep the two in step).
  *
- * Body: { modeId: "body" | "dream" | "conflict" | "journaling" }
+ * Body: {
+ *   modeId: "body" | "dream" | "conflict" | "journaling",
+ *   continuedFromSessionId?: string,   // carrying on from a previous session
+ *   carryOverContext?: string
+ * }
  * Returns: { session } or { blocked: true, reason: "quota" }
  */
 
@@ -65,7 +69,18 @@ Deno.serve(async (req) => {
     // ── Create ───────────────────────────────────────────────────────────────
     // created_by_id must be the USER, not the service role, or every RLS rule
     // that keys on ownership would stop matching.
+    // Only these extras are accepted. Anything else the client sends is
+    // ignored, so a crafted request cannot set status, dates or ownership.
+    const extras = {};
+    if (body?.continuedFromSessionId) {
+      extras.continued_from_session_id = String(body.continuedFromSessionId);
+    }
+    if (body?.carryOverContext) {
+      extras.carry_over_context = String(body.carryOverContext);
+    }
+
     const session = await svc.entities.Session.create({
+      ...extras,
       mode_id: modeId,
       mode: modeId,
       status: 'active',
