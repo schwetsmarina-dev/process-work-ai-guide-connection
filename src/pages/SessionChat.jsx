@@ -469,7 +469,7 @@ export default function SessionChat() {
       // Get AI response
       let rawResponse;
       try {
-        rawResponse = await getAIResponse(session, step, updatedMessages, text, language, memoriesBlock);
+        rawResponse = await getAIResponse({ ...session, current_step: currentStep }, step, updatedMessages, text, language, memoriesBlock);
         console.log("[CHAT_FLOW] 4. AI response generated, length:", rawResponse?.length);
       } catch (aiErr) {
         console.error("[CHAT_FLOW] AI generation failed:", aiErr);
@@ -499,6 +499,15 @@ export default function SessionChat() {
 
       if (nextStep) {
         await base44.entities.Session.update(sessionId, { current_step: nextStep });
+        // Update the cache synchronously as well. invalidateQueries only marks
+        // the data stale and refetches asynchronously, which left a window
+        // where the next turn still read the previous step and re-asked the
+        // same question. Writing the new step straight into the cache closes
+        // that window.
+        queryClient.setQueryData(
+          ["session", sessionId, currentUser?.email],
+          (prev) => (prev ? { ...prev, current_step: nextStep } : prev),
+        );
       } else {
         // No next step — final closing message shown; reveal the "end session" button instead of auto-redirect
         setSessionComplete(true);
