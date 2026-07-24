@@ -30,6 +30,37 @@ const iconMap = { Heart, Moon, GitBranch, PenLine };
 
 export default function SessionSummary() {
   const { can } = useEntitlement();
+  const [continuing, setContinuing] = useState(false);
+  const [continueBlocked, setContinueBlocked] = useState(false);
+
+  // Carries the thread of this session into the next one.
+  const handleContinueWork = async () => {
+    if (continuing) return;
+    setContinuing(true);
+    try {
+      const carryOverContext = [
+        session?.summary && !isSummaryUnavailable(session.summary) ? session.summary : "",
+        session?.next_step_suggestion || "",
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+
+      const result = await startSession(session.mode_id || session.mode, {
+        continuedFromSessionId: session.id,
+        carryOverContext,
+      });
+
+      if (result.blocked) {
+        setContinueBlocked(true);
+        setContinuing(false);
+        return;
+      }
+      navigate(`/session/${result.session.id}`);
+    } catch (e) {
+      console.error("[SessionSummary] could not continue work:", e?.message);
+      setContinuing(false);
+    }
+  };
   const navigate = useNavigate();
   const pathParts = window.location.pathname.split("/");
   const sessionId = pathParts[2];
@@ -270,6 +301,31 @@ export default function SessionSummary() {
               <p className="text-sm leading-relaxed text-muted-foreground">
                 {session.next_step_suggestion}
               </p>
+
+              {/* The suggestion used to be read-only text, which left people
+                  with an instruction and no way to act on it. The button opens
+                  a fresh session in the same mode and hands the summary and the
+                  suggestion forward as carry-over context, so the facilitator
+                  picks up where this one stopped. */}
+              {!isAdminViewing && (
+                <div className="mt-4">
+                  <Button
+                    onClick={handleContinueWork}
+                    disabled={continuing}
+                    className="rounded-xl gap-2"
+                  >
+                    {continuing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ArrowRight className="w-4 h-4" />
+                    )}
+                    {continuing ? t("continue_starting", language) : t("continue_this_work", language)}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {t("continue_this_work_hint", language)}
+                  </p>
+                </div>
+              )}
             </Card>
           </motion.div>
         )}
