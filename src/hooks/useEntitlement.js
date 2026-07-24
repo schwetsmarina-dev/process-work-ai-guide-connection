@@ -12,13 +12,34 @@ import { canUseFeature } from "@/lib/entitlement";
  * While loading, `hasAccess` is undefined rather than false, so the UI can
  * avoid flashing a paywall at someone who has already paid.
  */
+export const ENTITLEMENT_QUERY_KEY = ["entitlement"];
+
+async function fetchEntitlementRaw() {
+  const res = await base44.functions.invoke("getEntitlement", {});
+  return res?.data ?? res;
+}
+
+/**
+ * Resolve the entitlement inside an async handler, awaiting the request if it
+ * has not landed yet and reusing the cached value if it has.
+ *
+ * Needed because the hook reports `hasAccess: undefined` while loading, and a
+ * handler that treats "undefined" as "no access" silently switches paid
+ * features off for paying users during the first seconds of a page. That is
+ * exactly how cross-session memory got disabled for everyone.
+ */
+export async function fetchEntitlement(queryClient) {
+  return queryClient.fetchQuery({
+    queryKey: ENTITLEMENT_QUERY_KEY,
+    queryFn: fetchEntitlementRaw,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export default function useEntitlement() {
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["entitlement"],
-    queryFn: async () => {
-      const res = await base44.functions.invoke("getEntitlement", {});
-      return res?.data ?? res;
-    },
+    queryKey: ENTITLEMENT_QUERY_KEY,
+    queryFn: fetchEntitlementRaw,
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
