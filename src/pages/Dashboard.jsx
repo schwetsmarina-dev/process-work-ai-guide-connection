@@ -9,6 +9,7 @@ import RecentSessionCard from "@/components/dashboard/RecentSessionCard";
 import ModeCardDB from "@/components/dashboard/ModeCardDB";
 import AdminPanel from "@/components/dashboard/AdminPanel";
 import ExistingSessionDialog from "@/components/dashboard/ExistingSessionDialog";
+import ContinueThemeDialog from "@/components/dashboard/ContinueThemeDialog";
 import ConsistencyCalendar from "@/components/dashboard/ConsistencyCalendar";
 import { normalizeLang, t } from "@/lib/i18n";
 
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const [appUser, setAppUser] = useState(null);
   const [pendingMode, setPendingMode] = useState(null);
   const [existingActive, setExistingActive] = useState(null);
+  const [lastCompletedForMode, setLastCompletedForMode] = useState(null);
   const lang = normalizeLang(appUser?.language || "ru");
 
   useEffect(() => {
@@ -70,7 +72,51 @@ export default function Dashboard() {
       return;
     }
 
+    // No unfinished session — but the user may still have a *completed* session
+    // in this same mode whose theme they'd want to pick back up. Surfacing this
+    // explicitly is what was missing: previously there was no way for the user
+    // to know a previous session's thread could be continued at all.
+    let lastCompleted = null;
+    try {
+      const completedInMode = await base44.entities.Session.filter(
+        { created_by: currentUser.email, status: "completed", mode_id: modeId },
+        "-created_date",
+        1
+      );
+      lastCompleted = completedInMode?.[0] || null;
+    } catch (e) {
+      console.error("[SessionFlow] lookup of last completed session failed:", e?.message);
+    }
+
+    if (lastCompleted && (lastCompleted.summary || lastCompleted.next_step_suggestion)) {
+      setPendingMode(mode);
+      setLastCompletedForMode(lastCompleted);
+      return;
+    }
+
     await createSession(mode);
+  };
+
+  const handleContinueTheme = async () => {
+    const mode = pendingMode;
+    const prev = lastCompletedForMode;
+    setLastCompletedForMode(null);
+    setPendingMode(null);
+    if (!mode || !prev) return;
+
+    const carrySource = prev.next_step_suggestion || prev.summary || "";
+    const carryOverContext = carrySource
+      ? `Пользователь возвращается к теме прошлой сессии в этом же направлении. Тогда пришли к следующему: «${carrySource}». Начни с мягкого отсылки к этому и приглашения углубить именно эту тему — не начинай с нуля и не повторяй пройденное.`
+      : "";
+
+    await createSession(mode, { continuedFromSessionId: prev.id, carryOverContext });
+  };
+
+  const handleStartNewTheme = async () => {
+    const mode = pendingMode;
+    setLastCompletedForMode(null);
+    setPendingMode(null);
+    if (mode) await createSession(mode);
   };
 
   const handleContinueExisting = () => {
@@ -92,7 +138,7 @@ export default function Dashboard() {
     if (mode) await createSession(mode);
   };
 
-  const createSession = async (mode) => {
+  const createSession = async (mode, { continuedFromSessionId, carryOverContext } = {}) => {
     const modeId = mode.mode_id;
     const stepKey = `${modeId}_1`;
 
@@ -150,6 +196,8 @@ export default function Dashboard() {
       status: "active",
       current_step: 1,
       started_at: new Date().toISOString(),
+      ...(continuedFromSessionId ? { continued_from_session_id: continuedFromSessionId } : {}),
+      ...(carryOverContext ? { carry_over_context: carryOverContext } : {}),
     });
 
     console.log(
@@ -188,6 +236,15 @@ export default function Dashboard() {
         onContinue={handleContinueExisting}
         onStartNew={handleStartNew}
         onOpenChange={(o) => { if (!o) { setExistingActive(null); setPendingMode(null); } }}
+        lang={lang}
+      />
+
+      <ContinueThemeDialog
+        open={!!lastCompletedForMode}
+        summary={lastCompletedForMode?.next_step_suggestion || lastCompletedForMode?.summary}
+        onContinueTheme={handleContinueTheme}
+        onStartNew={handleStartNewTheme}
+        onOpenChange={(o) => { if (!o) { setLastCompletedForMode(null); setPendingMode(null); } }}
         lang={lang}
       />
 
