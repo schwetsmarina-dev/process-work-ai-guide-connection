@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { startSession } from "@/lib/sessionApi";
+import UpgradePrompt from "@/components/billing/UpgradePrompt";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import JournalSessionCard from "@/components/journal/JournalSessionCard";
@@ -10,6 +11,7 @@ import JournalProgress from "@/components/journal/JournalProgress";
 import { normalizeLang, t } from "@/lib/i18n";
 
 export default function Journal() {
+  const [quotaBlocked, setQuotaBlocked] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [currentUser, setCurrentUser] = useState(null);

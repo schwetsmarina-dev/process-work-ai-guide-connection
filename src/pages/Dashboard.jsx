@@ -13,6 +13,7 @@ import ContinueThemeDialog from "@/components/dashboard/ContinueThemeDialog";
 import ConsistencyCalendar from "@/components/dashboard/ConsistencyCalendar";
 import { normalizeLang, t } from "@/lib/i18n";
 import { startSession } from "@/lib/sessionApi";
+import UpgradePrompt from "@/components/billing/UpgradePrompt";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -229,6 +230,12 @@ export default function Dashboard() {
 
       {/* Admin quick-access panel */}
       {isAdmin && <AdminPanel />}
+
+      {quotaBlockedMode && (
+        <div className="mb-6">
+          <UpgradePrompt lang={lang} variant="quota" onDismiss={() => setQuotaBlockedMode(null)} />
+        </div>
+      )}
 
       <ExistingSessionDialog
         open={!!existingActive}
