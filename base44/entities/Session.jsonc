@@ -67,6 +67,14 @@
     "risk_flag": {
       "type": "boolean",
       "default": false
+    },
+    "continued_from_session_id": {
+      "type": "string",
+      "description": "If the user chose to deepen a previous completed session's theme, the id of that prior Session"
+    },
+    "carry_over_context": {
+      "type": "string",
+      "description": "Short summary of the previous session's theme, injected into the opening greeting when the user chose to continue/deepen it instead of starting fresh"
     }
   },
   "required": [
