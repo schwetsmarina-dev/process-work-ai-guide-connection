@@ -295,25 +295,22 @@ export default function SessionSummary() {
         </div>
       )}
 
-      {/* Quick PDF export of the whole session for personal archive */}
-      {!messagesError && messages.length > 0 && (
+      {/* PDF export and full report — subscription features */}
+      {can(FEATURES.REPORT) && !messagesError && messages.length > 0 && (
         <div className="mt-6">
           <ExportSessionPdfButton session={session} messages={messages} language={language} />
         </div>
       )}
 
-      {/* Full session report */}
-      {messages.length > 0 && (
-        {can(FEATURES.REPORT) && (
-          <FullSessionReport session={session} messages={messages} lang={language} />
-        )}
+      {can(FEATURES.REPORT) && messages.length > 0 && (
+        <FullSessionReport session={session} messages={messages} lang={language} />
+      )}
 
-        {/* One prompt, once, at the end — not next to every locked block. */}
-        {can(FEATURES.SUMMARY) === false && (
-          <div className="mt-6">
-            <UpgradePrompt lang={language} variant="feature" />
-          </div>
-        )}
+      {/* One prompt, once, rather than a lock icon beside every hidden block. */}
+      {can(FEATURES.SUMMARY) === false && (
+        <div className="mt-6">
+          <UpgradePrompt lang={language} variant="feature" />
+        </div>
       )}
 
       {/* Summary actions: regenerate (if fallback) or save to diary */}
