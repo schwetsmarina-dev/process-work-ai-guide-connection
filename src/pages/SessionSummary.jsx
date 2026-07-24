@@ -200,7 +200,7 @@ export default function SessionSummary() {
         </motion.div>
 
         {/* Quick visual overview of themes + signals */}
-        {!isSummaryUnavailable(session.summary) && (
+        {can(FEATURES.SUMMARY) && !isSummaryUnavailable(session.summary) && (
           <SessionHighlights
             themes={session.themes || []}
             signals={session.signals || []}
@@ -209,7 +209,7 @@ export default function SessionSummary() {
         )}
 
         {/* Themes — only show if summary is not the fallback */}
-        {session.themes?.length > 0 && !isSummaryUnavailable(session.summary) && (
+        {can(FEATURES.SUMMARY) && session.themes?.length > 0 && !isSummaryUnavailable(session.summary) && (
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -232,7 +232,7 @@ export default function SessionSummary() {
         )}
 
         {/* Signals — only show if summary is not the fallback */}
-        {session.signals?.length > 0 && !isSummaryUnavailable(session.summary) && (
+        {can(FEATURES.SUMMARY) && session.signals?.length > 0 && !isSummaryUnavailable(session.summary) && (
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -304,7 +304,16 @@ export default function SessionSummary() {
 
       {/* Full session report */}
       {messages.length > 0 && (
-        <FullSessionReport session={session} messages={messages} lang={language} />
+        {can(FEATURES.REPORT) && (
+          <FullSessionReport session={session} messages={messages} lang={language} />
+        )}
+
+        {/* One prompt, once, at the end — not next to every locked block. */}
+        {can(FEATURES.SUMMARY) === false && (
+          <div className="mt-6">
+            <UpgradePrompt lang={language} variant="feature" />
+          </div>
+        )}
       )}
 
       {/* Summary actions: regenerate (if fallback) or save to diary */}
@@ -329,7 +338,9 @@ export default function SessionSummary() {
           transition={{ duration: 0.5, delay: 0.5 }}
           className="mt-6"
         >
-          <SessionInsightSuggestions suggestions={insightSuggestions} session={session} lang={language} />
+          {can(FEATURES.INSIGHTS) && (
+            <SessionInsightSuggestions suggestions={insightSuggestions} session={session} lang={language} />
+          )}
         </motion.div>
       )}
 

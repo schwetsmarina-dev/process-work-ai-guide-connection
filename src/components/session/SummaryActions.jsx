@@ -6,13 +6,17 @@ import { generateSessionSummary } from "@/lib/sessionAI";
 import { listMessages } from "@/lib/messageApi";
 import { t } from "@/lib/i18n";
 import { isSummaryUnavailable } from "@/lib/summaryFallback";
+import useEntitlement from "@/hooks/useEntitlement";
+import { FEATURES } from "@/lib/entitlement";
 
 export default function SummaryActions({ session, onUpdated, language = "ru" }) {
+  const { can } = useEntitlement();
   const [generating, setGenerating] = useState(false);
   const [savedToDiary, setSavedToDiary] = useState(false);
   const retryTimer = useRef(null);
 
-  const needsSummary = isSummaryUnavailable(session?.summary);
+  // Generating a summary costs an LLM call, so it is subscription-only.
+  const needsSummary = can(FEATURES.SUMMARY) && isSummaryUnavailable(session?.summary);
 
   const regenerate = useCallback(async () => {
     if (generating || !session) return;
