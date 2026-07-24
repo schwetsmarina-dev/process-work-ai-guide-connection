@@ -6,6 +6,10 @@
       "type": "string",
       "description": "Owner of this entitlement. Matched against the authenticated user's email."
     },
+    "user_id": {
+      "type": "string",
+      "description": "Auth user id, when known. Secondary key: entitlements are matched by email OR id, so a record created by a job that only knew the id still resolves."
+    },
     "plan": {
       "type": "string",
       "enum": [
