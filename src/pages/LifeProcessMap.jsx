@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { t, getStoredLanguage } from "@/lib/i18n";
+import useEntitlement from "@/hooks/useEntitlement";
+import { FEATURES } from "@/lib/entitlement";
+import UpgradePrompt from "@/components/billing/UpgradePrompt";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Network, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProcessGraph from "@/components/map/ProcessGraph";
 
 export default function LifeProcessMap() {
+  const { can } = useEntitlement();
   const lang = getStoredLanguage();
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -27,6 +31,15 @@ export default function LifeProcessMap() {
 
   const nodes = data?.nodes || [];
   const edges = data?.edges || [];
+
+
+  if (can(FEATURES.ANALYTICS) === false) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
+        <UpgradePrompt lang={lang} variant="feature" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 md:p-10 max-w-5xl mx-auto">

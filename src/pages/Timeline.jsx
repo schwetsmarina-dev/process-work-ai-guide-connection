@@ -2,12 +2,16 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { t, getStoredLanguage } from "@/lib/i18n";
+import useEntitlement from "@/hooks/useEntitlement";
+import { FEATURES } from "@/lib/entitlement";
+import UpgradePrompt from "@/components/billing/UpgradePrompt";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Sparkles, Lightbulb } from "lucide-react";
 import TimelineEvent from "@/components/timeline/TimelineEvent";
 import InsightDetailModal from "@/components/insights/InsightDetailModal";
 
 export default function Timeline() {
+  const { can } = useEntitlement();
   const lang = getStoredLanguage();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
@@ -60,6 +64,15 @@ export default function Timeline() {
       setSelectedInsight(event.raw);
     }
   };
+
+
+  if (can(FEATURES.ANALYTICS) === false) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
+        <UpgradePrompt lang={lang} variant="feature" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 md:py-12">

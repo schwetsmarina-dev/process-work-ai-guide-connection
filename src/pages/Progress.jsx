@@ -17,6 +17,9 @@ import {
 import { startOfWeek, subWeeks, format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { normalizeLang } from "@/lib/i18n";
+import useEntitlement from "@/hooks/useEntitlement";
+import { FEATURES } from "@/lib/entitlement";
+import UpgradePrompt from "@/components/billing/UpgradePrompt";
 import { MODE_LABELS } from "@/lib/modeSteps";
 import { generateWeeklyRecap } from "@/lib/progressAI";
 
@@ -84,6 +87,15 @@ function sessionDate(s) {
 }
 
 function StatCard({ icon: Icon, value, label, sub, accent }) {
+
+  if (can(FEATURES.ANALYTICS) === false) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
+        <UpgradePrompt lang={lang} variant="feature" />
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-border bg-card p-4 flex flex-col gap-1">
       <Icon className={`w-5 h-5 ${accent || "text-primary"}`} />
@@ -113,6 +125,7 @@ function Bar({ label, count, max, Icon }) {
 }
 
 export default function Progress() {
+  const { can } = useEntitlement();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [appUser, setAppUser] = useState(null);

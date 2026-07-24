@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { t, getStoredLanguage } from "@/lib/i18n";
+import useEntitlement from "@/hooks/useEntitlement";
+import { FEATURES } from "@/lib/entitlement";
+import UpgradePrompt from "@/components/billing/UpgradePrompt";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Search, BookOpen, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -13,6 +16,7 @@ const IMPORTANCE_OPTS = [1, 2, 3];
 const IMPORTANCE_KEYS = { 1: "importance_num_1", 2: "importance_num_2", 3: "importance_num_3" };
 
 export default function InsightLibrary() {
+  const { can } = useEntitlement();
   const lang = getStoredLanguage();
   const [search, setSearch] = useState("");
   const [filterFav, setFilterFav] = useState(false);
@@ -43,6 +47,15 @@ export default function InsightLibrary() {
     }
     return true;
   });
+
+
+  if (can(FEATURES.INSIGHTS) === false) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
+        <UpgradePrompt lang={lang} variant="feature" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
