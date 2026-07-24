@@ -1101,6 +1101,18 @@ export async function getAIResponse(session, step, messages, userMessage, langua
   });
 
   // ── SESSION STATE — SOURCE OF TRUTH prompt block (after systemPrompt, before steps) ──
+  // Carry-over from the session this one continues. Without this the context
+  // reached only the opening greeting and was forgotten from the second turn
+  // onward — the facilitator would welcome the person back and then behave as
+  // if nothing had preceded.
+  const carryOverBlock = session?.carry_over_context
+    ? `\n\n━━━ CONTINUATION OF A PREVIOUS SESSION ━━━\n` +
+      `The person chose to carry this work forward. What follows is where they ` +
+      `stopped last time. Treat it as already known — do NOT ask them to repeat it.\n` +
+      `«${String(session.carry_over_context).substring(0, 1200)}»\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
+    : "";
+
   const sessionStateBlock =
     `\n\n━━━ CURRENT SESSION STATE — SOURCE OF TRUTH ━━━\n` +
     `• stage_rank: ${sessionState.current_stage_rank} (${sessionState.current_stage})\n` +
@@ -1269,7 +1281,7 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
     : "";
 
   const buildPrompt = (extraInstruction = "") =>
-    `${SYSTEM_PROMPT}${languageOverride}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${alreadyAnsweredInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${focusContinuity}${edgeLimitInstruction}${beginnerChoicesInstruction}${extraInstruction}
+    `${SYSTEM_PROMPT}${languageOverride}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${alreadyAnsweredInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${focusContinuity}${edgeLimitInstruction}${beginnerChoicesInstruction}${extraInstruction}
 
 Режим: ${currentMode}
 
@@ -1335,7 +1347,7 @@ ${userMessage}
     const trimmedHistory = trimmed
       .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
       .join("\n");
-    const trimmedPrompt = `${SYSTEM_PROMPT}${languageOverride}${memoriesBlock}${stepContext}${layerStatus}${alreadyAnsweredInstruction}${integrationLock}${forcedInstruction}${loopWarning}
+    const trimmedPrompt = `${SYSTEM_PROMPT}${languageOverride}${carryOverBlock}${memoriesBlock}${stepContext}${layerStatus}${alreadyAnsweredInstruction}${integrationLock}${forcedInstruction}${loopWarning}
 
 Режим: ${currentMode}
 
