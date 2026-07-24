@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { startSession } from "@/lib/sessionApi";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import JournalSessionCard from "@/components/journal/JournalSessionCard";
@@ -43,14 +44,12 @@ export default function Journal() {
   const handleRepeat = async (mode) => {
     const modeId = String(mode || "").trim();
     if (!modeId || !currentUser?.id) return;
-    const session = await base44.entities.Session.create({
-      user_id: currentUser.id,
-      mode_id: modeId,
-      mode: modeId,
-      status: "active",
-      current_step: 1,
-      started_at: new Date().toISOString(),
-    });
+    const result = await startSession(modeId);
+    if (result.blocked) {
+      setQuotaBlocked(true);
+      return;
+    }
+    const session = result.session;
     if (appUser?.id) {
       await base44.entities.AppUser.update(appUser.id, { last_session_id: session.id }).catch(() => {});
     }

@@ -5,6 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { normalizeLang, t } from "@/lib/i18n";
 import { buildConsentRecord } from "@/lib/consent";
 import { isOldEnough } from "@/lib/ageGate";
+import { startSession } from "@/lib/sessionApi";
 import { track, EVENTS } from "@/lib/telemetry";
 import OnboardingShell from "./OnboardingShell";
 import ModeSelectStep from "./ModeSelectStep";
@@ -51,14 +52,7 @@ export default function Onboarding({ appUser, currentUser, onComplete }) {
       const modeId = selectedMode?.mode_id;
       if (modeId) {
         track(EVENTS.ONBOARDING_COMPLETED, { mode: modeId, language: lang });
-        const session = await base44.entities.Session.create({
-          user_id: currentUser?.id,
-          mode_id: modeId,
-          mode: modeId,
-          status: "active",
-          current_step: 1,
-          started_at: new Date().toISOString(),
-        });
+        const { session } = await startSession(modeId);
         if (appUser?.id) {
           await base44.entities.AppUser.update(appUser.id, { last_session_id: session.id }).catch(() => {});
         }

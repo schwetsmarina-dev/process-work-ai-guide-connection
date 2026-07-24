@@ -12,6 +12,7 @@ import ExistingSessionDialog from "@/components/dashboard/ExistingSessionDialog"
 import ContinueThemeDialog from "@/components/dashboard/ContinueThemeDialog";
 import ConsistencyCalendar from "@/components/dashboard/ConsistencyCalendar";
 import { normalizeLang, t } from "@/lib/i18n";
+import { startSession } from "@/lib/sessionApi";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const [existingActive, setExistingActive] = useState(null);
   const [lastCompletedForMode, setLastCompletedForMode] = useState(null);
   const lang = normalizeLang(appUser?.language || "ru");
+  const [quotaBlockedMode, setQuotaBlockedMode] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -189,16 +191,13 @@ export default function Dashboard() {
       return;
     }
 
-    const session = await base44.entities.Session.create({
-      user_id: currentUser.id,
-      mode_id: modeId,
-      mode: modeId,
-      status: "active",
-      current_step: 1,
-      started_at: new Date().toISOString(),
-      ...(continuedFromSessionId ? { continued_from_session_id: continuedFromSessionId } : {}),
-      ...(carryOverContext ? { carry_over_context: carryOverContext } : {}),
-    });
+    const result = await startSession(modeId, { continuedFromSessionId, carryOverContext });
+    if (result.blocked) {
+      // Free trial for this mode is used up. The server decided this, not us.
+      setQuotaBlockedMode(modeId);
+      return;
+    }
+    const session = result.session;
 
     console.log(
       "[SessionFlow] session created:",
