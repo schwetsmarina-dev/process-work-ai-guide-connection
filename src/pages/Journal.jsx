@@ -72,6 +72,12 @@ export default function Journal() {
         <p className="text-muted-foreground">{t("journal_subtitle", lang)}</p>
       </div>
 
+      {quotaBlocked && (
+        <div className="mb-8">
+          <UpgradePrompt lang={lang} variant="quota" onDismiss={() => setQuotaBlocked(false)} />
+        </div>
+      )}
+
       {/* Progress */}
       <section className="mb-10">
         <h2 className="font-serif text-xl font-semibold mb-4">{t("journal_progress", lang)}</h2>
