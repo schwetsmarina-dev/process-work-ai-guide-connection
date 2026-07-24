@@ -147,6 +147,10 @@ const translations = {
     existing_session_text: "В этом режиме уже есть активная сессия. Продолжить её или начать новую?",
     existing_session_new: "Начать новую",
     existing_session_continue: "Продолжить",
+    continue_theme_title: "Продолжить прошлую тему?",
+    continue_theme_text: "В прошлый раз в этом направлении мы остановились на: «{summary}». Хочешь углубить именно эту тему сейчас, или начать с чего-то нового?",
+    continue_theme_start_new: "Начать новую тему",
+    continue_theme_continue: "Углубить прошлую тему",
 
     // —— Ошибки ——
     error_title: "Что-то пошло не так",
@@ -596,6 +600,10 @@ const translations = {
     existing_session_text: "Ya hay una sesión activa en este modo. ¿Quieres continuarla o empezar una nueva?",
     existing_session_new: "Empezar una nueva",
     existing_session_continue: "Continuar",
+    continue_theme_title: "¿Continuar el tema anterior?",
+    continue_theme_text: "La última vez, en esta dirección, nos quedamos en: «{summary}». ¿Quieres profundizar en ese mismo tema ahora, o prefieres empezar con algo nuevo?",
+    continue_theme_start_new: "Empezar un tema nuevo",
+    continue_theme_continue: "Profundizar en el tema anterior",
 
     // —— Errores ——
     error_title: "Algo ha salido mal",
