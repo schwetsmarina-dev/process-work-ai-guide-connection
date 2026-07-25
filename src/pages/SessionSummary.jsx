@@ -228,6 +228,31 @@ export default function SessionSummary() {
                 {session.confidence_note}
               </p>
             )}
+
+            {/* Continue this topic — always visible next to the summary, not just
+                when the AI happened to produce a next_step_suggestion. Several
+                testers reported the session ending with no visible way to carry
+                the theme into a new session; this button is now unconditional
+                (it only hides for an admin viewing someone else's session). */}
+            {!isAdminViewing && session.summary && !isSummaryUnavailable(session.summary) && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <Button
+                  onClick={handleContinueWork}
+                  disabled={continuing}
+                  className="rounded-xl gap-2"
+                >
+                  {continuing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ArrowRight className="w-4 h-4" />
+                  )}
+                  {continuing ? t("continue_starting", language) : t("continue_this_work", language)}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {t("continue_this_work_hint", language)}
+                </p>
+              </div>
+            )}
           </Card>
         </motion.div>
 
