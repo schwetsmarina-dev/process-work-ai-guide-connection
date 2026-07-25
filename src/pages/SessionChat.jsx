@@ -825,12 +825,17 @@ export default function SessionChat() {
                 <div className="flex flex-col items-center gap-3 p-5 rounded-2xl border border-primary/20 bg-primary/5 text-center">
                   <p className="text-sm text-muted-foreground">
                     {language === "es"
-                      ? "Esta sesión ha llegado a su cierre natural."
-                      : "Эта сессия подошла к естественному завершению."}
+                      ? "Esta sesión ha llegado a su cierre natural. Puedes finalizarla o seguir explorando un poco más."
+                      : "Эта сессия подошла к естественному завершению. Можно завершить её или продолжить исследование."}
                   </p>
-                  <Button size="lg" onClick={handleEndSession}>
-                    {language === "es" ? "Finalizar sesión" : "Завершить сессию"}
-                  </Button>
+                  <div className="flex gap-2 flex-wrap justify-center">
+                    <Button size="lg" variant="outline" onClick={handleContinueChat}>
+                      {language === "es" ? "Continuar la sesión" : "Продолжить сессию"}
+                    </Button>
+                    <Button size="lg" onClick={handleEndSession}>
+                      {language === "es" ? "Finalizar sesión" : "Завершить сессию"}
+                    </Button>
+                  </div>
                 </div>
               )}
 
