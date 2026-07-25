@@ -72,8 +72,11 @@ export function checkCrisis(text) {
 // Softer emotional-distress words. When present (and no full crisis), a RiskEvent
 // with severity "low" should be created so distress is logged for review.
 const LOW_RISK_KEYWORDS = [
-  // Russian
-  "смерть", "потеря", "не хочу жить", "горе",
+  // Russian — partial stems on purpose, so case endings (смерть/смерти/
+  // смертью, потеря/потери/потерю) still match a plain .includes() check.
+  // A prior version used only nominative forms and silently missed every
+  // inflected mention — caught by a unit test, see crisis.test.js.
+  "смерт", "потер", "утрат", "не хочу жить", "горе", "горю", "горем",
   // Spanish
   "muerte", "pérdida", "duelo", "desesperación",
   // English
