@@ -113,7 +113,7 @@ async function fetchRelatedTerms(relatedTermIds) {
 // SYSTEM_PROMPT is imported from @/lib/systemPrompt
 
 // ─── State Machine for Process Mapping ───────────────────────────────────────
-function getModeKey(modeId) {
+export function getModeKey(modeId) {
   const lower = (modeId || "").toLowerCase();
   if (lower.includes("dream")) return "dream";
   if (lower.includes("body")) return "body";
@@ -297,7 +297,7 @@ const INITIAL_MATERIAL_STAGE = {
   journaling: "awaiting_journaling_topic",
 };
 
-function detectProcessMappingStage(messages, modeId) {
+export function detectProcessMappingStage(messages, modeId) {
   const modeKey = getModeKey(modeId);
   if (!modeKey) return { stage: "complete", primary_answer: null, secondary_answer: null, dream_shared: true };
 
@@ -761,7 +761,7 @@ function getForcedNextLayer(modeId, coveredLayers, mappingStage) {
   return forcedNext;
 }
 
-function detectLoopInLastExchanges(messages) {
+export function detectLoopInLastExchanges(messages) {
   const assistantMsgs = messages
     .filter((m) => m.role === "assistant")
     .slice(-4)
