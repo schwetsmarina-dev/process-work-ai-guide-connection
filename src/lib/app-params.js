@@ -42,7 +42,10 @@ const getAppParams = () => {
 	return {
 		appId: getAppParamValue("app_id", { defaultValue: import.meta.env.VITE_BASE44_APP_ID }),
 		token: getAppParamValue("access_token", { removeFromUrl: true }),
-		fromUrl: getAppParamValue("from_url", { defaultValue: window.location.href }),
+		// Guarded with isNode like every other window access in this file — this
+		// one was unconditional and crashed any non-browser import of this module
+		// (e.g. Node-based unit tests importing sessionAI.js, or a future SSR path).
+		fromUrl: getAppParamValue("from_url", { defaultValue: isNode ? undefined : window.location.href }),
 		functionsVersion: getAppParamValue("functions_version", { defaultValue: import.meta.env.VITE_BASE44_FUNCTIONS_VERSION }),
 		appBaseUrl: getAppParamValue("app_base_url", { defaultValue: import.meta.env.VITE_BASE44_APP_BASE_URL }),
 	}
