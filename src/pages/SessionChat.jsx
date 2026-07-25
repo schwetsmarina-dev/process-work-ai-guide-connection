@@ -565,6 +565,16 @@ export default function SessionChat() {
     await finalizeSession(allMessages);
   };
 
+  // Lets the person keep going instead of being forced to stop when the flow
+  // reaches a step with no next_step_on_answer (e.g. an early or intermediate
+  // step that happens to close a stage). Re-enables input and clears the
+  // "session complete" banner without altering current_step, so the very next
+  // message is sent as a normal turn and the facilitator continues the process
+  // instead of leaving "Завершить сессию" as the only option.
+  const handleContinueChat = () => {
+    setSessionComplete(false);
+  };
+
   // Note: an older design auto-finalized the session without user action.
   // That was replaced by an explicit "end session" button once the final step
   // is reached (see setSessionComplete below), which is the safer behaviour in
