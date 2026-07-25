@@ -769,7 +769,15 @@ export function detectLoopInLastExchanges(messages) {
 
   if (assistantMsgs.length < 3) return false;
 
-  const wordSets = assistantMsgs.map((m) => new Set(m.split(/\s+/).filter((w) => w.length > 4)));
+  // Strip leading/trailing punctuation before comparing words — without this,
+  // "сейчас," and "сейчас" (or "этом?" and "этом") count as different tokens
+  // purely because of a trailing comma or question mark, which under-detects
+  // the exact case this function exists for: the AI re-asking a near-identical
+  // question with slightly different punctuation around the repeated words.
+  const normalizeWord = (w) => w.replace(/^[«»"'.,!?;:()—–]+|[«»"'.,!?;:()—–]+$/g, "");
+  const wordSets = assistantMsgs.map(
+    (m) => new Set(m.split(/\s+/).map(normalizeWord).filter((w) => w.length > 4))
+  );
   let overlapCount = 0;
   for (let i = 1; i < wordSets.length; i++) {
     const intersection = [...wordSets[i]].filter((w) => wordSets[i - 1].has(w));
