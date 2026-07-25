@@ -327,31 +327,8 @@ export default function SessionSummary() {
               <p className="text-sm leading-relaxed text-muted-foreground">
                 {session.next_step_suggestion}
               </p>
-
-              {/* The suggestion used to be read-only text, which left people
-                  with an instruction and no way to act on it. The button opens
-                  a fresh session in the same mode and hands the summary and the
-                  suggestion forward as carry-over context, so the facilitator
-                  picks up where this one stopped. */}
-              {!isAdminViewing && (
-                <div className="mt-4">
-                  <Button
-                    onClick={handleContinueWork}
-                    disabled={continuing}
-                    className="rounded-xl gap-2"
-                  >
-                    {continuing ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <ArrowRight className="w-4 h-4" />
-                    )}
-                    {continuing ? t("continue_starting", language) : t("continue_this_work", language)}
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {t("continue_this_work_hint", language)}
-                  </p>
-                </div>
-              )}
+              {/* Action button lives on the summary card above (always visible,
+                  not only when a next_step_suggestion was generated). */}
             </Card>
           </motion.div>
         )}
