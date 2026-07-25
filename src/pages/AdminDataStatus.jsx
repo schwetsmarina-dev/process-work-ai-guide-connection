@@ -383,6 +383,42 @@ export default function AdminDataStatus() {
             <Ok text="All process mapping steps are set at position _1." />
           )}
 
+          {/* Chain integrity self-test */}
+          {steps.length > 0 && chainProblems.length > 0 && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-semibold text-red-700">
+                <FlaskConical className="w-4 h-4" />
+                Chain integrity: {chainProblems.length} mode(s) can dead-end mid-session
+              </div>
+              {chainProblems.map((mode) => (
+                <div key={mode} className="ml-6">
+                  <p className="text-xs font-mono font-semibold text-red-700">{mode}</p>
+                  <ul className="text-xs text-red-600 list-disc ml-4">
+                    {chainResults[mode].issues.map((issue, i) => (
+                      <li key={i}>{issue}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+              <p className="text-xs text-red-600 ml-6">
+                Fix by editing the next_step_on_answer field on the listed steps so the chain runs 1 → 2 → … → last step → empty.
+              </p>
+            </div>
+          )}
+          {steps.length > 0 && chainProblems.length === 0 && (
+            <Ok text={`Chain integrity: all ${EXPECTED_MODES.length} modes run 1 → … → final step with no dead ends (${EXPECTED_MODES.map((m) => `${m}: ${chainResults[m].maxStepNumber}`).join(", ")}).`} />
+          )}
+
+          {/* Telemetry status */}
+          {sentryConfigured
+            ? <Ok text="Error monitoring (Sentry): configured and active in this build." />
+            : <Warning text="Error monitoring (Sentry): not configured — VITE_SENTRY_DSN is not set, errors are only logged to the browser console. See .env.example." />
+          }
+          {analyticsConfigured
+            ? <Ok text="Product analytics: configured and active in this build." />
+            : <Warning text="Product analytics: not configured — VITE_ANALYTICS_DOMAIN is not set. Optional; skip if not needed yet." />
+          }
+
           {/* Critical: missing first steps */}
           {steps.length === 0 && (
             <Warning text="⛔ MODE_STEPS is EMPTY. The public app cannot run sessions. Import mode_steps.csv." />
