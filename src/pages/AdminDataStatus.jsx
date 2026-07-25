@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, CheckCircle2, AlertTriangle, Database, Trash2, Wrench, RefreshCw, GitMerge, FlaskConical } from "lucide-react";
 import { fetchStep } from "@/lib/sessionAI";
+import { checkModeStepChain } from "@/lib/modeStepIntegrity";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -153,6 +154,24 @@ export default function AdminDataStatus() {
     const s = steps.find((s) => s.step_key === `${mode}_1`);
     return !s || !s.goal?.includes("process mapping");
   });
+
+  // ── Chain integrity self-test ────────────────────────────────────────────
+  // Walks next_step_on_answer for each mode the same way the live app does.
+  // Exists because a session can dead-end mid-flow (a tester hits a step with
+  // no reachable next step) without anything else on this page flagging it —
+  // step counts and step_key checks above don't verify the chain itself is
+  // intact. Pure logic lives in src/lib/modeStepIntegrity.js and is unit-tested
+  // there; this just runs it per mode against the already-loaded steps.
+  const chainResults = {};
+  for (const mode of EXPECTED_MODES) {
+    chainResults[mode] = checkModeStepChain(stepsByMode[mode]);
+  }
+  const chainProblems = EXPECTED_MODES.filter((m) => !chainResults[m].ok);
+
+  // ── Telemetry status — read directly from the built client bundle, so this
+  // reflects what's ACTUALLY configured in this deployment, not documentation.
+  const sentryConfigured = !!import.meta.env.VITE_SENTRY_DSN;
+  const analyticsConfigured = !!import.meta.env.VITE_ANALYTICS_DOMAIN;
 
   const handleTestStepLookup = async () => {
     setTesting(true);
