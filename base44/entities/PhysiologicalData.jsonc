@@ -32,6 +32,11 @@
       "type": "string",
       "format": "date-time",
       "description": "When the measurement was recorded"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional free-text description"
     }
   },
   "required": [

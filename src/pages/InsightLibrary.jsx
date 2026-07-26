@@ -115,7 +115,7 @@ export default function InsightLibrary() {
             variant={filterImportance === i ? "default" : "outline"}
             onClick={() => setFilterImportance(filterImportance === i ? null : i)}
           >
-            {IMPORTANCE_LABELS[i]}
+            {t(IMPORTANCE_KEYS[i], lang)}
           </Button>
         ))}
       </div>

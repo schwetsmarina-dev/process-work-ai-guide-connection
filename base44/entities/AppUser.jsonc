@@ -74,6 +74,11 @@
     "plan": {
       "type": "string",
       "default": "free"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional free-text description"
     }
   },
   "required": [],

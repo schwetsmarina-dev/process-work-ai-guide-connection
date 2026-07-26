@@ -27,7 +27,7 @@ export default function SummaryActions({ session, onUpdated, language = "ru" }) 
       if (userMessages.length === 0) return;
 
       const data = await generateSessionSummary(session, messages);
-      if (!data.summary || data.summary === FALLBACK) {
+      if (!data.summary || isSummaryUnavailable(data.summary)) {
         // schedule a retry in 30s
         retryTimer.current = setTimeout(regenerate, 30000);
         return;

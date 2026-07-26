@@ -53,6 +53,11 @@
     "is_archived": {
       "type": "boolean",
       "default": false
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional free-text description"
     }
   },
   "required": [

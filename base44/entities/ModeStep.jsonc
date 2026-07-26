@@ -57,6 +57,11 @@
     "pending_mode": {
       "type": "string",
       "description": "Mode to shift to if triggered"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional free-text description"
     }
   },
   "required": [

@@ -32,6 +32,8 @@ import RequireAuth from './components/layout/RequireAuth';
 import { Navigate } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import LegalDoc from '@/pages/LegalDoc';
+import About from './pages/About';
+import Contact from './pages/Contact';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -110,6 +112,10 @@ const AuthenticatedApp = () => {
       <Route path="/privacidad" element={<LegalDoc />} />
       <Route path="/terminos" element={<LegalDoc />} />
       <Route path="/aviso-legal" element={<LegalDoc />} />
+
+      {/* Public About & Contact pages */}
+      <Route path="/about" element={<About />} />
+      <Route path="/contact" element={<Contact />} />
 
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />

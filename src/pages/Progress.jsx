@@ -87,15 +87,6 @@ function sessionDate(s) {
 }
 
 function StatCard({ icon: Icon, value, label, sub, accent }) {
-
-  if (can(FEATURES.ANALYTICS) === false) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
-        <UpgradePrompt lang={lang} variant="feature" />
-      </div>
-    );
-  }
-
   return (
     <div className="rounded-2xl border border-border bg-card p-4 flex flex-col gap-1">
       <Icon className={`w-5 h-5 ${accent || "text-primary"}`} />
@@ -223,6 +214,14 @@ export default function Progress() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (can(FEATURES.ANALYTICS) === false) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
+        <UpgradePrompt lang={lang} variant="feature" />
       </div>
     );
   }

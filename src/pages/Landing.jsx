@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Heart, Moon, GitBranch, PenLine, ArrowRight, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { normalizeLang, t, getStoredLanguage, setStoredLanguage } from "@/lib/i18n";
 
@@ -183,6 +184,10 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
+        <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4">
+          <Link to="/about" className="hover:text-foreground transition-colors">About</Link>
+          <Link to="/contact" className="hover:text-foreground transition-colors">Contact</Link>
+        </nav>
         <p>© {new Date().getFullYear()} Talvira</p>
         <p className="mt-2 font-mono text-xs text-amber-600 bg-amber-50 inline-block px-3 py-1 rounded-full border border-amber-200">
 LANDING BUILD: language switcher active v2
