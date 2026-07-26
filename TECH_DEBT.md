@@ -85,3 +85,16 @@ explicit dev flag or remove for production.
 - Added real project docs: `README.md`, `ARCHITECTURE.md`, `SECURITY.md`,
   `.env.example`.
 - Added in-chat "step back" (undo last exchange) via `revertLastExchange`.
+- Fixed premature session end-lock (beta feedback, journaling mode, 2026-07-24):
+  reaching a step with no `next_step_on_answer` used to leave "Завершить
+  сессию" as the only option with input disabled. `SessionChat.jsx` now shows
+  a "Продолжить сессию" choice (`handleContinueChat`) alongside it, so the
+  person decides whether the process is actually done instead of being forced
+  to stop.
+- Fixed duplicate-question race on step advance (beta feedback, journaling
+  mode, 2026-07-24): `invalidateQueries` only marks the step query stale and
+  refetches asynchronously, which left a window where the next turn still
+  read the previous `current_step` and re-asked the same question.
+  `SessionChat.jsx` now also writes the new step into the query cache
+  synchronously (`queryClient.setQueryData`) right after the `Session.update`
+  call, closing that window.
