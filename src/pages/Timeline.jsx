@@ -55,7 +55,7 @@ export default function Timeline() {
     })),
   ]
     .filter((e) => e.date)
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const handleClick = (event) => {
     if (event.kind === "session") {
@@ -65,11 +65,10 @@ export default function Timeline() {
     }
   };
 
-
   if (can(FEATURES.ANALYTICS) === false) {
     return (
       <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
-        <UpgradePrompt lang={lang} variant="feature" />
+        <UpgradePrompt lang={lang} variant="feature" onDismiss={() => navigate(-1)} />
       </div>
     );
   }
@@ -81,7 +80,6 @@ export default function Timeline() {
         {t("timeline_subtitle", lang)}
       </p>
 
-      {/* Legend */}
       <div className="flex items-center gap-5 mb-8 text-sm">
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-primary" />
@@ -105,7 +103,6 @@ export default function Timeline() {
         </div>
       ) : (
         <div className="relative">
-          {/* Central vertical line */}
           <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-border -translate-x-1/2" />
 
           <div className="space-y-8">
