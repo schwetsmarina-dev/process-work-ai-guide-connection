@@ -1,16 +1,19 @@
 import React, { useRef, useState } from "react";
 import { Upload, FileText, X } from "lucide-react";
 
+/**
+ * @param {{ onParsed: (result: { headers: string[], rows: Record<string, string>[] }) => void, disabled?: boolean }} props
+ */
 export default function CsvUploader({ onParsed, disabled }) {
-  const inputRef = useRef();
+  const inputRef = useRef(null);
   const [fileName, setFileName] = useState(null);
 
+  /** @param {string} text */
   const parseCsv = (text) => {
     const lines = text.split(/\r?\n/).filter((l) => l.trim());
     if (lines.length < 2) return { headers: [], rows: [] };
     const headers = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
     const rows = lines.slice(1).map((line) => {
-      // Handle quoted fields with commas inside
       const cols = [];
       let inQuote = false;
       let cur = "";
@@ -21,6 +24,7 @@ export default function CsvUploader({ onParsed, disabled }) {
         else { cur += ch; }
       }
       cols.push(cur.trim());
+      /** @type {Record<string, string>} */
       const obj = {};
       headers.forEach((h, i) => { obj[h] = cols[i] ?? ""; });
       return obj;
@@ -28,17 +32,19 @@ export default function CsvUploader({ onParsed, disabled }) {
     return { headers, rows };
   };
 
+  /** @param {File | undefined} file */
   const handleFile = (file) => {
     if (!file) return;
     setFileName(file.name);
     const reader = new FileReader();
     reader.onload = (e) => {
-      const result = parseCsv(e.target.result);
+      const result = parseCsv(typeof e.target?.result === "string" ? e.target.result : "");
       onParsed(result);
     };
     reader.readAsText(file, "utf-8");
   };
 
+  /** @param {React.DragEvent<HTMLDivElement>} e */
   const handleDrop = (e) => {
     e.preventDefault();
     handleFile(e.dataTransfer.files[0]);
@@ -56,7 +62,7 @@ export default function CsvUploader({ onParsed, disabled }) {
         type="file"
         accept=".csv"
         className="hidden"
-        onChange={(e) => handleFile(e.target.files[0])}
+        onChange={(e) => handleFile(e.target.files?.[0])}
         disabled={disabled}
       />
       {fileName ? (
@@ -64,6 +70,7 @@ export default function CsvUploader({ onParsed, disabled }) {
           <FileText className="w-6 h-6 text-primary" />
           <span className="text-sm font-medium">{fileName}</span>
           <button
+            type="button"
             onClick={(e) => { e.stopPropagation(); setFileName(null); onParsed({ headers: [], rows: [] }); }}
             className="text-muted-foreground hover:text-foreground"
           >
