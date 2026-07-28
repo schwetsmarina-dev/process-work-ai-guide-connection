@@ -73,14 +73,28 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'severity not high or critical' });
     }
 
-    const teamEmail = Deno.env.get('TEAM_NOTIFICATION_EMAIL');
+    // The event IS high/critical — enter the review queue immediately, before
+    // any email is attempted, so escalation never depends on mail delivery or
+    // email configuration.
+    try {
+      await base44.asServiceRole.entities.RiskEvent.update(riskEventId, {
+        needs_human_review: true,
+      });
+    } catch (e) {
+      console.warn('[RiskNotify] could not flag event for review:', e?.message);
+    }
+
+    // TEMPORARY FALLBACK: hardcoded on-call address used when the env var is
+    // absent. This should be moved to the TEAM_NOTIFICATION_EMAIL env var.
+    const FALLBACK_TEAM_EMAIL = 'schwets.marina@gmail.com';
+    let teamEmail = Deno.env.get('TEAM_NOTIFICATION_EMAIL');
     if (!teamEmail) {
-      // Loud, because a missing address means nobody is being told.
-      console.error('[RiskNotify] TEAM_NOTIFICATION_EMAIL not set — alert NOT delivered', {
+      // Loud, because a missing address means nobody configured the on-call box.
+      console.error('[RiskNotify] TEAM_NOTIFICATION_EMAIL not set — using fallback address', {
         riskEventId,
         severity: riskEvent.severity,
       });
-      return Response.json({ error: 'TEAM_NOTIFICATION_EMAIL not configured' }, { status: 500 });
+      teamEmail = FALLBACK_TEAM_EMAIL;
     }
 
     const severityLabel = riskEvent.severity === 'critical' ? '🚨 CRITICAL' : '⚠️ HIGH';
@@ -124,15 +138,6 @@ Automated safety notification. This mailbox is not monitored by the user.`;
       body,
       from_name: 'Talvira Safety Monitor',
     });
-
-    // Mark the event so a delivered alert is distinguishable from an unsent one.
-    try {
-      await base44.asServiceRole.entities.RiskEvent.update(riskEventId, {
-        needs_human_review: true,
-      });
-    } catch (e) {
-      console.warn('[RiskNotify] could not flag event for review:', e?.message);
-    }
 
     console.log('[RiskNotify] alert sent', {
       riskEventId,
