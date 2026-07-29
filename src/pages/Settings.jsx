@@ -8,6 +8,7 @@ import { normalizeLang, t } from "@/lib/i18n";
 import LanguageSelector from "@/components/settings/LanguageSelector";
 import PrivacyControls from "@/components/settings/PrivacyControls";
 import SubscriptionCard from "@/components/settings/SubscriptionCard";
+import ShareWithTherapist from "@/components/client/ShareWithTherapist";
 
 export default function Settings() {
   const [user, setUser] = useState(null);
@@ -72,6 +73,8 @@ export default function Settings() {
         </Card>
 
         <PrivacyControls user={user} appUser={appUser} lang={lang} />
+
+        {user?.email && <ShareWithTherapist clientEmail={user.email} />}
 
         <Card className="p-6 border-destructive/20">
           <h3 className="font-semibold text-sm mb-2">{t("logout", lang)}</h3>

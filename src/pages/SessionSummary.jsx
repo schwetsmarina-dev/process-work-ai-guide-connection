@@ -26,6 +26,7 @@ import useEntitlement from "@/hooks/useEntitlement";
 import { FEATURES } from "@/lib/entitlement";
 import UpgradePrompt from "@/components/billing/UpgradePrompt";
 import { isSummaryUnavailable } from "@/lib/summaryFallback";
+import { PENDING_ASSIGNMENT_KEY } from "@/components/client/SuggestedPractices";
 
 const iconMap = { Heart, Moon, GitBranch, PenLine };
 
@@ -137,6 +138,34 @@ export default function SessionSummary() {
         .catch(() => {});
     }
   }, [session, messages]);
+
+  // Talvira Pro: if this session was started from an assigned practice, mark
+  // that Assignment done once we're on its summary (session finished).
+  useEffect(() => {
+    if (!session?.id) return;
+    let raw;
+    try {
+      raw = sessionStorage.getItem(PENDING_ASSIGNMENT_KEY);
+    } catch {
+      return;
+    }
+    if (!raw) return;
+    let pending;
+    try {
+      pending = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    if (pending?.sessionId !== session.id || !pending?.assignmentId) return;
+    base44.entities.Assignment.update(pending.assignmentId, {
+      status: "done",
+      resulting_session_id: session.id,
+    })
+      .catch((e) => console.error("[SessionSummary] could not complete assignment:", e?.message))
+      .finally(() => {
+        try { sessionStorage.removeItem(PENDING_ASSIGNMENT_KEY); } catch { /* ignore */ }
+      });
+  }, [session?.id]);
 
   if (!currentUser || isLoading) {
     return (

@@ -1,6 +1,6 @@
 import { t, getStoredLanguage } from "@/lib/i18n";
 import { MODE_LABELS } from "@/lib/modeSteps";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -8,10 +8,16 @@ import { Loader2, Stethoscope, AlertTriangle, MessageSquare } from "lucide-react
 import { format } from "date-fns";
 import ClientCard from "@/components/therapist/ClientCard";
 import RiskEventCard from "@/components/therapist/RiskEventCard";
+import TalviraProSection from "@/components/therapist/TalviraProSection";
 
 export default function TherapistDashboard() {
   const lang = getStoredLanguage();
   const [selectedClientId, setSelectedClientId] = useState(null);
+  const [therapistEmail, setTherapistEmail] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then((u) => setTherapistEmail(u?.email)).catch(() => {});
+  }, []);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["therapistDashboard"],
@@ -83,6 +89,9 @@ export default function TherapistDashboard() {
           </p>
         </div>
       </div>
+
+      {/* Talvira Pro — linked clients, consent-gated data, assignments */}
+      {therapistEmail && <TalviraProSection therapistEmail={therapistEmail} />}
 
       {/* Priority: all flagged risk events across clients, sorted by severity */}
       <section className="mb-8">

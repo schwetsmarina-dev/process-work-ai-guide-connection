@@ -1,0 +1,108 @@
+{
+  "name": "Assignment",
+  "type": "object",
+  "properties": {
+    "therapist_email": {
+      "type": "string",
+      "description": "Email of the therapist who assigned the practice"
+    },
+    "client_email": {
+      "type": "string",
+      "description": "Email of the client the practice is assigned to"
+    },
+    "mode_id": {
+      "type": "string",
+      "description": "Mode the client should run for this practice"
+    },
+    "tema": {
+      "type": "string",
+      "description": "Topic / focus of the assigned practice"
+    },
+    "instructions": {
+      "type": "string",
+      "description": "Free-text instructions from the therapist"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Optional deadline"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "done"
+      ],
+      "default": "pending"
+    },
+    "resulting_session_id": {
+      "type": "string",
+      "description": "Session created when the client completed this practice"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "therapist_email",
+    "client_email",
+    "mode_id"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.therapist_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.therapist_email": "{{user.email}}"
+        },
+        {
+          "data.client_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.therapist_email": "{{user.email}}"
+        },
+        {
+          "data.client_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.therapist_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

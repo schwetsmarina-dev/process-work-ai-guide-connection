@@ -1,0 +1,102 @@
+{
+  "name": "ClientLink",
+  "type": "object",
+  "properties": {
+    "therapist_email": {
+      "type": "string",
+      "description": "Email of the therapist who owns this link"
+    },
+    "client_email": {
+      "type": "string",
+      "description": "Email of the invited/linked client"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "invited",
+        "active",
+        "paused"
+      ],
+      "default": "invited"
+    },
+    "consent_to_share": {
+      "type": "boolean",
+      "default": false,
+      "description": "Client's explicit consent to share their data with this therapist"
+    },
+    "share_scope": {
+      "type": "string",
+      "enum": [
+        "summaries",
+        "insights",
+        "both"
+      ],
+      "default": "summaries",
+      "description": "What the client agrees to share"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "therapist_email",
+    "client_email"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.therapist_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.therapist_email": "{{user.email}}"
+        },
+        {
+          "data.client_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.therapist_email": "{{user.email}}"
+        },
+        {
+          "data.client_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.therapist_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

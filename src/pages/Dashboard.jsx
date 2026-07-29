@@ -14,6 +14,7 @@ import ConsistencyCalendar from "@/components/dashboard/ConsistencyCalendar";
 import { normalizeLang, t } from "@/lib/i18n";
 import { startSession } from "@/lib/sessionApi";
 import UpgradePrompt from "@/components/billing/UpgradePrompt";
+import SuggestedPractices from "@/components/client/SuggestedPractices";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -291,6 +292,13 @@ export default function Dashboard() {
           {modes.map((mode) => (
             <ModeCardDB key={mode.id} mode={mode} onClick={handleModeSelect} />
           ))}
+        </div>
+      )}
+
+      {/* Talvira Pro — practices assigned by the client's therapist */}
+      {currentUser?.email && (
+        <div className="mb-12">
+          <SuggestedPractices clientEmail={currentUser.email} />
         </div>
       )}
 
