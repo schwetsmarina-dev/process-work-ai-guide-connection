@@ -384,6 +384,9 @@ const translations = {
     continue_this_work: "Продолжить эту работу",
     continue_this_work_hint: "Откроется новая сессия в этом же режиме. Она будет помнить, на чём вы остановились.",
     continue_starting: "Открываем сессию…",
+    session_gone_title: "Эта страница недоступна",
+    session_gone_text: "Возможно, ссылка ведёт на чужую сессию или сессия была удалена. Давай начнём сначала.",
+    go_to_app: "На главную",
     age_too_young_title: "Пока это приложение не для тебя",
     age_too_young_text:
       "Приложение рассчитано на людей от 16 лет, поэтому продолжить не получится. Это не значит, что твои переживания менее важны — наоборот. Поговори с тем, кому доверяешь: родителем, школьным психологом или врачом. Если тяжело прямо сейчас, в Испании работает бесплатная линия 024, круглосуточно. В России — 8-800-2000-122, линия для детей и подростков.",
@@ -847,6 +850,9 @@ const translations = {
     continue_this_work: "Continuar este trabajo",
     continue_this_work_hint: "Se abrirá una nueva sesión en el mismo modo. Recordará dónde lo dejaste.",
     continue_starting: "Abriendo la sesión…",
+    session_gone_title: "Esta página no está disponible",
+    session_gone_text: "Puede que el enlace lleve a la sesión de otra persona o que la sesión se haya eliminado. Empecemos de nuevo.",
+    go_to_app: "Ir al inicio",
     age_too_young_title: "Esta aplicación todavía no es para ti",
     age_too_young_text:
       "La aplicación está pensada para personas a partir de 16 años, así que no es posible continuar. Eso no significa que lo que sientes importe menos — al contrario. Habla con alguien de confianza: un familiar, el orientador de tu centro o tu médico. Si lo estás pasando mal ahora mismo, en España el 024 atiende gratis las 24 horas.",

@@ -716,7 +716,11 @@ export default function SessionChat() {
   if (accessDenied || (!sessionLoading && !session)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">{t("session_not_found", language)}</p>
+<div className="flex flex-col items-center text-center px-6">
+          <h1 className="font-serif text-xl font-semibold mb-2">{t("session_gone_title", language)}</h1>
+          <p className="text-muted-foreground text-sm max-w-sm mb-6">{t("session_gone_text", language)}</p>
+          <Button onClick={() => navigate("/dashboard")} className="rounded-xl">{t("go_to_app", language)}</Button>
+        </div>
       </div>
     );
   }
