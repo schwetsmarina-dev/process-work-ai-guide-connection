@@ -166,7 +166,6 @@ const translations = {
     err_undo_failed: "Не удалось вернуться на шаг назад. Попробуй ещё раз.",
 
     // —— Экраны после сессии ——
-    session_not_found: "Сессия не найдена",
     admin_view_note: "Режим администратора: просмотр сессии пользователя. Изменения не вносятся.",
     summary_generating: "Резюме формируется...",
     summary_absent: "Резюме пока не сформировано.",
@@ -632,7 +631,6 @@ const translations = {
     err_undo_failed: "No se pudo volver un paso atrás. Inténtalo de nuevo.",
 
     // —— Pantallas posteriores a la sesión ——
-    session_not_found: "Sesión no encontrada",
     admin_view_note: "Modo administrador: vista de la sesión de un usuario. No se realizan cambios.",
     summary_generating: "Generando el resumen...",
     summary_absent: "El resumen aún no se ha generado.",
