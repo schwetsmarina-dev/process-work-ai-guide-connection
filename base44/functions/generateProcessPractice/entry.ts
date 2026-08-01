@@ -18,6 +18,35 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 const READY_THRESHOLD = 70;
 const TERM_KEYS = ['primary_process', 'secondary_process', 'edge', 'amplification', 'channel', 'body_signal', 'consensus_reality'];
+const EDGE_PATTERN = /край|edge|сопротивл|блок|стопор|не могу|избега|resisten|no puedo|bloque|evita/i;
+const EDGE_STREAK_THRESHOLD = 3; // "стабильно повторяется несколько сессий подряд" — 3 последних подряд сессий подряд
+
+// How many of the most recent sessions (starting from the newest) show an
+// edge-type signal, counted as a STREAK from the most recent session
+// backwards — stops at the first session without one. This deliberately
+// requires *consecutive* recurrence, not just frequency, per the product
+// rule: "a strong edge is one that keeps showing up session after session
+// right now", not one that appeared a few times months ago.
+function edgeStreak(sessions) {
+  let streak = 0;
+  for (const s of sessions) {
+    const labels = [...(s.themes || []), ...(s.signals || [])];
+    const hasEdge = labels.some((t) => EDGE_PATTERN.test(String(t)));
+    if (hasEdge) streak++;
+    else break;
+  }
+  return streak;
+}
+
+function liveFacilitatorNote(language) {
+  if (language === 'es') {
+    return 'Noto que, en tus últimas sesiones, aparece una y otra vez el mismo límite (edge). Una práctica grabada no puede leer lo que pasa contigo en tiempo real — así que, además de esta práctica, podría tener sentido explorarlo con un facilitador en vivo, si en algún momento te apetece. No es obligatorio — la práctica sigue estando disponible tal cual.';
+  }
+  if (language === 'en') {
+    return "I'm noticing the same edge showing up session after session. A recorded practice can't read what's happening for you in real time — so alongside this practice, it might be worth exploring this with a live facilitator at some point, if that feels right. It's not required — the practice is still here either way.";
+  }
+  return 'Замечаю, что в последних сессиях один и тот же край повторяется снова и снова. Записанная практика не может считать то, что происходит с вами в реальном времени — поэтому, кроме этой практики, имеет смысл в какой-то момент пойти с этим к живому фасилитатору, если возникнет желание. Это не обязательно — практика всё равно остаётся доступна.';
+}
 
 function scoreFromMap(nodes, edges, sessionsCount) {
   if (!nodes.length) return 0;
