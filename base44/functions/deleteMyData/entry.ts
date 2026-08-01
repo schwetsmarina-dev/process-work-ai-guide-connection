@@ -84,7 +84,9 @@ Deno.serve(async (req) => {
       'SessionFeedback',
       appUserId ? [{ user_email: email }, { user_id: appUserId }] : [{ user_email: email }]
     );
-    const risk = appUserId ? await collect('RiskEvent', [{ user_id: appUserId }]) : [];
+    // RiskEvent.user_id is also the platform User.id (set from currentUser.id
+    // client-side in SessionChat.jsx), not AppUser.id.
+    const risk = await collect('RiskEvent', [{ user_id: user.id }]);
     const physio = appUserId ? await collect('PhysiologicalData', [{ user_id: appUserId }]) : [];
 
     // Delete children before parents.
