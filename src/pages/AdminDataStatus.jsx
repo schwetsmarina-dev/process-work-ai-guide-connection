@@ -403,7 +403,17 @@ export default function AdminDataStatus() {
             <Badge variant="outline">channel: {practiceResult.dominant_channel}</Badge>
             <Badge variant="outline">confidence: {practiceResult.confidence_score}</Badge>
             {practiceResult.low_data_warning && <Badge variant="outline" className="border-orange-300 text-orange-700">low data — test mode</Badge>}
+            {practiceResult.edge_recurrence_streak > 0 && <Badge variant="outline">edge streak: {practiceResult.edge_recurrence_streak}</Badge>}
           </div>
+          {practiceResult.suggest_live_facilitator && (
+            <div className="flex items-start gap-2 text-sm text-indigo-900 bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-indigo-600" />
+              <div>
+                <p className="font-semibold text-indigo-800 mb-1">Suggest live facilitator (soft, non-blocking)</p>
+                <p>{practiceResult.live_facilitator_note}</p>
+              </div>
+            </div>
+          )}
           {practiceResult.offer_text && (
             <p className="text-sm italic text-amber-900 border-l-2 border-amber-300 pl-3">{practiceResult.offer_text}</p>
           )}
