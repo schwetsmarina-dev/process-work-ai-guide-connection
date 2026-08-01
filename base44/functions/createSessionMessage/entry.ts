@@ -15,7 +15,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields: session_id, role, content' }, { status: 400 });
     }
 
-    // Verify the session belongs to this user (or user is admin)
+    // Verify the session belongs to this user (or user is admin).
+    // NOTE: ownership uses the custom `user_id` field, not created_by/
+    // created_by_id — those are stamped with the SERVICE ROLE's identity
+    // because sessions are created server-side (startSession) and never
+    // match the real user.
     const sessions = await base44.asServiceRole.entities.Session.filter({ id: session_id });
     const session = sessions[0];
 
@@ -23,7 +27,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    if (session.created_by !== user.email && user.role !== 'admin') {
+    if (session.user_id !== user.id && user.role !== 'admin') {
       return Response.json({ error: 'Access denied: session does not belong to current user' }, { status: 403 });
     }
 
