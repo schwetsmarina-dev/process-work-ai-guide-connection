@@ -58,12 +58,19 @@ export default function PrivacyControls({ user, appUser, lang = "ru" }) {
     if (!email) return;
     setExporting(true);
     try {
+      // Session ownership uses `user_id` (platform User.id), not created_by —
+      // created_by is stamped with the SERVICE ROLE's identity since sessions
+      // are created server-side (startSession). Insight is still created
+      // client-side, so its created_by correctly reflects the real user.
+      // UserMemory.user_id is ALSO the platform User.id (set by
+      // persistSessionMemory as session.user_id) — not AppUser.id, which is a
+      // different record entirely.
       const [sessions, insights] = await Promise.all([
-        base44.entities.Session.filter({ created_by: email }, "-created_date", 1000).catch(() => []),
+        base44.entities.Session.filter({ user_id: user?.id }, "-created_date", 1000).catch(() => []),
         base44.entities.Insight.filter({ created_by: email }, "-created_date", 1000).catch(() => []),
       ]);
-      const memory = appUser?.id
-        ? await base44.entities.UserMemory.filter({ user_id: appUser.id }).catch(() => [])
+      const memory = user?.id
+        ? await base44.entities.UserMemory.filter({ user_id: user.id }).catch(() => [])
         : [];
       const feedback = await base44.entities.SessionFeedback
         .filter({ user_email: email })
