@@ -209,6 +209,48 @@ export default function AdminDataStatus() {
     setPatching(false);
   };
 
+  // ── Personal Process Practice — admin test generation ────────────────────
+  // force_test=true bypasses the confidence threshold entirely: generates
+  // even with little/no session history (low_data_warning flags this on the
+  // record). Never surfaces to real users — is_test:true keeps it out of any
+  // future "offer" flow.
+  const handleGenerateTestPractice = async () => {
+    setGeneratingPractice(true);
+    setPracticeResult(null);
+    setPracticeError(null);
+    try {
+      const res = await base44.functions.invoke("generateProcessPractice", { force_test: true });
+      if (res.data?.ready === false) {
+        setPracticeError(`Not ready (confidence ${res.data.confidence_score}) — but this shouldn't happen with force_test.`);
+        setGeneratingPractice(false);
+        return;
+      }
+      const practice = res.data?.practice;
+      setPracticeResult(practice);
+      setGeneratingPractice(false);
+
+      // Chain into audio generation automatically.
+      if (practice?.id) {
+        setGeneratingAudio(true);
+        try {
+          const audioRes = await base44.functions.invoke("generatePracticeAudio", { practice_id: practice.id });
+          setPracticeResult((prev) => prev ? {
+            ...prev,
+            audio_status: audioRes.data?.ok ? "ready" : "failed",
+            audio_url: audioRes.data?.audio_url || prev.audio_url,
+            audio_error: audioRes.data?.error || audioRes.data?.reason || prev.audio_error,
+          } : prev);
+        } catch (audioErr) {
+          setPracticeResult((prev) => prev ? { ...prev, audio_status: "failed", audio_error: audioErr.message } : prev);
+        }
+        setGeneratingAudio(false);
+      }
+    } catch (e) {
+      setPracticeError(e.message);
+      setGeneratingPractice(false);
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
       {/* Header */}
