@@ -44,8 +44,10 @@ export default function Dashboard() {
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
     queryKey: ["sessions", currentUser?.email],
-    queryFn: () => base44.entities.Session.filter({ created_by: currentUser.email }, "-created_date", 10),
-    enabled: !!currentUser?.email,
+    // Ownership uses `user_id`, not created_by — created_by is stamped with
+    // the SERVICE ROLE's identity since sessions are created server-side.
+    queryFn: () => base44.entities.Session.filter({ user_id: currentUser.id }, "-created_date", 10),
+    enabled: !!currentUser?.id,
   });
 
   // Full completed-session history for the consistency calendar
@@ -53,7 +55,7 @@ export default function Dashboard() {
     queryKey: ["sessions-completed", currentUser?.email],
     queryFn: () =>
       base44.entities.Session.filter(
-        { created_by: currentUser.email, status: "completed" },
+        { user_id: currentUser.id, status: "completed" },
         "-created_date",
         500
       ),
