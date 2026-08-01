@@ -119,6 +119,14 @@ Deno.serve(async (req) => {
     const confidenceScore = scoreFromMap(nodes, edges, sessions.length);
     const ready = forceTest || confidenceScore >= READY_THRESHOLD;
 
+    // Strong, STABLE edge — the same edge signal repeating in consecutive
+    // recent sessions, not just a high confidence_score. An unsupervised
+    // audio practice has no way to read what happens for the person in real
+    // time, so instead of trying to "push through" it, we surface a soft,
+    // non-blocking option to continue with a live facilitator alongside it.
+    const edgeRecurrenceStreak = edgeStreak(sessions);
+    const suggestLiveFacilitator = edgeRecurrenceStreak >= EDGE_STREAK_THRESHOLD;
+
     if (!ready) {
       return Response.json({ ready: false, confidence_score: confidenceScore });
     }
