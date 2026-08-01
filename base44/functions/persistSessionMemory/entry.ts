@@ -120,10 +120,13 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'not_completed' });
     }
 
-    // user_id = the User who owns this session (consistent with UserMemory RLS data.user_id == user.id)
-    const userId = session.created_by_id;
+    // user_id = the User who owns this session (consistent with UserMemory RLS data.user_id == user.id).
+    // NOTE: do NOT use created_by_id here — it's stamped with the SERVICE
+    // ROLE's identity since sessions are created server-side (startSession),
+    // so it never points at the real owner.
+    const userId = session.user_id;
     if (!userId) {
-      console.warn('[persistSessionMemory] session has no created_by_id — cannot attribute memory');
+      console.warn('[persistSessionMemory] session has no user_id — cannot attribute memory');
       return Response.json({ error: 'No owner on session' }, { status: 400 });
     }
     console.log('[persistSessionMemory] owner user_id:', userId, 'mode:', session.mode_id || session.mode);
