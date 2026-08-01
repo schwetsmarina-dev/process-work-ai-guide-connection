@@ -24,13 +24,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'session_id is required' }, { status: 400 });
     }
 
-    // Load session and verify ownership (mirror createSessionMessage / listSessionMessages)
+    // Load session and verify ownership (mirror createSessionMessage / listSessionMessages).
+    // NOTE: ownership uses `user_id`, not created_by/created_by_id — those are
+    // stamped with the SERVICE ROLE's identity since sessions are created
+    // server-side (startSession) and never match the real user.
     const sessions = await base44.asServiceRole.entities.Session.filter({ id: session_id });
     const session = sessions[0];
     if (!session) {
       return Response.json({ error: 'Session not found' }, { status: 404 });
     }
-    if (session.created_by !== user.email && user.role !== 'admin') {
+    if (session.user_id !== user.id && user.role !== 'admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
