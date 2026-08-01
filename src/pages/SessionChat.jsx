@@ -155,10 +155,23 @@ export default function SessionChat() {
     queryKey: ["session", sessionId, currentUser?.email],
     queryFn: async () => {
       console.log("[SessionChat] loading session:", sessionId, "for user:", currentUser?.email);
-      const rows = await base44.entities.Session.filter({ id: sessionId });
-      const found = rows[0];
+      // A session just created by the startSession backend function can take a
+      // moment to become visible to this client-side RLS-gated read — the
+      // create happens via the service role, this read happens via the user's
+      // own token a beat later (e.g. Onboarding navigates here immediately
+      // after creating a person's very first session ever). Without a short
+      // retry, that pure timing gap surfaces as a false "session not found"
+      // on the very first screen someone sees. Retry a few times before
+      // concluding it's really missing.
+      let found = null;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const rows = await base44.entities.Session.filter({ id: sessionId });
+        found = rows[0];
+        if (found) break;
+        if (attempt < 4) await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+      }
       if (!found) {
-        console.warn("[SessionChat] session not found");
+        console.warn("[SessionChat] session not found after retries");
         setAccessDenied(true);
         return null;
       }
