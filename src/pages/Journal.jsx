@@ -30,8 +30,10 @@ export default function Journal() {
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
     queryKey: ["journal-sessions", currentUser?.email],
-    queryFn: () => base44.entities.Session.filter({ created_by: currentUser.email }, "-created_date", 100),
-    enabled: !!currentUser?.email,
+    // Ownership uses `user_id`, not created_by — created_by is stamped with
+    // the SERVICE ROLE's identity since sessions are created server-side.
+    queryFn: () => base44.entities.Session.filter({ user_id: currentUser.id }, "-created_date", 100),
+    enabled: !!currentUser?.id,
   });
 
   const { data: insights = [], isLoading: insightsLoading } = useQuery({
