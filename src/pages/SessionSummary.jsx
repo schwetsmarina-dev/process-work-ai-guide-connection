@@ -85,8 +85,16 @@ export default function SessionSummary() {
   const { data: session, isLoading } = useQuery({
     queryKey: ["session", sessionId, currentUser?.email],
     queryFn: async () => {
-      const sessions = await base44.entities.Session.filter({ id: sessionId });
-      const found = sessions[0];
+      // Same read-after-write race as SessionChat.jsx: a session just written
+      // via the service role (startSession) may not be visible yet to this
+      // client-side RLS-gated read. Retry briefly before concluding "not found".
+      let found = null;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const sessions = await base44.entities.Session.filter({ id: sessionId });
+        found = sessions[0];
+        if (found) break;
+        if (attempt < 4) await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+      }
       const isAdmin =
         currentUser?.role === "admin" ||
         hasAdminRole(currentUser);
