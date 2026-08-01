@@ -85,7 +85,7 @@ export default function Dashboard() {
     let lastCompleted = null;
     try {
       const completedInMode = await base44.entities.Session.filter(
-        { created_by: currentUser.email, status: "completed", mode_id: modeId },
+        { user_id: currentUser.id, status: "completed", mode_id: modeId },
         "-created_date",
         1
       );
