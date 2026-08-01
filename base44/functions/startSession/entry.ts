@@ -50,8 +50,11 @@ Deno.serve(async (req) => {
     );
 
     // ── Quota, for free users only ───────────────────────────────────────────
+    // NOTE: filter by `user_id`, not created_by_id — service-role writes get
+    // stamped with the SERVICE ROLE's own identity on created_by/created_by_id,
+    // so those never match the real user and the quota check silently no-ops.
     if (!hasFullAccess) {
-      const sessions = (await svc.entities.Session.filter({ created_by_id: user.id })) || [];
+      const sessions = (await svc.entities.Session.filter({ user_id: user.id })) || [];
       const usedInMode = sessions.filter((s) => (s.mode_id || s.mode) === modeId).length;
 
       if (usedInMode >= FREE_SESSIONS_PER_MODE) {
@@ -67,8 +70,11 @@ Deno.serve(async (req) => {
     }
 
     // ── Create ───────────────────────────────────────────────────────────────
-    // created_by_id must be the USER, not the service role, or every RLS rule
-    // that keys on ownership would stop matching.
+    // Ownership for RLS/backend checks is carried by the plain custom field
+    // `user_id` (see Session.jsonc RLS) — Base44 stamps the system fields
+    // created_by/created_by_id with the SERVICE ROLE's own identity on every
+    // service-role write, regardless of what's passed below, so they can
+    // never be used for ownership. They're kept here only for display/export.
     // Only these extras are accepted. Anything else the client sends is
     // ignored, so a crafted request cannot set status, dates or ownership.
     const extras = {};
