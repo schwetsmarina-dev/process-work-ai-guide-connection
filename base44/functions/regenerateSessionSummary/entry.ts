@@ -39,10 +39,15 @@ Deno.serve(async (req) => {
     // Language must follow the SESSION OWNER, not the admin running this.
     // Without it, regenerating a Spanish user's summary silently replaced it
     // with Russian text.
+    // NOTE: look up via created_by_id, not session.created_by (email) —
+    // session.created_by is stamped with the SERVICE ROLE's identity since
+    // sessions are created server-side (startSession), so it never resolves
+    // to a real AppUser. AppUser rows are created client-side, so their own
+    // created_by_id still correctly reflects the real user.
     let language = 'ru';
     try {
       const owners = await base44.asServiceRole.entities.AppUser.filter({
-        email: session.created_by,
+        created_by_id: session.user_id,
       });
       if (owners[0]?.language === 'es') language = 'es';
     } catch (e) {
