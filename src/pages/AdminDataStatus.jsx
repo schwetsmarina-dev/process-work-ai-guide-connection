@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, CheckCircle2, AlertTriangle, Database, Trash2, Wrench, RefreshCw, GitMerge, FlaskConical } from "lucide-react";
+import { Loader2, CheckCircle2, AlertTriangle, Database, Trash2, Wrench, RefreshCw, GitMerge, FlaskConical, Sparkles, Volume2 } from "lucide-react";
 import { fetchStep } from "@/lib/sessionAI";
 import { checkModeStepChain } from "@/lib/modeStepIntegrity";
 import { Card } from "@/components/ui/card";
@@ -62,6 +62,10 @@ export default function AdminDataStatus() {
   const [patchResult, setPatchResult] = useState(null);
   const [testing, setTesting] = useState(false);
   const [testResults, setTestResults] = useState(null);
+  const [generatingPractice, setGeneratingPractice] = useState(false);
+  const [practiceResult, setPracticeResult] = useState(null);
+  const [practiceError, setPracticeError] = useState(null);
+  const [generatingAudio, setGeneratingAudio] = useState(false);
 
   const { data: modes = [], isLoading: modesLoading } = useQuery({
     queryKey: ["admin-modes"],
