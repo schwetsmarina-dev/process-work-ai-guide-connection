@@ -31,14 +31,17 @@ export default function Insights() {
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
     queryKey: ["sessions-all", currentUser?.email],
-    queryFn: () => base44.entities.Session.filter({ created_by: currentUser.email }, "-created_date", 100),
-    enabled: !!currentUser?.email,
+    // Ownership uses `user_id`, not created_by — both Session and UserMemory
+    // are written server-side (startSession / persistSessionMemory), which
+    // stamps created_by/created_by_id with the SERVICE ROLE's identity.
+    queryFn: () => base44.entities.Session.filter({ user_id: currentUser.id }, "-created_date", 100),
+    enabled: !!currentUser?.id,
   });
 
   const { data: memories = [], isLoading: memoriesLoading } = useQuery({
     queryKey: ["memories", currentUser?.email],
-    queryFn: () => base44.entities.UserMemory.filter({ created_by: currentUser.email }, "-created_date", 50),
-    enabled: !!currentUser?.email,
+    queryFn: () => base44.entities.UserMemory.filter({ user_id: currentUser.id }, "-created_date", 50),
+    enabled: !!currentUser?.id,
   });
 
   const isLoading = sessionsLoading || memoriesLoading;
