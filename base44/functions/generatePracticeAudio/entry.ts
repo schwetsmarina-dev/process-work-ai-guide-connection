@@ -56,7 +56,9 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           text,
           model_id: 'eleven_multilingual_v2', // supports ru/es/en from one cloned voice
-          voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+          // Tuned by the voice owner in the ElevenLabs UI for this specific cloned
+          // voice ("Amplification") to sound maximally like her own speaking voice.
+          voice_settings: { stability: 0.16, similarity_boost: 0.87, style: 0.70, speed: 0.90, use_speaker_boost: true },
         }),
       });
       if (!ttsRes.ok) {
