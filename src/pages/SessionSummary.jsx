@@ -102,16 +102,20 @@ export default function SessionSummary() {
         return null;
       }
 
-      if (found.created_by !== currentUser.email && !isAdmin) {
+      // Ownership uses the custom `user_id` field, NOT created_by/created_by_id
+      // — those are stamped by Base44 with the SERVICE ROLE's identity because
+      // sessions are created server-side (startSession), and never match the
+      // real owner. See Session.jsonc RLS / SessionChat.jsx for the same fix.
+      if (found.user_id !== currentUser.id && !isAdmin) {
         setAccessDenied(true);
         return null;
       }
 
-      if (isAdmin && found.created_by !== currentUser.email) {
+      if (isAdmin && found.user_id !== currentUser.id) {
         console.log("[ADMIN_SUMMARY_ACCESS_GRANTED]", {
           adminEmail: currentUser.email,
           sessionId,
-          sessionOwner: found.created_by,
+          sessionOwner: found.user_id,
         });
       }
 
@@ -202,7 +206,7 @@ export default function SessionSummary() {
   const Icon = iconMap[MODE_ICONS[resolvedMode]] || Heart;
   const label = MODE_LABELS[resolvedMode]?.ru || resolvedMode;
   const isAdmin = hasAdminRole(currentUser);
-  const isAdminViewing = isAdmin && session.created_by !== currentUser.email;
+  const isAdminViewing = isAdmin && session.user_id !== currentUser.id;
 
   return (
     <div className="max-w-2xl mx-auto px-4 md:px-6 py-8 md:py-12">
@@ -421,7 +425,7 @@ export default function SessionSummary() {
       )}
 
       {/* Feedback (beta) — only for completed sessions owned by the user */}
-      {session.status === "completed" && currentUser && session.created_by === currentUser.email && (
+      {session.status === "completed" && currentUser && session.user_id === currentUser.id && (
         <SessionFeedbackForm session={session} user={currentUser} language={language} />
       )}
 
