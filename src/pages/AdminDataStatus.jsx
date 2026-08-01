@@ -296,6 +296,19 @@ export default function AdminDataStatus() {
           <Button
             variant="outline"
             size="sm"
+            disabled={generatingPractice || generatingAudio}
+            onClick={handleGenerateTestPractice}
+            className="border-amber-200 text-amber-700 hover:bg-amber-50"
+          >
+            {generatingPractice || generatingAudio
+              ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              : <Sparkles className="w-4 h-4 mr-2" />}
+            {generatingPractice ? "Generating practice…" : generatingAudio ? "Generating audio…" : "Test Personal Process Practice"}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               queryClient.invalidateQueries({ queryKey: ["admin-modes"] });
               queryClient.invalidateQueries({ queryKey: ["admin-steps"] });
