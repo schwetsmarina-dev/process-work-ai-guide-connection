@@ -392,6 +392,44 @@ export default function AdminDataStatus() {
         </div>
       )}
 
+      {practiceError && <Warning text={`Practice generation failed: ${practiceError}`} />}
+      {practiceResult && (
+        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+          <p className="text-sm font-semibold text-amber-800 flex items-center gap-2">
+            <Sparkles className="w-4 h-4" /> Personal Process Practice — test result
+          </p>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <Badge variant="outline">theme: {practiceResult.theme_label}</Badge>
+            <Badge variant="outline">channel: {practiceResult.dominant_channel}</Badge>
+            <Badge variant="outline">confidence: {practiceResult.confidence_score}</Badge>
+            {practiceResult.low_data_warning && <Badge variant="outline" className="border-orange-300 text-orange-700">low data — test mode</Badge>}
+          </div>
+          {practiceResult.offer_text && (
+            <p className="text-sm italic text-amber-900 border-l-2 border-amber-300 pl-3">{practiceResult.offer_text}</p>
+          )}
+          <div className="space-y-2">
+            {(practiceResult.steps || []).map((s, i) => (
+              <div key={i} className="text-sm bg-white/70 rounded-md p-2 border border-amber-100">
+                <span className="font-mono text-xs text-amber-700">{s.key}</span>
+                {s.label ? <span className="font-semibold ml-2">{s.label}</span> : null}
+                <p className="mt-1">{s.text}</p>
+              </div>
+            ))}
+          </div>
+          <div className="pt-2 border-t border-amber-200">
+            <p className="text-xs text-amber-700 flex items-center gap-1 mb-1">
+              <Volume2 className="w-3.5 h-3.5" /> Audio: {practiceResult.audio_status || "none"}
+            </p>
+            {practiceResult.audio_status === "ready" && practiceResult.audio_url && (
+              <audio controls src={practiceResult.audio_url} className="w-full" />
+            )}
+            {practiceResult.audio_status === "failed" && (
+              <p className="text-xs text-red-700">{practiceResult.audio_error}</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Counts */}
       <div className="grid grid-cols-3 gap-4 my-8">
         <StatCard label="Modes (MODES)" count={modes.length} isLoading={modesLoading} />
