@@ -52,7 +52,13 @@ Deno.serve(async (req) => {
       return n;
     }
 
-    const ownerFilters = [{ created_by: email }];
+    // NOTE: Session.user_id (and UserMemory.user_id) hold the platform
+    // User.id (user.id below), NOT AppUser.id — those are different records.
+    // created_by is also unreliable for Session: it's stamped with the
+    // SERVICE ROLE's identity since sessions are created server-side
+    // (startSession), so it never matches the real user. user.id is the
+    // filter that actually works for Session ownership.
+    const ownerFilters = [{ created_by: email }, { user_id: user.id }];
     if (appUserId) ownerFilters.push({ user_id: appUserId });
 
     // 1) Sessions owned by this user
@@ -73,7 +79,7 @@ Deno.serve(async (req) => {
 
     // 3) Other user-owned entities
     const insights = await collect('Insight', ownerFilters);
-    const memory = appUserId ? await collect('UserMemory', [{ user_id: appUserId }]) : [];
+    const memory = await collect('UserMemory', [{ user_id: user.id }]);
     const feedback = await collect(
       'SessionFeedback',
       appUserId ? [{ user_email: email }, { user_id: appUserId }] : [{ user_email: email }]
