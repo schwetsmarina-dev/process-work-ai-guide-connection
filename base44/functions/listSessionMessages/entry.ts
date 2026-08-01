@@ -21,8 +21,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    // Only owner or admin can read messages
-    if (session.created_by !== user.email && user.role !== 'admin') {
+    // Only owner or admin can read messages.
+    // NOTE: ownership uses `user_id`, not created_by/created_by_id — those are
+    // stamped with the SERVICE ROLE's identity since sessions are created
+    // server-side (startSession) and never match the real user.
+    if (session.user_id !== user.id && user.role !== 'admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
