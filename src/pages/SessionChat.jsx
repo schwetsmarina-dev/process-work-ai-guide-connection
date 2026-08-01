@@ -162,14 +162,17 @@ export default function SessionChat() {
         setAccessDenied(true);
         return null;
       }
-      // Admin can view any session (read-only)
-      if (found.created_by !== currentUser.email) {
+      // Ownership is tracked via the custom `user_id` field, NOT created_by/
+      // created_by_id — those are stamped by Base44 with the SERVICE ROLE's
+      // identity because sessions are created server-side (startSession),
+      // so they never match the real owner. See Session.jsonc RLS.
+      if (found.user_id !== currentUser.id) {
         if (currentUser.role === "admin") {
           console.log("[SessionChat] admin viewing foreign session (read-only)");
           setIsAdminView(true);
           return found;
         }
-        console.warn("[SessionChat] access denied — session owned by", found.created_by);
+        console.warn("[SessionChat] access denied — session owned by", found.user_id);
         setAccessDenied(true);
         return null;
       }
