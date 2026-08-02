@@ -38,6 +38,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import LegalFooter from '@/components/layout/LegalFooter';
 
 function ProtectedAdminRoute({ children }) {
   const [status, setStatus] = React.useState("loading");
@@ -160,7 +161,12 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <AuthenticatedApp />
+          <div className="min-h-screen flex flex-col">
+            <div className="flex-1">
+              <AuthenticatedApp />
+            </div>
+            <LegalFooter />
+          </div>
         </Router>
         <Toaster />
       </QueryClientProvider>
