@@ -637,6 +637,8 @@ export default function SessionChat() {
       } else {
         const summaryData = await generateSessionSummary(session, sessionMessages, language);
         const edgeSignals = Array.isArray(summaryData.edge_signals) ? summaryData.edge_signals.filter(Boolean) : [];
+        const primaryProcess = Array.isArray(summaryData.primary_process) ? summaryData.primary_process.filter(Boolean) : [];
+        const secondaryProcess = Array.isArray(summaryData.secondary_process) ? summaryData.secondary_process.filter(Boolean) : [];
         await base44.entities.Session.update(sessionId, {
           status: "completed",
           ended_at: new Date().toISOString(),
@@ -645,6 +647,8 @@ export default function SessionChat() {
           signals: summaryData.signals || [],
           edge_signals: edgeSignals,
           edge_signal_count: edgeSignals.length,
+          primary_process: primaryProcess,
+          secondary_process: secondaryProcess,
           next_step_suggestion: summaryData.next_step_suggestion || "",
           confidence_note: summaryData.confidence_note || "",
         });
