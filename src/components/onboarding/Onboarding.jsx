@@ -5,7 +5,6 @@ import { base44 } from "@/api/base44Client";
 import { normalizeLang, t } from "@/lib/i18n";
 import { buildConsentRecord } from "@/lib/consent";
 import { isOldEnough } from "@/lib/ageGate";
-import { startSession } from "@/lib/sessionApi";
 import { track, EVENTS } from "@/lib/telemetry";
 import OnboardingShell from "./OnboardingShell";
 import ModeSelectStep from "./ModeSelectStep";
@@ -48,20 +47,12 @@ export default function Onboarding({ appUser, currentUser, onComplete }) {
         });
       }
 
-      // Create first session in the selected mode
       const modeId = selectedMode?.mode_id;
-      if (modeId) {
-        track(EVENTS.ONBOARDING_COMPLETED, { mode: modeId, language: lang });
-        const { session } = await startSession(modeId);
-        if (appUser?.id) {
-          await base44.entities.AppUser.update(appUser.id, { last_session_id: session.id }).catch(() => {});
-        }
-        track(EVENTS.SESSION_STARTED, { mode: modeId, language: lang, is_first: true });
-        onComplete?.();
-        navigate(`/session/${session.id}`);
-        return;
-      }
+      track(EVENTS.ONBOARDING_COMPLETED, { mode: modeId || "", language: lang });
 
+      // Onboarding no longer starts a session — that would consume the user's
+      // free-trial session in this mode before they knowingly begin a chat.
+      // The user lands on the dashboard and starts their first session there.
       onComplete?.();
       navigate("/dashboard");
     } catch (e) {
