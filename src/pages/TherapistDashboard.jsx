@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Loader2, Stethoscope, AlertTriangle, MessageSquare } from "lucide-react";
+import { Loader2, Stethoscope, AlertTriangle, MessageSquare, Compass } from "lucide-react";
 import { format } from "date-fns";
 import ClientCard from "@/components/therapist/ClientCard";
 import RiskEventCard from "@/components/therapist/RiskEventCard";
@@ -203,7 +203,17 @@ export default function TherapistDashboard() {
                               <AlertTriangle className="w-3 h-3" /> {t("th_risk", lang)}
                             </span>
                           )}
+                          {s.edge_signal_count > 0 && (
+                            <span className="text-xs text-amber-700 font-medium flex items-center gap-1" title={t("node_edge", lang)}>
+                              <Compass className="w-3 h-3" /> {s.edge_signal_count}
+                            </span>
+                          )}
                         </div>
+                        {s.edge_signals?.length > 0 && (
+                          <p className="text-xs text-amber-700/80 mt-1.5 italic line-clamp-2">
+                            {s.edge_signals.join(" · ")}
+                          </p>
+                        )}
                       </Link>
                     ))}
                   </div>
