@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { isAdmin as hasAdminRole } from "@/lib/roles";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -75,6 +77,15 @@ export default function Settings() {
         <PrivacyControls user={user} appUser={appUser} lang={lang} />
 
         {user?.email && <ShareWithTherapist clientEmail={user.email} />}
+
+        {hasAdminRole(user) && (
+          <Link
+            to="/admin/access"
+            className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Выдать доступ (админ)
+          </Link>
+        )}
 
         <Card className="p-6 border-destructive/20">
           <h3 className="font-semibold text-sm mb-2">{t("logout", lang)}</h3>
