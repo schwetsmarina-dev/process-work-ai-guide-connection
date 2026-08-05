@@ -65,9 +65,12 @@ Deno.serve(async (req) => {
   "summary": "связный абзац 3-5 предложений — что происходило, какой процесс разворачивался, к чему пришли",
   "themes": ["тема 1", "тема 2", "тема 3"],
   "signals": ["телесный или эмоциональный сигнал 1", "сигнал 2"],
-  "edge_signals": ["короткое описание момента с внутренним критиком/стыдом/зацикливанием/отрицанием идентичности, если такой момент был (иначе пустой массив)"]
+  "edge_signals": ["короткое описание момента с внутренним критиком/стыдом/зацикливанием/отрицанием идентичности, если такой момент был (иначе пустой массив)"],
+  "primary_process": ["короткая заметка о том, что было привычным/знакомым для человека"],
+  "secondary_process": ["короткая заметка о том, что было новым/неожиданным, впервые проявившимся"]
 }
 ВНУТРЕННЕЕ ПОЛЕ edge_signals (для аналитики терапевта, не показывается клиенту): заполняй только если в транскрипте был момент с признаками: резкое падение энергии, нервный смех, стыд/смущение, зацикливание без развития, отрицание идентичности, цитирование внутреннего запрета. Короткие фразы, без слова «край»/«граница»/«limite»/«borde». Если таких моментов не было — пустой массив [].
+ВНУТРЕННИЕ ПОЛЯ primary_process / secondary_process (для карты процесса терапевта, не показываются клиенту, сами термины «первичный/вторичный процесс» в значения не пиши): primary_process — что было знакомым/привычным для человека, secondary_process — что было новым/неожиданным. Короткие фразы своими словами, без терминов Process Work. Если не выделялось — пустой массив [] для каждого.
 
 Пиши на том же языке, на котором шла сессия. ${languageRule}
 
@@ -82,18 +85,24 @@ ${conversation}`,
           themes: { type: 'array', items: { type: 'string' } },
           signals: { type: 'array', items: { type: 'string' } },
           edge_signals: { type: 'array', items: { type: 'string' } },
+          primary_process: { type: 'array', items: { type: 'string' } },
+          secondary_process: { type: 'array', items: { type: 'string' } },
           next_step_suggestion: { type: 'string' },
         },
       },
     });
 
     const edgeSignals = Array.isArray(result.edge_signals) ? result.edge_signals.filter(Boolean) : [];
+    const primaryProcess = Array.isArray(result.primary_process) ? result.primary_process.filter(Boolean) : [];
+    const secondaryProcess = Array.isArray(result.secondary_process) ? result.secondary_process.filter(Boolean) : [];
     await base44.asServiceRole.entities.Session.update(sessionId, {
       summary: result.summary || session.summary,
       themes: result.themes || [],
       signals: result.signals || [],
       edge_signals: edgeSignals,
       edge_signal_count: edgeSignals.length,
+      primary_process: primaryProcess,
+      secondary_process: secondaryProcess,
       next_step_suggestion: result.next_step_suggestion || '',
     });
 
