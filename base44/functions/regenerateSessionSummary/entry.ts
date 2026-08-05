@@ -65,8 +65,10 @@ Deno.serve(async (req) => {
   "summary": "связный абзац 3-5 предложений — что происходило, какой процесс разворачивался, к чему пришли",
   "themes": ["тема 1", "тема 2", "тема 3"],
   "signals": ["телесный или эмоциональный сигнал 1", "сигнал 2"],
-  "next_step_suggestion": "одна конкретная рекомендация — что исследовать в следующий раз"
+  "edge_signals": ["короткое описание момента с внутренним критиком/стыдом/зацикливанием/отрицанием идентичности, если такой момент был (иначе пустой массив)"]
 }
+ВНУТРЕННЕЕ ПОЛЕ edge_signals (для аналитики терапевта, не показывается клиенту): заполняй только если в транскрипте был момент с признаками: резкое падение энергии, нервный смех, стыд/смущение, зацикливание без развития, отрицание идентичности, цитирование внутреннего запрета. Короткие фразы, без слова «край»/«граница»/«limite»/«borde». Если таких моментов не было — пустой массив [].
+
 Пиши на том же языке, на котором шла сессия. ${languageRule}
 
 Режим: ${session.mode_id || session.mode}
@@ -79,15 +81,19 @@ ${conversation}`,
           summary: { type: 'string' },
           themes: { type: 'array', items: { type: 'string' } },
           signals: { type: 'array', items: { type: 'string' } },
+          edge_signals: { type: 'array', items: { type: 'string' } },
           next_step_suggestion: { type: 'string' },
         },
       },
     });
 
+    const edgeSignals = Array.isArray(result.edge_signals) ? result.edge_signals.filter(Boolean) : [];
     await base44.asServiceRole.entities.Session.update(sessionId, {
       summary: result.summary || session.summary,
       themes: result.themes || [],
       signals: result.signals || [],
+      edge_signals: edgeSignals,
+      edge_signal_count: edgeSignals.length,
       next_step_suggestion: result.next_step_suggestion || '',
     });
 
