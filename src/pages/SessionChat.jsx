@@ -636,12 +636,15 @@ export default function SessionChat() {
         });
       } else {
         const summaryData = await generateSessionSummary(session, sessionMessages, language);
+        const edgeSignals = Array.isArray(summaryData.edge_signals) ? summaryData.edge_signals.filter(Boolean) : [];
         await base44.entities.Session.update(sessionId, {
           status: "completed",
           ended_at: new Date().toISOString(),
           summary: summaryData.summary || t("session_completed_short", language),
           themes: summaryData.themes || [],
           signals: summaryData.signals || [],
+          edge_signals: edgeSignals,
+          edge_signal_count: edgeSignals.length,
           next_step_suggestion: summaryData.next_step_suggestion || "",
           confidence_note: summaryData.confidence_note || "",
         });
