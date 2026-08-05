@@ -1,7 +1,7 @@
 import { t, getStoredLanguage } from "@/lib/i18n";
 import React from "react";
 import { format } from "date-fns";
-import { User, MessageSquare, AlertTriangle } from "lucide-react";
+import { User, MessageSquare, AlertTriangle, Compass } from "lucide-react";
 
 export default function ClientCard({ client, active, onClick }) {
   const lang = getStoredLanguage();
@@ -35,6 +35,12 @@ export default function ClientCard({ client, active, onClick }) {
           <span className="flex items-center gap-1 text-destructive font-medium">
             <AlertTriangle className="w-3.5 h-3.5" />
             {client.flagged_count} {t("th_flagged_short", lang)}
+          </span>
+        )}
+        {client.edge_signal_count > 0 && (
+          <span className="flex items-center gap-1 text-amber-700 font-medium" title={t("node_edge", lang)}>
+            <Compass className="w-3.5 h-3.5" />
+            {client.edge_signal_count}
           </span>
         )}
       </div>
