@@ -1,9 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 
 // Life Process Map builder.
-// For one client, collects nodes (themes + signals + edge_signals from Session,
-// tags from Insight, high/critical RiskEvents, and cross-cutting Terms) and
-// edges based on co-occurrence within the same session.
+// For one client, collects nodes (themes + signals + edge_signals + primary/
+// secondary process notes from Session, tags from Insight, ALL RiskEvents
+// regardless of severity, and cross-cutting Terms) and edges based on
+// co-occurrence within the same session.
 // Returns { nodes, edges } — pure computation, nothing is saved to the DB.
 //
 // SECURITY — two ways to call this:
