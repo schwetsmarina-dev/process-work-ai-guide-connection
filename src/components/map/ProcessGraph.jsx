@@ -5,8 +5,10 @@ import React, { useMemo, useState } from "react";
 const TYPE_STYLE = {
   theme: { color: "#326ea0", labelKey: "node_theme" },
   signal: { color: "#c89632", labelKey: "node_signal" },
+  edge: { color: "#b45309", labelKey: "node_edge" },
   tag: { color: "#46825f", labelKey: "node_tag" },
   term: { color: "#6e50a0", labelKey: "node_term" },
+  risk: { color: "#dc2626", labelKey: "node_risk" },
 };
 
 const WIDTH = 900;
