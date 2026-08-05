@@ -28,7 +28,9 @@ function splitTags(raw) {
     .filter(Boolean);
 }
 
-const RISK_NODE_SEVERITIES = new Set(['high', 'critical']);
+// All severities are surfaced in the therapist's map — low/medium risk events
+// still matter for a full clinical picture, not just the ones needing urgent review.
+const RISK_NODE_SEVERITIES = new Set(['low', 'medium', 'high', 'critical']);
 
 Deno.serve(async (req) => {
   try {
@@ -168,6 +170,14 @@ Deno.serve(async (req) => {
       }
       for (const edgeSig of s.edge_signals || []) {
         const k = addNode(edgeSig, 'edge');
+        if (k) labelsInSession.push(k);
+      }
+      for (const p of s.primary_process || []) {
+        const k = addNode(p, 'primary');
+        if (k) labelsInSession.push(k);
+      }
+      for (const sec of s.secondary_process || []) {
+        const k = addNode(sec, 'secondary');
         if (k) labelsInSession.push(k);
       }
       for (const tag of tagsBySession.get(s.id) || []) {
