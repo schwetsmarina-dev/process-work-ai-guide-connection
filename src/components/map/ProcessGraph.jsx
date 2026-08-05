@@ -6,6 +6,8 @@ const TYPE_STYLE = {
   theme: { color: "#326ea0", labelKey: "node_theme" },
   signal: { color: "#c89632", labelKey: "node_signal" },
   edge: { color: "#b45309", labelKey: "node_edge" },
+  primary: { color: "#64748b", labelKey: "node_primary" },
+  secondary: { color: "#0891b2", labelKey: "node_secondary" },
   tag: { color: "#46825f", labelKey: "node_tag" },
   term: { color: "#6e50a0", labelKey: "node_term" },
   risk: { color: "#dc2626", labelKey: "node_risk" },
