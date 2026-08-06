@@ -19,7 +19,7 @@ const RISK_TYPE_KEYS = {
   other: "risk_other",
 };
 
-export default function RiskEventCard({ event, clientName = null }) {
+export default function RiskEventCard({ event, clientName }) {
   const lang = getStoredLanguage();
   const sev = SEVERITY_STYLE[event.severity] || SEVERITY_STYLE.low;
   return (
