@@ -9,6 +9,13 @@ import { normalizeLang, t, getStoredLanguage, setStoredLanguage } from "@/lib/i1
 const heroRu = "https://media.base44.com/images/public/69ecbcec1c0f2de14e2fbc75/850646afd_.png";
 const heroEs = "https://media.base44.com/images/public/69ecbcec1c0f2de14e2fbc75/d2cdae3ac_hero-es.png";
 
+// The source hero artwork above still carries the old "Process Work AI Guide"
+// wordmark baked into the pixels. Rather than re-hosting a new raster image,
+// we mask those two zones and redraw the Talvira brand mark + headline as a
+// crisp, responsive SVG overlay aligned to the artwork's 1024x683 viewBox.
+const HERO_MASK_BG = { ru: "rgb(239,238,241)", es: "rgb(245,245,247)" };
+const HERO_INK = "hsl(215 52% 34%)";
+
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   visible: (i) => ({
@@ -112,9 +119,32 @@ export default function Landing() {
             <div className="absolute inset-0 blur-3xl opacity-20 bg-primary/40 rounded-3xl scale-95" />
             <img
               src={heroImage}
-              alt={lang === "es" ? "Talvira — Español" : "Talvira — Русский"}
+              alt="Talvira"
               className="relative w-full h-auto rounded-2xl shadow-2xl shadow-primary/10 object-contain mx-auto"
             />
+            {/* Talvira brand overlay — masks the legacy "Process Work AI Guide"
+                wordmark baked into the artwork and redraws the current brand. */}
+            <svg
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              viewBox="0 0 1024 683"
+              preserveAspectRatio="xMidYMid meet"
+              aria-hidden="true"
+            >
+              <rect x="30" y="35" width="165" height="145" fill={HERO_MASK_BG[lang === "es" ? "es" : "ru"]} />
+              <rect x="38" y="203" width="485" height="205" fill={HERO_MASK_BG[lang === "es" ? "es" : "ru"]} />
+              <circle
+                cx="88" cy="90" r="34"
+                fill="none"
+                stroke={HERO_INK}
+                strokeWidth="7"
+                strokeLinecap="round"
+                strokeDasharray="180 40"
+                transform="rotate(-100 88 90)"
+              />
+              <text x="136" y="101" fontFamily="'Playfair Display', serif" fontSize="31" fontWeight="600" fill={HERO_INK}>Talvira</text>
+              <text x="58" y="322" fontFamily="'Playfair Display', serif" fontSize="88" fontWeight="700" fill={HERO_INK}>Talvira</text>
+              <line x1="58" y1="350" x2="378" y2="350" stroke={HERO_INK} strokeWidth="3" />
+            </svg>
           </motion.div>
 
           {/* CTA button — kept exactly as before */}
