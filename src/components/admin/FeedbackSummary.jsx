@@ -31,7 +31,7 @@ export default function FeedbackSummary({ feedback }) {
     return acc;
   }, {});
 
-  const Stat = ({ icon: Icon, label, value, sub }) => (
+  const Stat = ({ icon: Icon, label, value, sub = null }) => (
     <Card className="p-4">
       <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
         <Icon className="w-4 h-4" />
