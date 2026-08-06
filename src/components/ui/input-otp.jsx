@@ -4,9 +4,10 @@ import { Minus } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+const _OTPInput = /** @type {any} */ (OTPInput);
 /** @type {React.ForwardRefExoticComponent<any>} */
 const InputOTP = React.forwardRef(({ className, containerClassName, ...props }, ref) => (
-  <OTPInput
+  <_OTPInput
     ref={ref}
     containerClassName={cn("flex items-center gap-2 has-[:disabled]:opacity-50", containerClassName)}
     className={cn("disabled:cursor-not-allowed", className)}
