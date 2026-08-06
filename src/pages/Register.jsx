@@ -26,10 +26,11 @@ export default function Register() {
     // WebOTP API — Android Chrome auto-reads SMS codes
     if (!('OTPCredential' in window)) return;
     const ac = new AbortController();
-    navigator.credentials.get({ otp: { transport: ['sms'] }, signal: ac.signal })
+    navigator.credentials.get(/** @type {any} */ ({ otp: { transport: ['sms'] }, signal: ac.signal }))
       .then((otp) => {
-        if (otp?.code) {
-          setOtpCode(otp.code);
+        const cred = /** @type {any} */ (otp);
+        if (cred?.code) {
+          setOtpCode(cred.code);
         }
       })
       .catch(() => { /* silently ignore — not all Android devices support this */ });
