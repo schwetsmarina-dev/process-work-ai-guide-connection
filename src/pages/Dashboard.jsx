@@ -143,6 +143,10 @@ export default function Dashboard() {
     if (mode) await createSession(mode);
   };
 
+  /**
+   * @param {any} mode
+   * @param {{ continuedFromSessionId?: any, carryOverContext?: any }} [opts]
+   */
   const createSession = async (mode, { continuedFromSessionId, carryOverContext } = {}) => {
     const modeId = mode.mode_id;
     const stepKey = `${modeId}_1`;
