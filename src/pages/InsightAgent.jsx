@@ -140,8 +140,8 @@ export default function InsightAgent() {
             className="flex-1 resize-none rounded-xl border border-input bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring min-h-[42px] max-h-32"
             style={{ height: "auto" }}
             onInput={(e) => {
-              e.target.style.height = "auto";
-              e.target.style.height = Math.min(e.target.scrollHeight, 128) + "px";
+              e.currentTarget.style.height = "auto";
+              e.currentTarget.style.height = Math.min(e.currentTarget.scrollHeight, 128) + "px";
             }}
           />
           <Button
