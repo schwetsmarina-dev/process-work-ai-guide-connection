@@ -131,6 +131,11 @@ export default function SessionChat() {
     setStepError(false);
     setStepDebugInfo(null);
     setOptimisticMessages([]);
+    // accessDenied / isAdminView must be reset too — otherwise a single denial
+    // (e.g. reading a just-created session before it has replicated) latches
+    // and every later session, including brand-new ones, shows "foreign session".
+    setAccessDenied(false);
+    setIsAdminView(false);
   }, [sessionId]);
 
   // ── Load current user first ───────────────────────────────────────────────
