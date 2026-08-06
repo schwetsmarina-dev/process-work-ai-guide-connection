@@ -3,6 +3,9 @@ import { base44 } from "@/api/base44Client";
 /**
  * Creates a Message record via backend function (bypasses frontend RLS).
  */
+/**
+ * @param {{ session_id: any, mode_id?: any, step_number?: any, role: any, content: any }} msg
+ */
 export async function createMessage({ session_id, mode_id, step_number, role, content }) {
   const res = await base44.functions.invoke("createSessionMessage", {
     session_id,
