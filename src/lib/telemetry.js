@@ -177,10 +177,11 @@ function initAnalytics() {
   document.head.appendChild(script);
 
   // Queue stub so events fired before the script loads are not lost.
-  window.plausible =
-    window.plausible ||
+  const w = /** @type {any} */ (window);
+  w.plausible =
+    w.plausible ||
     function () {
-      (window.plausible.q = window.plausible.q || []).push(arguments);
+      (w.plausible.q = w.plausible.q || []).push(arguments);
     };
 }
 
@@ -227,9 +228,10 @@ export function track(event, props = {}) {
     console.info("[telemetry] event:", event, safeProps);
   }
 
-  if (ANALYTICS_DOMAIN && typeof window !== "undefined" && window.plausible) {
+  const w = /** @type {any} */ (window);
+  if (ANALYTICS_DOMAIN && typeof window !== "undefined" && w.plausible) {
     try {
-      window.plausible(event, { props: safeProps });
+      w.plausible(event, { props: safeProps });
     } catch {
       /* analytics must never break the app */
     }
