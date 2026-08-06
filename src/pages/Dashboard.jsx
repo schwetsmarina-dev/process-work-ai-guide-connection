@@ -29,7 +29,6 @@ export default function Dashboard() {
   useEffect(() => {
     (async () => {
       const u = await base44.auth.me();
-      console.log("CURRENT USER:", u?.id, u?.email);
       setCurrentUser(u);
       const rows = await base44.entities.AppUser.filter({ email: u?.email });
       setAppUser(rows[0] || null);
