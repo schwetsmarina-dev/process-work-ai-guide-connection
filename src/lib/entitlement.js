@@ -101,6 +101,6 @@ export function isLifetime(entitlement) {
 /** Days remaining, or null for lifetime / no entitlement. */
 export function daysRemaining(entitlement, now = new Date()) {
   if (!entitlement || !entitlement.expires_at) return null;
-  const ms = new Date(entitlement.expires_at) - now;
+  const ms = new Date(entitlement.expires_at).getTime() - now.getTime();
   return ms <= 0 ? 0 : Math.ceil(ms / 86400000);
 }
