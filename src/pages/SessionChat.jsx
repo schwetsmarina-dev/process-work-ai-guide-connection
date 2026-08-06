@@ -522,7 +522,7 @@ export default function SessionChat() {
         // that window.
         queryClient.setQueryData(
           ["session", sessionId, currentUser?.email],
-          (prev) => (prev ? { ...prev, current_step: nextStep } : prev),
+          (prev) => (prev ? { ...(/** @type {any} */ (prev)), current_step: nextStep } : prev),
         );
       } else {
         // No next step — final closing message shown; reveal the "end session" button instead of auto-redirect
