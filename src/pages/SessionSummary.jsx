@@ -87,12 +87,18 @@ export default function SessionSummary() {
       // Same read-after-write race as SessionChat.jsx: a session just written
       // via the service role (startSession) may not be visible yet to this
       // client-side RLS-gated read. Retry briefly before concluding "not found".
+      // Widened from 5 attempts / ~4s to 8 attempts / ~8s — see SessionChat.jsx
+      // for why: fresh non-admin signups landing on their first session's
+      // summary could outlast the shorter window and see a false "session gone".
       let found = null;
-      for (let attempt = 0; attempt < 5; attempt++) {
+      const maxAttempts = 8;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const sessions = await base44.entities.Session.filter({ id: sessionId });
         found = sessions[0];
         if (found) break;
-        if (attempt < 4) await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+        if (attempt < maxAttempts - 1) {
+          await new Promise((r) => setTimeout(r, Math.min(400 * (attempt + 1), 1500)));
+        }
       }
       const isAdmin =
         currentUser?.role === "admin" ||
