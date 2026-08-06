@@ -168,15 +168,23 @@ export default function SessionChat() {
       // retry, that pure timing gap surfaces as a false "session not found"
       // on the very first screen someone sees. Retry a few times before
       // concluding it's really missing.
+      // Widened from 5 attempts / ~4s to 8 attempts / ~8s: real-world
+      // read-after-write lag on a brand-new AppUser's very first session
+      // (fresh non-admin signups going straight from onboarding into their
+      // first session) was occasionally outlasting the previous window,
+      // producing a false "session gone" even though the session existed.
       let found = null;
-      for (let attempt = 0; attempt < 5; attempt++) {
+      const maxAttempts = 8;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const rows = await base44.entities.Session.filter({ id: sessionId });
         found = rows[0];
         if (found) break;
-        if (attempt < 4) await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+        if (attempt < maxAttempts - 1) {
+          await new Promise((r) => setTimeout(r, Math.min(400 * (attempt + 1), 1500)));
+        }
       }
       if (!found) {
-        console.warn("[SessionChat] session not found after retries");
+        console.warn("[SessionChat] session not found after retries", { sessionId, attempts: maxAttempts });
         setAccessDenied(true);
         return null;
       }
