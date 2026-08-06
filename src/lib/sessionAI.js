@@ -24,7 +24,7 @@ export {
 } from "./crisis";
 
 // ─── Fetch step from DB — bulletproof lookup ─────────────────────────────────
-/** @returns {any} */
+/** @returns {Promise<any>} */
 export async function fetchStep(modeId, stepNumber) {
   const modeIdClean = String(modeId || "").trim();
   const stepNum = Number(stepNumber) || 1;
