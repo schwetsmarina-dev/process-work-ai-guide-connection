@@ -298,6 +298,7 @@ const INITIAL_MATERIAL_STAGE = {
   journaling: "awaiting_journaling_topic",
 };
 
+/** @returns {any} */
 export function detectProcessMappingStage(messages, modeId) {
   const modeKey = getModeKey(modeId);
   if (!modeKey) return { stage: "complete", primary_answer: null, secondary_answer: null, dream_shared: true };
