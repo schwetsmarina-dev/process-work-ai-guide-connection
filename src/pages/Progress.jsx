@@ -86,7 +86,7 @@ function sessionDate(s) {
   return new Date(s.ended_at || s.updated_date || s.created_date || s.started_at);
 }
 
-function StatCard({ icon: Icon, value, label, sub, accent }) {
+function StatCard({ icon: Icon, value, label, sub = null, accent = null }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-4 flex flex-col gap-1">
       <Icon className={`w-5 h-5 ${accent || "text-primary"}`} />
@@ -99,7 +99,7 @@ function StatCard({ icon: Icon, value, label, sub, accent }) {
   );
 }
 
-function Bar({ label, count, max, Icon }) {
+function Bar({ label, count, max, Icon = null }) {
   const pct = max > 0 ? Math.round((count / max) * 100) : 0;
   return (
     <div className="flex items-center gap-3">
