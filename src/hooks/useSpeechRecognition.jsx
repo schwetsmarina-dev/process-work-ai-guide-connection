@@ -2,10 +2,12 @@ import { useEffect, useRef, useState, useCallback } from "react";
 
 // Browser Web Speech API (SpeechRecognition) wrapper.
 // isSupported is false when the browser has no SpeechRecognition — callers hide the mic button.
+/**
+ * @param {{ lang?: string, onResult?: (transcript: string) => void }} [options]
+ */
 export default function useSpeechRecognition({ lang = "ru-RU", onResult } = {}) {
-  const SpeechRecognition =
-    typeof window !== "undefined" &&
-    (window.SpeechRecognition || window.webkitSpeechRecognition);
+  const win = /** @type {any} */ (typeof window !== "undefined" ? window : {});
+  const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
 
   const isSupported = !!SpeechRecognition;
   const [isListening, setIsListening] = useState(false);
