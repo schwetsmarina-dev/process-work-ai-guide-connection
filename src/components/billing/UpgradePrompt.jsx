@@ -14,7 +14,7 @@ import { t } from "@/lib/i18n";
  * it appears inline. Someone in the middle of writing about their inner life
  * should never have a payment screen thrown over the top of it.
  */
-export default function UpgradePrompt({ lang, variant = "feature", onDismiss }) {
+export default function UpgradePrompt({ lang, variant = "feature", onDismiss = null }) {
   const [busy, setBusy] = useState(false);
 
   const openCheckout = async () => {
