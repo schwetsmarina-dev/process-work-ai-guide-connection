@@ -692,7 +692,6 @@ const translations = {
     map_empty: "Todavía no hay datos suficientes para el mapa. Completa algunas sesiones y los temas y señales aparecerán aquí conectados en un gráfico.",
     map_legend: "El tamaño del nodo indica con qué frecuencia aparece el tema; el grosor de la línea, cuántas veces dos temas coincidieron en una misma sesión. Pasa el cursor por un nodo para resaltar sus conexiones.",
     refresh: "Actualizar",
-    retry: "Reintentar",
 
     // —— Informe completo de la sesión ——
     report_generate_summary_pdf: "Generar resumen y PDF",
