@@ -48,6 +48,7 @@ const DialogContent = React.forwardRef(({ className, children, ...props }, ref) 
 ))
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
+/** @type {(props: any) => any} */
 const DialogHeader = ({
   className,
   ...props
@@ -58,6 +59,7 @@ const DialogHeader = ({
 )
 DialogHeader.displayName = "DialogHeader"
 
+/** @type {(props: any) => any} */
 const DialogFooter = ({
   className,
   ...props
