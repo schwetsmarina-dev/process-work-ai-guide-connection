@@ -42,7 +42,7 @@ export default function BodySignalMatch({ session, userId }) {
         const t = new Date(r.recorded_at).getTime();
         return t >= from.getTime() && t <= to.getTime();
       });
-      inWindow.sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+      inWindow.sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime());
       setPhysioData(inWindow);
     } finally {
       setLoading(false);
