@@ -57,7 +57,7 @@ function NavContent({ currentPath, onNavigate, isAdmin, isTherapist, lang }) {
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-primary-foreground" />
           </div>
-          <span className="font-serif text-lg font-semibold">Process Work</span>
+          <span className="font-serif text-lg font-semibold">Talvira</span>
         </Link>
       </div>
 
@@ -151,7 +151,7 @@ export default function AppLayout() {
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
               <Sparkles className="w-3.5 h-3.5 text-primary-foreground" />
             </div>
-            <span className="font-serif text-base font-semibold">Process Work</span>
+            <span className="font-serif text-base font-semibold">Talvira</span>
           </Link>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
