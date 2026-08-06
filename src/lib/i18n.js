@@ -94,7 +94,7 @@ const translations = {
     export_pdf_role_assistant: "Фасилитатор",
     // Onboarding
     onb_back: "Назад",
-    onb_step1_title: "Добро пожаловать в Process Work AI",
+    onb_step1_title: "Добро пожаловать в Talvira",
     onb_step1_text:
       "Это пространство для исследования себя через процессуально-ориентированный подход Арнольда Минделла. Здесь нет правильных и неправильных ответов — только твой процесс.",
     onb_step1_button: "Начать",
@@ -565,7 +565,7 @@ const translations = {
     export_pdf_role_assistant: "Facilitador",
     // Onboarding
     onb_back: "Volver",
-    onb_step1_title: "Bienvenida a Process Work AI",
+    onb_step1_title: "Bienvenida a Talvira",
     onb_step1_text:
       "Este es un espacio para explorarte a ti misma a través del enfoque orientado al proceso de Arnold Mindell. Aquí no hay respuestas correctas ni incorrectas — solo tu proceso.",
     onb_step1_button: "Empezar",
