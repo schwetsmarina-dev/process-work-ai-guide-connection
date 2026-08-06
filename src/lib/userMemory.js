@@ -48,6 +48,11 @@ export function formatMemoriesForPrompt(memories, language = "ru") {
 
 // ─── 3. Save memories: dedupe by memory_key, deactivate oldest over limit ────
 // items: [{ memory_type, memory_key, memory_value }]
+/**
+ * @param {any} userId
+ * @param {any} items
+ * @param {{ sessionId?: any, modeId?: any }} [opts]
+ */
 export async function saveUserMemories(userId, items, { sessionId, modeId } = {}) {
   if (!userId || !items || items.length === 0) return;
 
