@@ -175,10 +175,6 @@ export default function Dashboard() {
       );
       const rows = completedInMode || [];
 
-      // First priority: a previously identified edge figure, even if the old
-      // session summary failed. Inspect recent completed transcripts so a real
-      // theme such as an internal critic cannot be hidden by a newer broken
-      // "Резюме недоступно" record.
       for (const candidate of rows.slice(0, 15)) {
         const storedEvidence = [
           isUnavailableSummary(candidate.summary) ? "" : candidate.summary,
@@ -203,11 +199,9 @@ export default function Dashboard() {
         }
       }
 
-      // Second priority: latest genuinely meaningful completed session.
       const stored = rows.find(hasStoredContinuationMaterial);
       if (stored) return stored;
 
-      // Last fallback: recover a completed transcript even if summary generation failed.
       for (const candidate of rows.slice(0, 15)) {
         const recovered = await enrichFromTranscript(candidate);
         if (recovered) return recovered;
@@ -288,6 +282,10 @@ export default function Dashboard() {
     if (mode) await createSession(mode);
   };
 
+  /**
+   * @param {any} mode
+   * @param {{ continuedFromSessionId?: any, carryOverContext?: any }} [options]
+   */
   const createSession = async (mode, { continuedFromSessionId, carryOverContext } = {}) => {
     const modeId = mode.mode_id;
     const stepKey = `${modeId}_1`;
