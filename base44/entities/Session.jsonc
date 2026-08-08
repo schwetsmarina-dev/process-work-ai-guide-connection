@@ -30,6 +30,21 @@
     },
     "themes": { "type": "array", "items": { "type": "string" } },
     "signals": { "type": "array", "items": { "type": "string" } },
+    "edge_signals": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Moments where resistance, an inner critic, shame, looping, or another process edge appeared"
+    },
+    "primary_process": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "What felt familiar or identity-consistent in this session"
+    },
+    "secondary_process": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "What felt new, unfamiliar, or emergent in this session"
+    },
     "next_step_suggestion": { "type": "string" },
     "risk_flag": { "type": "boolean", "default": false },
     "continued_from_session_id": {
