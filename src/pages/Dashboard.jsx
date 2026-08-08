@@ -65,6 +65,44 @@ export default function Dashboard() {
   const activeSession = sessions.find((s) => s.status === "active");
   const recentSessions = sessions.filter((s) => s.status !== "active").slice(0, 5);
 
+  const hasContinuationMaterial = (session) => {
+    if (!session) return false;
+    return Boolean(
+      String(session.summary || "").trim() ||
+      String(session.next_step_suggestion || "").trim() ||
+      (Array.isArray(session.edge_signals) && session.edge_signals.some(Boolean)) ||
+      (Array.isArray(session.primary_process) && session.primary_process.some(Boolean)) ||
+      (Array.isArray(session.secondary_process) && session.secondary_process.some(Boolean))
+    );
+  };
+
+  // Find the latest *meaningful* completed session in this mode. We deliberately
+  // do not use limit=1: a short/broken test session can otherwise hide an older
+  // session that actually contains the process map and continuation point.
+  const findContinuationSession = async (modeId) => {
+    try {
+      const completedInMode = await base44.entities.Session.filter(
+        { user_id: currentUser.id, status: "completed", mode_id: modeId },
+        "-created_date",
+        50
+      );
+      return (completedInMode || []).find(hasContinuationMaterial) || null;
+    } catch (e) {
+      console.error("[SessionFlow] lookup of continuation session failed:", e?.message);
+      return null;
+    }
+  };
+
+  const offerContinuationOrCreate = async (mode) => {
+    const previous = await findContinuationSession(mode.mode_id);
+    if (previous) {
+      setPendingMode(mode);
+      setLastCompletedForMode(previous);
+      return;
+    }
+    await createSession(mode);
+  };
+
   const handleModeSelect = async (mode) => {
     const modeId = mode.mode_id;
 
@@ -77,29 +115,7 @@ export default function Dashboard() {
       return;
     }
 
-    // No unfinished session — but the user may still have a *completed* session
-    // in this same mode whose theme they'd want to pick back up. Surfacing this
-    // explicitly is what was missing: previously there was no way for the user
-    // to know a previous session's thread could be continued at all.
-    let lastCompleted = null;
-    try {
-      const completedInMode = await base44.entities.Session.filter(
-        { user_id: currentUser.id, status: "completed", mode_id: modeId },
-        "-created_date",
-        1
-      );
-      lastCompleted = completedInMode?.[0] || null;
-    } catch (e) {
-      console.error("[SessionFlow] lookup of last completed session failed:", e?.message);
-    }
-
-    if (lastCompleted && (lastCompleted.summary || lastCompleted.next_step_suggestion)) {
-      setPendingMode(mode);
-      setLastCompletedForMode(lastCompleted);
-      return;
-    }
-
-    await createSession(mode);
+    await offerContinuationOrCreate(mode);
   };
 
   const handleContinueTheme = async () => {
@@ -109,9 +125,11 @@ export default function Dashboard() {
     setPendingMode(null);
     if (!mode || !prev) return;
 
+    // Legacy fallback only. startSession/sessionApi now reconstruct the full
+    // continuation from the previous Session record, including map + edge data.
     const carrySource = prev.next_step_suggestion || prev.summary || "";
     const carryOverContext = carrySource
-      ? `Пользователь возвращается к теме прошлой сессии в этом же направлении. Тогда пришли к следующему: «${carrySource}». Начни с мягкого отсылки к этому и приглашения углубить именно эту тему — не начинай с нуля и не повторяй пройденное.`
+      ? `Пользователь возвращается к теме прошлой сессии в этом же направлении. Тогда пришли к следующему: «${carrySource}». Начни с мягкой отсылки к этому и продолжай со следующего незавершённого слоя — не начинай с нуля и не повторяй пройденное.`
       : "";
 
     await createSession(mode, { continuedFromSessionId: prev.id, carryOverContext });
@@ -131,16 +149,24 @@ export default function Dashboard() {
   };
 
   const handleStartNew = async () => {
+    const mode = pendingMode;
     if (existingActive) {
       await base44.entities.Session.update(existingActive.id, {
         status: "abandoned",
         ended_at: new Date().toISOString(),
       }).catch(() => {});
     }
-    const mode = pendingMode;
     setExistingActive(null);
-    setPendingMode(null);
-    if (mode) await createSession(mode);
+
+    // IMPORTANT: "start new" here only means "do not resume this unfinished
+    // session". It must NOT skip the separate choice to deepen a previously
+    // completed meaningful theme. That bypass caused the continuation dialog to
+    // disappear during testing.
+    if (mode) {
+      await offerContinuationOrCreate(mode);
+    } else {
+      setPendingMode(null);
+    }
   };
 
   /**
@@ -221,6 +247,16 @@ export default function Dashboard() {
     navigate(`/session/${session.id}`);
   };
 
+  const continuationPreview = lastCompletedForMode
+    ? (
+        lastCompletedForMode.next_step_suggestion ||
+        lastCompletedForMode.summary ||
+        (Array.isArray(lastCompletedForMode.edge_signals) ? lastCompletedForMode.edge_signals.filter(Boolean).join("; ") : "") ||
+        (Array.isArray(lastCompletedForMode.secondary_process) ? lastCompletedForMode.secondary_process.filter(Boolean).join("; ") : "") ||
+        (Array.isArray(lastCompletedForMode.primary_process) ? lastCompletedForMode.primary_process.filter(Boolean).join("; ") : "")
+      )
+    : "";
+
   const isLoading = modesLoading || sessionsLoading;
 
   return (
@@ -253,7 +289,7 @@ export default function Dashboard() {
 
       <ContinueThemeDialog
         open={!!lastCompletedForMode}
-        summary={lastCompletedForMode?.next_step_suggestion || lastCompletedForMode?.summary}
+        summary={continuationPreview}
         onContinueTheme={handleContinueTheme}
         onStartNew={handleStartNewTheme}
         onOpenChange={(o) => { if (!o) { setLastCompletedForMode(null); setPendingMode(null); } }}
