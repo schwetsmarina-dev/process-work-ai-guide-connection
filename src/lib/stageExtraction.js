@@ -38,6 +38,55 @@ const FOCUS_SEMANTIC_MARKERS = [
   "me atrae", "la flor", "alegría",
 ];
 
+// Explicit internal figures that often perform the edge function in Process Work.
+// These are INTERNAL runtime labels only. The assistant must still speak to the
+// person in ordinary language and must not call something an "edge" or "edge figure".
+const EDGE_FIGURE_DIRECT_MARKERS = [
+  // RU
+  "внутренний критик", "внутренняя критика", "внутренний цензор",
+  "строгий внутренний голос", "контролирующая часть", "запрещающая часть",
+  "осуждающая часть", "критикующая часть",
+  // ES
+  "crítico interior", "crítica interior", "voz crítica interior",
+  "parte controladora", "parte que prohíbe", "parte crítica",
+];
+
+const EDGE_FIGURE_GENERIC_MARKERS = [
+  // RU — generic figure/voice requires a blocking or prohibiting function too
+  "внутренний голос", "голос внутри", "какая-то часть меня", "часть меня",
+  "внутренняя часть", "голос в голове",
+  // ES
+  "voz interior", "una parte de mí", "parte de mí", "voz en mi cabeza",
+];
+
+const EDGE_FUNCTION_MARKERS = [
+  // RU
+  "запрещает", "не разрешает", "не позволяет", "останавливает", "мешает мне",
+  "мешает", "удерживает", "не пускает", "говорит нельзя", "говорит, что нельзя",
+  "говорит что нельзя", "говорит должна", "говорит, что должна", "говорит должен",
+  "нельзя", "стыдно", "опасно", "не имею права", "не заслуживаю", "критикует",
+  "осуждает", "обесценивает", "требует", "контролирует",
+  // ES
+  "me prohíbe", "no me deja", "no me permite", "me detiene", "me impide",
+  "me frena", "dice que no", "no debo", "debería", "me critica", "me juzga",
+  "me controla", "no lo merezco", "es peligroso", "me da vergüenza",
+];
+
+export function detectEdgeFigure(text) {
+  const raw = String(text || "");
+  const lower = raw.toLowerCase();
+  if (!lower) return null;
+
+  const direct = EDGE_FIGURE_DIRECT_MARKERS.find((mk) => lower.includes(mk));
+  if (direct) return extractSentenceAround(raw, direct) || raw;
+
+  const generic = EDGE_FIGURE_GENERIC_MARKERS.find((mk) => lower.includes(mk));
+  const blocking = EDGE_FUNCTION_MARKERS.some((mk) => lower.includes(mk));
+  if (generic && blocking) return extractSentenceAround(raw, generic) || raw;
+
+  return null;
+}
+
 const INTEGRATION_SEMANTIC_MARKERS = [
   // RU
   "в жизни", "в отношениях", "в работе", "в теле", "это проявляется",
@@ -107,6 +156,7 @@ export function extractStageAnswersFromUserMessages(messages, modeKey = null, de
   let primary_answer = null;
   let secondary_answer = null;
   let selected_focus = null;
+  let edge_figure = null;
   let integration_material = null;
   let closure_signal = null;
 
@@ -134,6 +184,15 @@ export function extractStageAnswersFromUserMessages(messages, modeKey = null, de
       const fm = FOCUS_SEMANTIC_MARKERS.find((mk) => lower.includes(mk));
       if (fm) selected_focus = extractSentenceAround(text, fm) || text;
     }
+
+    // A clearly named internal prohibiting/critical figure is itself meaningful
+    // process material. Treat it as an already-identified active focus instead
+    // of asking the person to remap or repeat the material.
+    if (!edge_figure) {
+      edge_figure = detectEdgeFigure(text);
+      if (edge_figure && !selected_focus) selected_focus = edge_figure;
+    }
+
     if (!integration_material) {
       const im = INTEGRATION_SEMANTIC_MARKERS.find((mk) => lower.includes(mk));
       if (im) integration_material = extractSentenceAround(text, im) || text;
@@ -144,5 +203,13 @@ export function extractStageAnswersFromUserMessages(messages, modeKey = null, de
     }
   }
 
-  return { initial_material, primary_answer, secondary_answer, selected_focus, integration_material, closure_signal };
+  return {
+    initial_material,
+    primary_answer,
+    secondary_answer,
+    selected_focus,
+    edge_figure,
+    integration_material,
+    closure_signal,
+  };
 }
