@@ -2,94 +2,42 @@
   "name": "Message",
   "type": "object",
   "properties": {
-    "session_id": {
-      "type": "string",
-      "description": "Reference to Session"
-    },
-    "user_id": {
-      "type": "string",
-      "description": "Reference to AppUser"
-    },
-    "mode_id": {
-      "type": "string",
-      "description": "Mode at time of message"
-    },
-    "step_number": {
-      "type": "number",
-      "description": "Step number at time of message"
-    },
+    "session_id": { "type": "string", "description": "Reference to Session" },
+    "user_id": { "type": "string", "description": "Authenticated Base44 user id that owns the parent session" },
+    "mode_id": { "type": "string", "description": "Mode at time of message" },
+    "step_number": { "type": "number", "description": "Step number at time of message" },
     "role": {
       "type": "string",
-      "enum": [
-        "user",
-        "assistant",
-        "system"
-      ]
+      "enum": ["user", "assistant", "system"]
     },
-    "content": {
-      "type": "string"
-    },
-    "created_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "safety_flag": {
-      "type": "boolean",
-      "default": false
-    }
+    "content": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "safety_flag": { "type": "boolean", "default": false }
   },
-  "required": [
-    "session_id",
-    "role",
-    "content"
-  ],
+  "required": ["session_id", "role", "content"],
   "rls": {
     "create": {
       "$or": [
-        {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
+        { "data.user_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } }
       ]
     },
     "read": {
       "$or": [
-        {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
+        { "data.user_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } }
       ]
     },
     "update": {
       "$or": [
-        {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
+        { "data.user_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } }
       ]
     },
     "delete": {
       "$or": [
-        {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
+        { "data.user_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } }
       ]
     }
   }
