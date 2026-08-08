@@ -1,5 +1,5 @@
 import { base44 } from "@/api/base44Client";
-import { COMPLETION_SIGNALS, detectCompletionState } from "@/lib/sessionSignals";
+import { detectCompletionState } from "@/lib/sessionSignals";
 import { SYSTEM_PROMPT } from "@/lib/systemPrompt";
 import {
   extractStageAnswersFromUserMessages,
