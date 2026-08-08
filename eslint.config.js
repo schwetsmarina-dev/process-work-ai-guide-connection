@@ -19,6 +19,7 @@ export default [
       "src/lib/sessionApi.js",
       "src/lib/messageApi.js",
       "src/lib/userMemory.js",
+      "src/lib/sessionAI.js",
     ],
     ignores: ["src/components/ui/**/*"],
     ...pluginJs.configs.recommended,
