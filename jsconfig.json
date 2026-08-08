@@ -29,7 +29,8 @@
     "src/lib/sessionApi.js",
     "src/lib/messageApi.js",
     "src/lib/userMemory.js",
-    "src/lib/sessionAI.js"
+    "src/lib/sessionAI.js",
+    "src/lib/systemPrompt.js"
   ],
   "exclude": [
     "node_modules",
