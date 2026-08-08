@@ -1,27 +1,75 @@
 import fs from 'node:fs';
 
-const bpPath = 'src/lib/bodyProcess.js';
-let bp = fs.readFileSync(bpPath, 'utf8');
-const oldId = `const IDENTIFICATION_ASSISTANT = [\n  "стань этим", "побудь этим", "если ты —", "если ты становишься", "попробуй быть этим", "войти в этот образ",\n  "войти в это ощущение", "представь, что ты —", "sé eso", "si tú eres", "conviértete en",\n];`;
-const newId = `const IDENTIFICATION_ASSISTANT = [\n  "стань эт", "стать эт", "побудь эт", "если ты —", "если ты становишься", "если ты сейчас", "попробуй быть эт",\n  "попробуй на мгновение стать", "войти в этот образ", "войти в эту", "войти в это ощущение", "представь, что ты —",\n  "sé eso", "si tú eres", "si ahora eres", "conviértete en",\n];`;
-if (!bp.includes(oldId)) throw new Error('IDENTIFICATION_ASSISTANT block not found');
-bp = bp.replace(oldId, newId);
-fs.writeFileSync(bpPath, bp);
-
 const aiPath = 'src/lib/sessionAI.js';
 let ai = fs.readFileSync(aiPath, 'utf8');
-const oldIdx = `  const secondaryAnswerIndex = messages.findLastIndex((m) => m.role === "user" && mappingStage.secondary_answer && m.content.includes(mappingStage.secondary_answer.substring(0, 30)));\n  const messagesAfterSecondary = secondaryAnswerIndex >= 0 ? messages.slice(secondaryAnswerIndex + 1) : [];`;
-const newIdx = `  const secondaryAnswerIndex = modeKey === "body"\n    ? -1\n    : messages.findLastIndex((m) => m.role === "user" && mappingStage.secondary_answer && m.content.includes(mappingStage.secondary_answer.substring(0, 30)));\n  const messagesAfterSecondary = secondaryAnswerIndex >= 0 ? messages.slice(secondaryAnswerIndex + 1) : [];`;
-if (!ai.includes(oldIdx)) throw new Error('secondaryAnswerIndex block not found');
-ai = ai.replace(oldIdx, newIdx);
 
-const warningOld = `  if (mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer && !assistantReflectedMap) {`;
-const warningNew = `  if (modeKey !== "body" && mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer && !assistantReflectedMap) {`;
-if (!ai.includes(warningOld)) throw new Error('energy selection warning block not found');
-ai = ai.replace(warningOld, warningNew);
+const relatedFn = `async function fetchRelatedTerms(relatedTermIds) {
+  if (!relatedTermIds) return [];
+  const ids = relatedTermIds.split(";").map((s) => s.trim()).filter(Boolean);
+  if (!ids.length) return [];
+  const results = await Promise.all(
+    ids.map((tid) => base44.entities.Term.filter({ term_id: tid }))
+  );
+  return results.flat();
+}`;
 
-const contextOld = `  const mappingCompleteContext = mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer`;
-const contextNew = `  const mappingCompleteContext = modeKey !== "body" && mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer`;
-if (!ai.includes(contextOld)) throw new Error('mappingCompleteContext block not found');
-ai = ai.replace(contextOld, contextNew);
+const bodyChannelsFn = `${relatedFn}
+
+// BODY CHANNELS: authoritative channel definitions come from the Term table, not hardcoded prompt theory.
+// We load all Term rows and select the six Process Work channels by name/key/tags/aliases.
+async function fetchBodyChannelTerms() {
+  let all = [];
+  try {
+    all = await base44.entities.Term.list("term", 500);
+  } catch (e) {
+    console.error(\`[BODY_CHANNEL_TERMS] Term.list failed: \${e.message}\`);
+    return [];
+  }
+
+  const channelGroups = [
+    ["visual", "визуаль", "visual channel", "канал зрения"],
+    ["propriocept", "проприоцеп", "proprioceptive channel", "телесный канал"],
+    ["auditory", "аудиаль", "слухов", "auditory channel"],
+    ["relationship", "отношен", "relationship channel", "relational"],
+    ["movement", "движен", "movement channel", "kinesthetic"],
+    ["world", "миров", "world channel", "канал мира"],
+  ];
+
+  const haystack = (t) => [
+    t.term, t.term_id, t.latin_key, t.category, t.short_definition,
+    t.practical_application, t.related_terms, t.search_tags, t.aliases, t.notes,
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  const selected = [];
+  for (const group of channelGroups) {
+    const hit = all.find((t) => group.some((needle) => haystack(t).includes(needle)));
+    if (hit && !selected.some((x) => x.id === hit.id || x.term_id === hit.term_id)) selected.push(hit);
+  }
+
+  console.log("[BODY_CHANNEL_TERMS]", {
+    found: selected.length,
+    channels: selected.map((t) => t.term || t.latin_key || t.term_id),
+  });
+  return selected;
+}`;
+
+if (!ai.includes('async function fetchBodyChannelTerms()')) {
+  if (!ai.includes(relatedFn)) throw new Error('fetchRelatedTerms block not found');
+  ai = ai.replace(relatedFn, bodyChannelsFn);
+}
+
+const oldTerms = `  const terms = await fetchRelatedTerms(step?.related_term_ids);`;
+const newTerms = `  const terms = modeKey === "body"
+    ? await fetchBodyChannelTerms()
+    : await fetchRelatedTerms(step?.related_term_ids);`;
+if (ai.includes(oldTerms)) ai = ai.replace(oldTerms, newTerms);
+else if (!ai.includes('modeKey === "body"\n    ? await fetchBodyChannelTerms()')) throw new Error('terms loading block not found');
+
+const oldHeader = `    ? "\\n\\nРелевантные концепции Process Work (используй ТОЛЬКО внутренне, чтобы выбрать правильный тип вмешательства):\\n" +`;
+const newHeader = `    ? (modeKey === "body"
+        ? "\\n\\nШЕСТЬ КАНАЛОВ PROCESS WORK — определения загружены из таблицы Term. Используй их внутренне при разворачивании образа X; канал описывает способ восприятия/проявления образа и НЕ заменяет сам образ:\\n"
+        : "\\n\\nРелевантные концепции Process Work (используй ТОЛЬКО внутренне, чтобы выбрать правильный тип вмешательства):\\n") +`;
+if (ai.includes(oldHeader)) ai = ai.replace(oldHeader, newHeader);
+else if (!ai.includes('ШЕСТЬ КАНАЛОВ PROCESS WORK')) throw new Error('terms context header not found');
+
 fs.writeFileSync(aiPath, ai);
