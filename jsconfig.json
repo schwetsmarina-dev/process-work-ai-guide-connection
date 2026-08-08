@@ -25,7 +25,10 @@
     "src/lib/sessionSignals.js",
     "src/lib/sessionValidation.js",
     "src/lib/modeStepIntegrity.js",
-    "src/lib/summaryFallback.js"
+    "src/lib/summaryFallback.js",
+    "src/lib/sessionApi.js",
+    "src/lib/messageApi.js",
+    "src/lib/userMemory.js"
   ],
   "exclude": [
     "node_modules",
