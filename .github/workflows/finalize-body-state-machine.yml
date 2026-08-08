@@ -1,0 +1,72 @@
+name: Finalize body state machine
+on:
+  push:
+    paths:
+      - '.github/workflows/finalize-body-state-machine.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Patch Body invariants
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          bp = Path('src/lib/bodyProcess.js')
+          s = bp.read_text()
+          old = '''const IDENTIFICATION_ASSISTANT = [
+  "стань этим", "побудь этим", "если ты —", "если ты становишься", "попробуй быть этим", "войти в этот образ",
+  "войти в это ощущение", "представь, что ты —", "sé eso", "si tú eres", "conviértete en",
+];'''
+          new = '''const IDENTIFICATION_ASSISTANT = [
+  "стань эт", "стать эт", "побудь эт", "если ты —", "если ты становишься", "если ты сейчас", "попробуй быть эт",
+  "попробуй на мгновение стать", "войти в этот образ", "войти в эту", "войти в это ощущение", "представь, что ты —",
+  "sé eso", "si tú eres", "si ahora eres", "conviértete en",
+];'''
+          if old not in s:
+              raise SystemExit('IDENTIFICATION_ASSISTANT block not found')
+          bp.write_text(s.replace(old, new, 1))
+
+          p = Path('src/lib/sessionAI.js')
+          t = p.read_text()
+
+          # Generic primary/secondary energy-selection belongs to dream/conflict/journaling, never Body.
+          old = '''  const secondaryAnswerIndex = messages.findLastIndex((m) => m.role === "user" && mappingStage.secondary_answer && m.content.includes(mappingStage.secondary_answer.substring(0, 30)));
+  const messagesAfterSecondary = secondaryAnswerIndex >= 0 ? messages.slice(secondaryAnswerIndex + 1) : [];'''
+          new = '''  const secondaryAnswerIndex = modeKey === "body"
+    ? -1
+    : messages.findLastIndex((m) => m.role === "user" && mappingStage.secondary_answer && m.content.includes(mappingStage.secondary_answer.substring(0, 30)));
+  const messagesAfterSecondary = secondaryAnswerIndex >= 0 ? messages.slice(secondaryAnswerIndex + 1) : [];'''
+          if old not in t:
+              raise SystemExit('secondaryAnswerIndex block not found')
+          t = t.replace(old, new, 1)
+
+          old = '''  if (mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer && !assistantReflectedMap) {'''
+          new = '''  if (modeKey !== "body" && mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer && !assistantReflectedMap) {'''
+          if old not in t:
+              raise SystemExit('energy selection warning block not found')
+          t = t.replace(old, new, 1)
+
+          old = '''  const mappingCompleteContext = mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer'''
+          new = '''  const mappingCompleteContext = modeKey !== "body" && mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer'''
+          if old not in t:
+              raise SystemExit('mappingCompleteContext block not found')
+          t = t.replace(old, new, 1)
+
+          p.write_text(t)
+          PY
+      - name: Verify Body wiring
+        run: |
+          grep -q 'if (modeKey === "body") return detectBodyProcessStage(messages);' src/lib/sessionAI.js
+          grep -q 'modeKey !== "body" && mappingStageComplete' src/lib/sessionAI.js
+          grep -q '"стать эт"' src/lib/bodyProcess.js
+      - name: Commit
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/lib/bodyProcess.js src/lib/sessionAI.js
+          git commit -m 'Finalize dedicated Body process flow'
+          git push
