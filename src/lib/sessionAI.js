@@ -1,6 +1,7 @@
 import { base44 } from "@/api/base44Client";
 import { detectCompletionState } from "@/lib/sessionSignals";
 import { SYSTEM_PROMPT } from "@/lib/systemPrompt";
+import { detectBodyProcessStage, buildBodyStageInstruction } from "@/lib/bodyProcess";
 import {
   extractStageAnswersFromUserMessages,
   detectUserAlreadyAnswered,
@@ -125,14 +126,14 @@ export function getModeKey(modeId) {
 
 const PRIMARY_QUESTION_MARKERS = {
   dream:      ["откликается с твоей реальной жизнью", "привычными чувствами", "знакомыми ситуациями", "больше всего откликается"],
-  body:       ["как ты обычно объясняешь", "понятно, знакомо", "связано с твоей обычной жизнью"],
+  body:       [],
   conflict:   ["более привычная, знакомая", "ближе к тому, как ты обычно"],
   journaling: ["уже понятно, знакомо", "похоже на твой обычный способ"],
 };
 
 const SECONDARY_QUESTION_MARKERS = {
   dream:      ["самым странным", "новым, непривычным", "заряженным", "совсем не похожим на тебя"],
-  body:       ["странное, необычное", "неожиданное", "не совсем твоё"],
+  body:       [],
   conflict:   ["более новая, непривычная", "труднее принимается", "больше напряжения"],
   journaling: ["новым, странным, живым", "тревожащим, непривычным", "пока не до конца понятным"],
 };
@@ -302,6 +303,10 @@ const INITIAL_MATERIAL_STAGE = {
 export function detectProcessMappingStage(messages, modeId) {
   const modeKey = getModeKey(modeId);
   if (!modeKey) return { stage: "complete", primary_answer: null, secondary_answer: null, dream_shared: true };
+
+  // BODY IS STRUCTURALLY DIFFERENT: small u (primary) -> X -> big U (secondary).
+  // Never run body through the generic familiar-vs-unfamiliar primary/secondary questionnaire.
+  if (modeKey === "body") return detectBodyProcessStage(messages);
 
   const primaryMarkers = PRIMARY_QUESTION_MARKERS[modeKey] || [];
   const secondaryMarkers = SECONDARY_QUESTION_MARKERS[modeKey] || [];
@@ -929,7 +934,9 @@ export async function getAIResponse(session, step, messages, userMessage, langua
 
   const needsMapping = !mappingStageComplete && !isIntegrationStage;
 
-  const forcedNext = isIntegrationStage
+  const forcedNext = modeKeyEarly === "body"
+    ? null
+    : isIntegrationStage
     ? null
     : needsMapping
     ? null
@@ -957,20 +964,23 @@ export async function getAIResponse(session, step, messages, userMessage, langua
   };
   const PRIMARY_QUESTIONS = {
     dream:      "Что из этого сна больше всего откликается с твоей реальной жизнью, привычными чувствами или знакомыми ситуациями?",
-    body:       "Как ты обычно объясняешь это ощущение? Что в нём для тебя понятно, знакомо или связано с твоей обычной жизнью?",
+    body:       "",
     conflict:   "Какая из этих сторон для тебя более привычная, знакомая или ближе к тому, как ты обычно себя ведёшь?",
     journaling: "Что в этой ситуации для тебя уже понятно, знакомо или похоже на твой обычный способ реагировать?",
   };
   const SECONDARY_QUESTIONS = {
     dream:      "А что в этом сне кажется тебе самым странным, новым, непривычным, заряженным или совсем не похожим на тебя?",
-    body:       "А что в этом телесном ощущении странное, необычное, непонятное, неожиданное или как будто не совсем твоё?",
+    body:       "",
     conflict:   "Какая сторона более новая, непривычная, труднее принимается или вызывает больше напряжения?",
     journaling: "А что здесь кажется новым, странным, живым, тревожащим, непривычным или пока не до конца понятным?",
   };
 
   let mappingStageInstruction = "";
 
-  if (isDreamAlreadyTold) {
+  if (modeKey === "body" && !mappingStageComplete) {
+    mappingStageInstruction = buildBodyStageInstruction(mappingStage, language);
+  }
+  else if (isDreamAlreadyTold) {
     const priorUserMessages = messages
       .filter((m) => m.role === "user")
       .map((m) => m.content)
