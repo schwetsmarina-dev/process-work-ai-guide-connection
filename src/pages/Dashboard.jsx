@@ -35,7 +35,6 @@ export default function Dashboard() {
     })();
   }, []);
 
-  // Load active modes from DB
   const { data: modes = [], isLoading: modesLoading } = useQuery({
     queryKey: ["modes-active"],
     queryFn: () => base44.entities.Mode.filter({ is_active: true }, "sort_order"),
@@ -43,13 +42,10 @@ export default function Dashboard() {
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
     queryKey: ["sessions", currentUser?.email],
-    // Ownership uses `user_id`, not created_by — created_by is stamped with
-    // the SERVICE ROLE's identity since sessions are created server-side.
     queryFn: () => base44.entities.Session.filter({ user_id: currentUser.id }, "-created_date", 10),
     enabled: !!currentUser?.id,
   });
 
-  // Full completed-session history for the consistency calendar
   const { data: completedSessions = [] } = useQuery({
     queryKey: ["sessions-completed", currentUser?.email],
     queryFn: () =>
@@ -76,9 +72,6 @@ export default function Dashboard() {
     );
   };
 
-  // Find the latest *meaningful* completed session in this mode. We deliberately
-  // do not use limit=1: a short/broken test session can otherwise hide an older
-  // session that actually contains the process map and continuation point.
   const findContinuationSession = async (modeId) => {
     try {
       const completedInMode = await base44.entities.Session.filter(
@@ -106,7 +99,9 @@ export default function Dashboard() {
   const handleModeSelect = async (mode) => {
     const modeId = mode.mode_id;
 
-    // Guard: if an active session already exists for this user+mode, ask before creating
+    // FLOW A: unfinished session. This is only about resuming or discarding
+    // the currently active session. It is intentionally separate from
+    // FLOW B (deepening a completed past theme).
     const existing = sessions.find((s) => s.status === "active" && (s.mode_id || s.mode) === modeId);
     if (existing) {
       console.log("[SessionFlow] existing active session found for mode:", modeId, "→", existing.id);
@@ -115,6 +110,8 @@ export default function Dashboard() {
       return;
     }
 
+    // FLOW B: no unfinished session exists, so now we may offer to deepen a
+    // meaningful COMPLETED session. This is a different action/state.
     await offerContinuationOrCreate(mode);
   };
 
@@ -125,11 +122,9 @@ export default function Dashboard() {
     setPendingMode(null);
     if (!mode || !prev) return;
 
-    // Legacy fallback only. startSession/sessionApi now reconstruct the full
-    // continuation from the previous Session record, including map + edge data.
     const carrySource = prev.next_step_suggestion || prev.summary || "";
     const carryOverContext = carrySource
-      ? `Пользователь возвращается к теме прошлой сессии в этом же направлении. Тогда пришли к следующему: «${carrySource}». Начни с мягкой отсылки к этому и продолжай со следующего незавершённого слоя — не начинай с нуля и не повторяй пройденное.`
+      ? `Пользователь возвращается к теме прошлой завершённой сессии. Тогда пришли к следующему: «${carrySource}». Продолжай со следующего незавершённого слоя — не начинай с нуля и не повторяй пройденное.`
       : "";
 
     await createSession(mode, { continuedFromSessionId: prev.id, carryOverContext });
@@ -156,17 +151,15 @@ export default function Dashboard() {
         ended_at: new Date().toISOString(),
       }).catch(() => {});
     }
-    setExistingActive(null);
 
-    // IMPORTANT: "start new" here only means "do not resume this unfinished
-    // session". It must NOT skip the separate choice to deepen a previously
-    // completed meaningful theme. That bypass caused the continuation dialog to
-    // disappear during testing.
-    if (mode) {
-      await offerContinuationOrCreate(mode);
-    } else {
-      setPendingMode(null);
-    }
+    setExistingActive(null);
+    setPendingMode(null);
+
+    // "Начать новую" in the unfinished-session dialog means exactly that:
+    // discard the unfinished session and start a fresh one. Do NOT inject a
+    // completed-session continuation dialog here. The user can choose the mode
+    // again later to get the separate "deepen previous completed theme" offer.
+    if (mode) await createSession(mode);
   };
 
   /**
@@ -179,12 +172,10 @@ export default function Dashboard() {
 
     console.log("[SessionFlow] mode selected:", modeId, "looking up step_key:", stepKey);
 
-    // Load all steps for mode — bulletproof check before creating session
     let allModeSteps = [];
     try {
       allModeSteps = await base44.entities.ModeStep.filter({ mode_id: modeId });
     } catch (e) {
-      // Permissions issue — try listing all
       try {
         const all = await base44.entities.ModeStep.list("step_number", 500);
         allModeSteps = all.filter((s) => String(s.mode_id || "").trim() === modeId);
@@ -226,7 +217,6 @@ export default function Dashboard() {
 
     const result = await startSession(modeId, { continuedFromSessionId, carryOverContext });
     if (result.blocked) {
-      // Free trial for this mode is used up. The server decided this, not us.
       setQuotaBlockedMode(modeId);
       return;
     }
@@ -270,7 +260,6 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Admin quick-access panel */}
       {isAdmin && <AdminPanel />}
 
       {quotaBlockedMode && (
@@ -296,7 +285,6 @@ export default function Dashboard() {
         lang={lang}
       />
 
-      {/* Active session banner */}
       {activeSession && (
         <div className="mb-8 p-5 rounded-2xl border-2 border-primary/20 bg-primary/5">
           <div className="flex items-center justify-between">
@@ -313,7 +301,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Mode selection */}
       {modesLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -336,19 +323,16 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Talvira Pro — practices assigned by the client's therapist */}
       {currentUser?.email && (
         <div className="mb-12">
           <SuggestedPractices clientEmail={currentUser.email} />
         </div>
       )}
 
-      {/* Consistency calendar */}
       {completedSessions.length > 0 && (
         <ConsistencyCalendar sessions={completedSessions} lang={lang} />
       )}
 
-      {/* Recent sessions */}
       {sessionsLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
