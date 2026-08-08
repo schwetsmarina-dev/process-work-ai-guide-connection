@@ -25,30 +25,59 @@ const CLIENT_TOKEN = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
 const ENV = import.meta.env.VITE_PADDLE_ENV || "sandbox";
 const CDN = "https://cdn.paddle.com/paddle/v2/paddle.js";
 
+/**
+ * Minimal surface of the Paddle browser SDK used by this module.
+ * Keeping this local avoids weakening typechecking for the rest of the app.
+ * @typedef {{
+ *   Environment: { set: (environment: string) => void },
+ *   Initialize: (options: { token: string, eventCallback: (event: { name?: string } | undefined) => void }) => void,
+ *   Checkout: { open: (options: object) => void }
+ * }} PaddleBrowserSdk
+ */
+
+/** @returns {PaddleBrowserSdk | undefined} */
+function readPaddleGlobal() {
+  return /** @type {Window & { Paddle?: PaddleBrowserSdk }} */ (window).Paddle;
+}
+
 // The overlay's completion handler is set per-open but delivered through the
 // single global eventCallback Paddle v2 expects, so we route it via this ref.
+/** @type {(() => void) | null} */
 let onCompleteRef = null;
+/** @type {Promise<PaddleBrowserSdk> | null} */
 let paddlePromise = null;
 
+/** @returns {Promise<PaddleBrowserSdk>} */
 function loadScript() {
   return new Promise((resolve, reject) => {
-    if (window.Paddle) return resolve(window.Paddle);
+    const loaded = readPaddleGlobal();
+    if (loaded) return resolve(loaded);
+
     const existing = document.querySelector(`script[src="${CDN}"]`);
     if (existing) {
-      existing.addEventListener("load", () => resolve(window.Paddle));
+      existing.addEventListener("load", () => {
+        const Paddle = readPaddleGlobal();
+        if (Paddle) resolve(Paddle);
+        else reject(new Error("Paddle SDK loaded but window.Paddle is unavailable"));
+      });
       existing.addEventListener("error", reject);
       return;
     }
+
     const s = document.createElement("script");
     s.src = CDN;
     s.async = true;
-    s.onload = () => resolve(window.Paddle);
+    s.onload = () => {
+      const Paddle = readPaddleGlobal();
+      if (Paddle) resolve(Paddle);
+      else reject(new Error("Paddle SDK loaded but window.Paddle is unavailable"));
+    };
     s.onerror = reject;
     document.head.appendChild(s);
   });
 }
 
-/** Load + initialise Paddle once. Resolves to window.Paddle. */
+/** Load + initialise Paddle once. Resolves to the Paddle browser SDK. */
 export async function getPaddle() {
   if (!CLIENT_TOKEN) {
     throw new Error("VITE_PADDLE_CLIENT_TOKEN is not set");
