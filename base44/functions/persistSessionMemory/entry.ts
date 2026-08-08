@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-const MEMORY_LIMIT = 20;
+const MEMORY_LIMIT = 40;
 
 // Analyze the session transcript via Claude → structured memory items.
 // Silent: any failure returns [] and logs, never throws.
@@ -24,16 +24,16 @@ async function extractMemories(base44, messages) {
 
 КРИТИЧЕСКОЕ ПРАВИЛО ФОРМУЛИРОВОК (СТРОГО): НИКОГДА не используй слова «пользователь», «человек», «он», «она» как подлежащее. Каждое значение — короткая безличная фраза от третьего лица БЕЗ подлежащего, как заметка о человеке.
 Например: «Избегает телесного контакта», «Чувствует тревогу при финансовых решениях», «Склонен к самокритике», «Замечает паттерн избегания», «Осознал, что...».
-СТРОГО ЗАПРЕЩЕНО начинать фразу со слов «Пользователь», «Человек», «Он», «Она» (например НЕЛЬЗЯ: «Пользователь испытывает...», «Пользователь осознал...»).
+СТРОГО ЗАПРЕЩЕНО начинать фразу со слов «Пользователь», «Человек», «Он», «Она».
 
-ВАЖНО ПРО ЯЗЫК: пиши значения на том же языке, на котором говорил человек в сессии (русский или испанский). Если сессия на испанском — то же правило: НИКОГДА не начинай с «El usuario», «La persona», «Él», «Ella». Пиши безличными фразами от третьего лица без подлежащего (например: «Evita el contacto físico», «Siente ansiedad ante decisiones financieras», «Tiende a la autocrítica»).
+ВАЖНО ПРО ЯЗЫК: пиши значения на том же языке, на котором говорил человек в сессии (русский или испанский). Если сессия на испанском — то же правило: НИКОГДА не начинай с «El usuario», «La persona», «Él», «Ella».
 
 Поля:
 - insights: ключевые открытия/осознания пользователя
 - patterns: повторяющиеся паттерны реакций или поведения
 - themes: темы, которые поднимал пользователь (всегда заполняй, если есть содержание)
 - body_signals: телесные сигналы, если упоминались
-- edge: описание края/сопротивления, если был, иначе пустая строка
+- edge: описание края/сопротивления ИЛИ краевой фигуры. Внутренний критик, внутренний запрещающий/контролирующий голос или часть, которая «не разрешает», «мешает», «останавливает», «критикует», — это значимый edge и должен быть сохранён здесь.
 - progress: одной фразой — в чём продвинулся пользователь (всегда заполняй, если была беседа)
 
 Сессия:
@@ -69,7 +69,6 @@ ${conversation}`,
     progress: !!result.progress,
   });
 
-  // Remove leading impersonal subject (RU: Пользователь/Человек/Он/Она, ES: El usuario/La persona/Él/Ella) from each phrase.
   const stripSubject = (s) =>
     String(s || '')
       .replace(/(^|;\s*)(пользовател[ьяюе]|человек|он|она)\s+/giu, (_m, sep) => sep)
@@ -98,7 +97,6 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
 
     const body = await req.json().catch(() => ({}));
-    // Accept session_id directly OR an entity-automation payload { event: { entity_id } }
     const sessionId = body.session_id || body.event?.entity_id;
 
     if (!sessionId) {
@@ -107,7 +105,6 @@ Deno.serve(async (req) => {
 
     console.log('[persistSessionMemory] START session:', sessionId);
 
-    // ── Load session (service role — works for automations and any user) ──────
     const sessions = await base44.asServiceRole.entities.Session.filter({ id: sessionId });
     const session = sessions[0];
     if (!session) {
@@ -120,10 +117,6 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'not_completed' });
     }
 
-    // user_id = the User who owns this session (consistent with UserMemory RLS data.user_id == user.id).
-    // NOTE: do NOT use created_by_id here — it's stamped with the SERVICE
-    // ROLE's identity since sessions are created server-side (startSession),
-    // so it never points at the real owner.
     const userId = session.user_id;
     if (!userId) {
       console.warn('[persistSessionMemory] session has no user_id — cannot attribute memory');
@@ -131,14 +124,15 @@ Deno.serve(async (req) => {
     }
     console.log('[persistSessionMemory] owner user_id:', userId, 'mode:', session.mode_id || session.mode);
 
-    // ── Idempotency: skip if memory already saved for this session ────────────
+    // Idempotency is per source session. Crucially, memories from a NEW session
+    // must not overwrite an older session merely because both have memory_key="edge"
+    // or memory_key="themes". Historical process material is longitudinal data.
     const already = await base44.asServiceRole.entities.UserMemory.filter({ source_session_id: sessionId });
     if (already.length > 0) {
       console.log('[persistSessionMemory] memory already exists for session — skipping');
       return Response.json({ skipped: true, reason: 'already_saved', count: already.length });
     }
 
-    // ── Step А: collect all messages of this session ──────────────────────────
     const messages = await base44.asServiceRole.entities.Message.filter({ session_id: sessionId }, 'created_at', 500);
     const userMessages = messages.filter((m) => m.role === 'user');
     console.log('[persistSessionMemory] Step А: messages', messages.length, 'user messages', userMessages.length);
@@ -147,7 +141,6 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'no_user_messages' });
     }
 
-    // ── Steps Б+В: analyze ────────────────────────────────────────────────────
     const items = await extractMemories(base44, messages);
     console.log('[persistSessionMemory] extracted items:', items.length, items.map((i) => i.memory_key));
     if (items.length === 0) {
@@ -155,57 +148,34 @@ Deno.serve(async (req) => {
       return Response.json({ saved: 0 });
     }
 
-    // ── Existing memories for dedupe by memory_key ────────────────────────────
-    const existing = await base44.asServiceRole.entities.UserMemory.filter({ user_id: userId });
-    const byKey = {};
-    for (const row of existing) {
-      const prev = byKey[row.memory_key];
-      if (!prev || new Date(row.updated_at || row.created_date) > new Date(prev.updated_at || prev.created_date)) {
-        byKey[row.memory_key] = row;
-      }
-    }
-
     const now = new Date().toISOString();
     let savedCount = 0;
 
-    // ── Steps Г+Д: create or update ───────────────────────────────────────────
+    // One row per (session, memory_key). Never destructively replace a memory
+    // from another session. This is what previously made older themes such as
+    // an internal critic disappear after later sessions were completed.
     for (const item of items) {
       if (!item.memory_value || !item.memory_key) continue;
-      const target = byKey[item.memory_key];
       try {
-        if (target) {
-          await base44.asServiceRole.entities.UserMemory.update(target.id, {
-            memory_value: item.memory_value,
-            memory_type: item.memory_type || target.memory_type,
-            source_session_id: sessionId,
-            source_mode_id: session.mode_id || session.mode || null,
-            importance: 'medium',
-            is_active: true,
-            updated_at: now,
-          });
-          console.log('[persistSessionMemory] updated memory_key:', item.memory_key);
-        } else {
-          await base44.asServiceRole.entities.UserMemory.create({
-            user_id: userId,
-            memory_type: item.memory_type || item.memory_key,
-            memory_key: item.memory_key,
-            memory_value: item.memory_value,
-            source_session_id: sessionId,
-            source_mode_id: session.mode_id || session.mode || null,
-            importance: 'medium',
-            is_active: true,
-            created_at: now,
-            updated_at: now,
-          });
-          console.log('[persistSessionMemory] created memory_key:', item.memory_key);
-        }
+        await base44.asServiceRole.entities.UserMemory.create({
+          user_id: userId,
+          memory_type: item.memory_type || item.memory_key,
+          memory_key: item.memory_key,
+          memory_value: item.memory_value,
+          source_session_id: sessionId,
+          source_mode_id: session.mode_id || session.mode || null,
+          importance: item.memory_key === 'edge' ? 'high' : 'medium',
+          is_active: true,
+          created_at: now,
+          updated_at: now,
+        });
         savedCount++;
+        console.log('[persistSessionMemory] created historical memory:', item.memory_key);
       } catch (writeErr) {
         console.error('[persistSessionMemory] write failed for', item.memory_key, '—', writeErr?.message);
       }
     }
 
-    // ── Enforce limit: deactivate oldest active beyond MEMORY_LIMIT ────────────
     const active = await base44.asServiceRole.entities.UserMemory.filter(
       { user_id: userId, is_active: true },
       '-updated_at',
@@ -217,10 +187,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log('[persistSessionMemory] DONE — saved/updated:', savedCount, 'for session:', sessionId);
+    console.log('[persistSessionMemory] DONE — saved:', savedCount, 'for session:', sessionId);
     return Response.json({ saved: savedCount, session_id: sessionId, user_id: userId });
   } catch (error) {
-    // Never surface errors to the user-facing flow.
     console.error('[persistSessionMemory] fatal (silent):', error?.message, String(error));
     return Response.json({ error: error.message }, { status: 500 });
   }
