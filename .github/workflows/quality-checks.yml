@@ -35,5 +35,5 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
-      - name: Security audit (critical)
-        run: npm audit --audit-level=critical
+      - name: Security audit (high)
+        run: npm audit --audit-level=high
