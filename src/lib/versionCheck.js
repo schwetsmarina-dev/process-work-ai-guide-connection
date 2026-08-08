@@ -49,8 +49,8 @@ async function fetchServerFingerprint() {
 // Don't reload out from under someone actively typing in a session.
 function isUserBusy() {
   const el = document.activeElement;
-  if (el && (el.tagName === "TEXTAREA" || el.tagName === "INPUT")) {
-    if (el.value && el.value.trim().length > 0) return true;
+  if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) {
+    if (el.value.trim().length > 0) return true;
   }
   return false;
 }
