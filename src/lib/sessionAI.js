@@ -111,6 +111,44 @@ async function fetchRelatedTerms(relatedTermIds) {
   return results.flat();
 }
 
+// BODY CHANNELS: authoritative channel definitions come from the Term table, not hardcoded prompt theory.
+// We load all Term rows and select the six Process Work channels by name/key/tags/aliases.
+async function fetchBodyChannelTerms() {
+  let all = [];
+  try {
+    all = await base44.entities.Term.list("term", 500);
+  } catch (e) {
+    console.error(`[BODY_CHANNEL_TERMS] Term.list failed: ${e.message}`);
+    return [];
+  }
+
+  const channelGroups = [
+    ["visual", "визуаль", "visual channel", "канал зрения"],
+    ["propriocept", "проприоцеп", "proprioceptive channel", "телесный канал"],
+    ["auditory", "аудиаль", "слухов", "auditory channel"],
+    ["relationship", "отношен", "relationship channel", "relational"],
+    ["movement", "движен", "movement channel", "kinesthetic"],
+    ["world", "миров", "world channel", "канал мира"],
+  ];
+
+  const haystack = (t) => [
+    t.term, t.term_id, t.latin_key, t.category, t.short_definition,
+    t.practical_application, t.related_terms, t.search_tags, t.aliases, t.notes,
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  const selected = [];
+  for (const group of channelGroups) {
+    const hit = all.find((t) => group.some((needle) => haystack(t).includes(needle)));
+    if (hit && !selected.some((x) => x.id === hit.id || x.term_id === hit.term_id)) selected.push(hit);
+  }
+
+  console.log("[BODY_CHANNEL_TERMS]", {
+    found: selected.length,
+    channels: selected.map((t) => t.term || t.latin_key || t.term_id),
+  });
+  return selected;
+}
+
 // ─── Main AI response ────────────────────────────────────────────────────────
 // SYSTEM_PROMPT is imported from @/lib/systemPrompt
 
@@ -1272,12 +1310,16 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
       `ES: «Si esto sigue expandiéndose, ¿qué ocurre después?» / «¿Qué se vuelve posible cuando hay en ti esta luz, abundancia y crecimiento?»`
     : "";
 
-  const terms = await fetchRelatedTerms(step?.related_term_ids);
+  const terms = modeKey === "body"
+    ? await fetchBodyChannelTerms()
+    : await fetchRelatedTerms(step?.related_term_ids);
   if (terms.length) {
     console.log("[TERMS_CONTEXT_LOADED]", { count: terms.length, term_names: terms.map((t) => t.term) });
   }
   const termsContext = terms.length
-    ? "\n\nРелевантные концепции Process Work (используй ТОЛЬКО внутренне, чтобы выбрать правильный тип вмешательства):\n" +
+    ? (modeKey === "body"
+        ? "\n\nШЕСТЬ КАНАЛОВ PROCESS WORK — определения загружены из таблицы Term. Используй их внутренне при разворачивании образа X; канал описывает способ восприятия/проявления образа и НЕ заменяет сам образ:\n"
+        : "\n\nРелевантные концепции Process Work (используй ТОЛЬКО внутренне, чтобы выбрать правильный тип вмешательства):\n") +
       terms
         .map((t) => `• ${t.term}: ${t.short_definition || ""}${t.practical_application ? " | Применение: " + t.practical_application : ""}`)
         .join("\n") +
