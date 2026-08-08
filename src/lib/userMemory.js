@@ -1,4 +1,4 @@
-import { base44 } from "@/api/base44Client";
+import { memoryService } from "@/services/memory";
 
 const MEMORY_LIMIT = 20;
 
@@ -6,7 +6,7 @@ const MEMORY_LIMIT = 20;
 export async function loadUserMemories(userId) {
   if (!userId) return [];
   try {
-    const rows = await base44.entities.UserMemory.filter(
+    const rows = await memoryService.list(
       { user_id: userId, is_active: true },
       "-updated_at",
       MEMORY_LIMIT
@@ -19,9 +19,6 @@ export async function loadUserMemories(userId) {
 }
 
 // ─── 2. Format memories block for the system prompt ──────────────────────────
-// The wrapper text is part of the prompt, so it must be written in the session
-// language — a Russian instruction block inside a Spanish conversation nudges
-// the model to drift back into Russian.
 const MEMORY_PREAMBLE = {
   ru: {
     intro: "Вот что известно об этом пользователе из прошлых сессий:",
@@ -47,7 +44,6 @@ export function formatMemoriesForPrompt(memories, language = "ru") {
 }
 
 // ─── 3. Save memories: dedupe by memory_key, deactivate oldest over limit ────
-// items: [{ memory_type, memory_key, memory_value }]
 /**
  * @param {any} userId
  * @param {any} items
@@ -56,8 +52,7 @@ export function formatMemoriesForPrompt(memories, language = "ru") {
 export async function saveUserMemories(userId, items, { sessionId, modeId } = {}) {
   if (!userId || !items || items.length === 0) return;
 
-  const existing = await base44.entities.UserMemory.filter({ user_id: userId });
-  // newest record per memory_key (update target)
+  const existing = await memoryService.list({ user_id: userId });
   const byKey = {};
   for (const row of existing) {
     const prev = byKey[row.memory_key];
@@ -72,8 +67,7 @@ export async function saveUserMemories(userId, items, { sessionId, modeId } = {}
     if (!item.memory_value || !item.memory_key) continue;
     const target = byKey[item.memory_key];
     if (target) {
-      // Update existing record with same memory_key
-      await base44.entities.UserMemory.update(target.id, {
+      await memoryService.update(target.id, {
         memory_value: item.memory_value,
         memory_type: item.memory_type || target.memory_type,
         source_session_id: sessionId,
@@ -83,8 +77,7 @@ export async function saveUserMemories(userId, items, { sessionId, modeId } = {}
         updated_at: now,
       });
     } else {
-      // Create new record
-      await base44.entities.UserMemory.create({
+      await memoryService.create({
         user_id: userId,
         memory_type: item.memory_type || item.memory_key,
         memory_key: item.memory_key,
@@ -99,8 +92,7 @@ export async function saveUserMemories(userId, items, { sessionId, modeId } = {}
     }
   }
 
-  // ─── Enforce limit: deactivate oldest active records beyond MEMORY_LIMIT ───
-  const active = await base44.entities.UserMemory.filter(
+  const active = await memoryService.list(
     { user_id: userId, is_active: true },
     "-updated_at",
     200
@@ -108,14 +100,7 @@ export async function saveUserMemories(userId, items, { sessionId, modeId } = {}
   if (active.length > MEMORY_LIMIT) {
     const toDeactivate = active.slice(MEMORY_LIMIT);
     for (const row of toDeactivate) {
-      await base44.entities.UserMemory.update(row.id, { is_active: false });
+      await memoryService.update(row.id, { is_active: false });
     }
   }
 }
-
-// ─── 4. (removed) Client-side session analysis ───────────────────────────────
-// `extractMemoriesFromSession` used to analyze the transcript here and had no
-// callers — the live implementation is the `persistSessionMemory` backend
-// function, which already handles both languages and strips the subject from
-// each phrase. Keeping a second copy on the client meant two prompts drifting
-// apart, with only the backend one actually running.
