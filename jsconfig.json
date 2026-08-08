@@ -28,7 +28,8 @@
     "src/lib/summaryFallback.js",
     "src/lib/sessionApi.js",
     "src/lib/messageApi.js",
-    "src/lib/userMemory.js"
+    "src/lib/userMemory.js",
+    "src/lib/sessionAI.js"
   ],
   "exclude": [
     "node_modules",
