@@ -1,38 +1,53 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-// Personal Process Practice generator.
-//
-// NOT a "meditation" — per Process Work logic, the goal is not to relax the
-// person but to help them take the next step of a process that has already
-// shown itself as recurring across sessions (primary process → edge →
-// secondary process → integration), grounded in this user's own material.
-//
-// Two entry modes:
-//  - force_test = true  → admin test button. Always generates, even with
-//    thin/no data (low_data_warning=true in that case), ignoring the
-//    confidence threshold. Marked is_test=true so it never surfaces to real
-//    users mixed in with accepted practices.
-//  - force_test = false → real flow (future in-app offer). Only generates
-//    when confidence_score >= READY_THRESHOLD; otherwise returns
-//    { ready: false } without creating a record.
+// Personalized Process Work practice generator.
+// This is intentionally not a generic relaxation meditation. It builds a
+// seven-step recorded practice from recurring material already present in the
+// user's completed sessions and memory.
 
 const READY_THRESHOLD = 70;
-const TERM_KEYS = ['primary_process', 'secondary_process', 'edge', 'amplification', 'channel', 'body_signal', 'consensus_reality'];
-const EDGE_PATTERN = /край|edge|сопротивл|блок|стопор|не могу|избега|resisten|no puedo|bloque|evita/i;
-const EDGE_STREAK_THRESHOLD = 3; // "стабильно повторяется несколько сессий подряд" — 3 последних подряд сессий подряд
+const TERM_KEYS = [
+  'primary_process',
+  'secondary_process',
+  'edge',
+  'amplification',
+  'channel',
+  'body_signal',
+  'consensus_reality',
+];
+const EXPECTED_STEP_KEYS = [
+  'grounding',
+  'contact',
+  'amplification',
+  'exploration',
+  'transition',
+  'secondary_process',
+  'integration',
+];
+const EDGE_STREAK_THRESHOLD = 3;
+const EDGE_PATTERN = /край|edge|сопротивл|блок|стопор|не могу|избега|внутренн(?:ий|яя|ее)?\s+(?:критик|голос|част)|критик|запрещ|не позволяет|мешает|resisten|no puedo|bloque|evita|cr[ií]tic[oa]\s+interior|voz\s+interior|no me permite/i;
 
-// How many of the most recent sessions (starting from the newest) show an
-// edge-type signal, counted as a STREAK from the most recent session
-// backwards — stops at the first session without one. This deliberately
-// requires *consecutive* recurrence, not just frequency, per the product
-// rule: "a strong edge is one that keeps showing up session after session
-// right now", not one that appeared a few times months ago.
+function normalizeText(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function sessionEdgeText(session) {
+  return [
+    ...(session.themes || []),
+    ...(session.signals || []),
+    session.summary,
+    session.primary_process,
+    session.secondary_process,
+    session.next_step_suggestion,
+  ]
+    .filter(Boolean)
+    .join(' | ');
+}
+
 function edgeStreak(sessions) {
   let streak = 0;
-  for (const s of sessions) {
-    const labels = [...(s.themes || []), ...(s.signals || [])];
-    const hasEdge = labels.some((t) => EDGE_PATTERN.test(String(t)));
-    if (hasEdge) streak++;
+  for (const session of sessions) {
+    if (EDGE_PATTERN.test(sessionEdgeText(session))) streak += 1;
     else break;
   }
   return streak;
@@ -40,175 +55,220 @@ function edgeStreak(sessions) {
 
 function liveFacilitatorNote(language) {
   if (language === 'es') {
-    return 'Noto que, en tus últimas sesiones, aparece una y otra vez el mismo límite (edge). Una práctica grabada no puede leer lo que pasa contigo en tiempo real — así que, además de esta práctica, podría tener sentido explorarlo con un facilitador en vivo, si en algún momento te apetece. No es obligatorio — la práctica sigue estando disponible tal cual.';
+    return 'Noto que, en tus últimas sesiones, aparece una y otra vez el mismo límite. Una práctica grabada no puede leer lo que pasa contigo en tiempo real; si alguna vez te apetece, también podría tener sentido explorarlo con un facilitador en vivo. No es obligatorio: la práctica sigue estando disponible.';
   }
   if (language === 'en') {
-    return "I'm noticing the same edge showing up session after session. A recorded practice can't read what's happening for you in real time — so alongside this practice, it might be worth exploring this with a live facilitator at some point, if that feels right. It's not required — the practice is still here either way.";
+    return "The same edge seems to be recurring across your recent sessions. A recorded practice cannot read what is happening for you in real time, so it may also be useful to explore it with a live facilitator at some point if you want to. That is optional; the practice remains available.";
   }
-  return 'Замечаю, что в последних сессиях один и тот же край повторяется снова и снова. Записанная практика не может считать то, что происходит с вами в реальном времени — поэтому, кроме этой практики, имеет смысл в какой-то момент пойти с этим к живому фасилитатору, если возникнет желание. Это не обязательно — практика всё равно остаётся доступна.';
+  return 'В последних сессиях один и тот же край повторяется снова и снова. Записанная практика не может считывать происходящее с вами в реальном времени, поэтому при желании это также можно исследовать с живым фасилитатором. Это не обязательно: практика всё равно остаётся доступна.';
 }
 
 function scoreFromMap(nodes, edges, sessionsCount) {
   if (!nodes.length) return 0;
-  const themeOrSignal = nodes.filter((n) => n.type === 'theme' || n.type === 'signal');
-  const dominant = [...themeOrSignal].sort((a, b) => b.count - a.count)[0];
+  const candidates = nodes.filter((node) => node.type === 'theme' || node.type === 'signal');
+  const dominant = [...candidates].sort((a, b) => Number(b.count || 0) - Number(a.count || 0))[0];
   if (!dominant) return 0;
 
-  const recurrence = Math.min(50, (dominant.count - 1) * 25); // 2 occurrences=25, 3+=50
-  const hasEdgeSignal = nodes.some((n) => /край|edge|сопротивл|resisten/i.test(n.label));
+  const recurrence = Math.min(50, Math.max(0, (Number(dominant.count || 0) - 1) * 25));
+  const hasEdgeSignal = nodes.some((node) => EDGE_PATTERN.test(String(node.label || '')));
   const edgeBonus = hasEdgeSignal ? 20 : 0;
   const sessionsBonus = sessionsCount >= 3 ? 20 : sessionsCount === 2 ? 10 : 0;
-  const strongEdges = edges.filter((e) => e.weight >= 2).length;
+  const strongEdges = edges.filter((edge) => Number(edge.weight || 0) >= 2).length;
   const cohesionBonus = Math.min(10, strongEdges * 5);
-
   return Math.min(100, recurrence + edgeBonus + sessionsBonus + cohesionBonus);
 }
 
 function pickDominantCluster(nodes, edges) {
-  const themeOrSignal = nodes.filter((n) => n.type === 'theme' || n.type === 'signal');
-  if (!themeOrSignal.length) return { label: null, neighbors: [] };
-  const dominant = [...themeOrSignal].sort((a, b) => b.count - a.count)[0];
+  const candidates = nodes.filter((node) => node.type === 'theme' || node.type === 'signal');
+  if (!candidates.length) return { label: null, neighbors: [] };
+  const dominant = [...candidates].sort((a, b) => Number(b.count || 0) - Number(a.count || 0))[0];
   const neighborIds = new Set();
-  for (const e of edges) {
-    if (e.source === dominant.id) neighborIds.add(e.target);
-    if (e.target === dominant.id) neighborIds.add(e.source);
+  for (const edge of edges) {
+    if (edge.source === dominant.id) neighborIds.add(edge.target);
+    if (edge.target === dominant.id) neighborIds.add(edge.source);
   }
-  const neighbors = nodes.filter((n) => neighborIds.has(n.id)).map((n) => n.label);
-  return { label: dominant.label, neighbors };
+  return {
+    label: normalizeText(dominant.label),
+    neighbors: nodes.filter((node) => neighborIds.has(node.id)).map((node) => normalizeText(node.label)).filter(Boolean),
+  };
+}
+
+function validateGeneratedPractice(result) {
+  if (!result || typeof result !== 'object') return { ok: false, reason: 'empty_llm_result' };
+  const steps = Array.isArray(result.steps) ? result.steps : [];
+  if (steps.length !== EXPECTED_STEP_KEYS.length) {
+    return { ok: false, reason: `invalid_step_count:${steps.length}` };
+  }
+
+  for (let i = 0; i < EXPECTED_STEP_KEYS.length; i += 1) {
+    const step = steps[i] || {};
+    if (step.key !== EXPECTED_STEP_KEYS[i]) {
+      return { ok: false, reason: `invalid_step_order:${i}:${step.key || 'missing'}` };
+    }
+    if (!normalizeText(step.text)) {
+      return { ok: false, reason: `empty_step_text:${step.key}` };
+    }
+  }
+
+  const fullText = steps
+    .map((step) => `${normalizeText(step.label) ? `${normalizeText(step.label)}.\n` : ''}${normalizeText(step.text)}`)
+    .join('\n\n')
+    .trim();
+
+  if (fullText.length < 120) return { ok: false, reason: 'practice_too_short' };
+  return { ok: true, steps, fullText };
 }
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
-    const forceTest = !!body.force_test;
-
-    // Resolve caller + target user (test button always targets the caller).
     const caller = await base44.auth.me().catch(() => null);
     if (!caller) return Response.json({ error: 'Not authenticated' }, { status: 401 });
+
+    const forceTest = body.force_test === true;
     if (forceTest && caller.role !== 'admin') {
       return Response.json({ error: 'Forbidden: admin only for test generation' }, { status: 403 });
     }
-    const userId = body.user_id || caller.id;
 
-    // Language: from AppUser, default ru.
+    // Critical privacy boundary: service-role reads below can see any user's
+    // sessions. A normal caller must never be allowed to choose another user_id.
+    const requestedUserId = normalizeText(body.user_id);
+    if (requestedUserId && requestedUserId !== caller.id && caller.role !== 'admin') {
+      return Response.json({ error: 'Forbidden: cannot generate a practice for another user' }, { status: 403 });
+    }
+    const userId = caller.role === 'admin' && requestedUserId ? requestedUserId : caller.id;
+
     let language = 'ru';
     try {
       const owners = await base44.asServiceRole.entities.AppUser.filter({ created_by_id: userId });
-      if (owners[0]?.language) language = owners[0].language;
+      if (['ru', 'es', 'en'].includes(owners[0]?.language)) language = owners[0].language;
     } catch (e) {
-      console.warn('[generateProcessPractice] could not resolve language, defaulting to ru:', e?.message);
+      console.warn('[generateProcessPractice] language lookup failed; defaulting to ru:', e?.message);
     }
 
-    // ── Step 1: recurring-pattern map (reuses buildLifeProcessMap — no logic duplication) ──
     let nodes = [];
     let edges = [];
     try {
       const mapRes = await base44.functions.invoke('buildLifeProcessMap', { user_id: userId });
-      nodes = mapRes?.data?.nodes || [];
-      edges = mapRes?.data?.edges || [];
+      nodes = Array.isArray(mapRes?.data?.nodes) ? mapRes.data.nodes : [];
+      edges = Array.isArray(mapRes?.data?.edges) ? mapRes.data.edges : [];
     } catch (e) {
-      console.warn('[generateProcessPractice] buildLifeProcessMap failed (continuing with empty map):', e?.message);
+      console.warn('[generateProcessPractice] buildLifeProcessMap failed:', e?.message);
     }
 
     const sessions = await base44.asServiceRole.entities.Session.filter(
       { user_id: userId, status: 'completed' },
       '-created_date',
-      10
+      10,
     );
     const confidenceScore = scoreFromMap(nodes, edges, sessions.length);
-    const ready = forceTest || confidenceScore >= READY_THRESHOLD;
-
-    // Strong, STABLE edge — the same edge signal repeating in consecutive
-    // recent sessions, not just a high confidence_score. An unsupervised
-    // audio practice has no way to read what happens for the person in real
-    // time, so instead of trying to "push through" it, we surface a soft,
-    // non-blocking option to continue with a live facilitator alongside it.
-    const edgeRecurrenceStreak = edgeStreak(sessions);
-    const suggestLiveFacilitator = edgeRecurrenceStreak >= EDGE_STREAK_THRESHOLD;
-
-    if (!ready) {
+    if (!forceTest && confidenceScore < READY_THRESHOLD) {
       return Response.json({ ready: false, confidence_score: confidenceScore });
     }
 
+    const edgeRecurrenceStreak = edgeStreak(sessions);
+    const suggestLiveFacilitator = edgeRecurrenceStreak >= EDGE_STREAK_THRESHOLD;
     const lowDataWarning = forceTest && (sessions.length === 0 || nodes.length === 0);
     const { label: clusterLabel, neighbors } = pickDominantCluster(nodes, edges);
 
-    // ── Step 2: gather supporting material ─────────────────────────────────
-    const memories = await base44.asServiceRole.entities.UserMemory.filter({ user_id: userId, is_active: true }, '-updated_at', 20);
-    const memoryBlock = memories.map((m) => `${m.memory_key}: ${m.memory_value}`).join('\n') || '(нет сохранённой памяти — тестовый прогон)';
+    const memories = await base44.asServiceRole.entities.UserMemory.filter(
+      { user_id: userId, is_active: true },
+      '-updated_at',
+      20,
+    );
+    const memoryBlock = memories
+      .map((memory) => `${normalizeText(memory.memory_key)}: ${normalizeText(memory.memory_value)}`)
+      .filter(Boolean)
+      .join('\n') || '(нет сохранённой памяти — тестовый прогон)';
+
     const sessionsBlock = sessions
-      .map((s, i) => `Сессия ${i + 1} [${s.mode_id || s.mode}]: ${s.summary || '(без summary)'} | темы: ${(s.themes || []).join(', ')} | сигналы: ${(s.signals || []).join(', ')}`)
+      .map((session, index) => {
+        const summary = normalizeText(session.summary) || '(без summary)';
+        const themes = (session.themes || []).map(normalizeText).filter(Boolean).join(', ');
+        const signals = (session.signals || []).map(normalizeText).filter(Boolean).join(', ');
+        return `Сессия ${index + 1} [${normalizeText(session.mode_id || session.mode)}]: ${summary} | темы: ${themes || '—'} | сигналы: ${signals || '—'}`;
+      })
       .join('\n') || '(нет завершённых сессий — тестовый прогон)';
 
-    // ── Step 3: ground the prompt in this user's own curated PW glossary ────
     let terms = [];
     try {
       terms = await base44.asServiceRole.entities.Term.filter({ latin_key: { $in: TERM_KEYS } });
     } catch (e) {
-      console.warn('[generateProcessPractice] Term lookup failed:', e?.message);
+      console.warn('[generateProcessPractice] glossary lookup failed:', e?.message);
     }
-    const glossaryBlock = terms.map((t) => `${t.latin_key}: ${t.short_definition}`).join('\n');
+    const glossaryBlock = terms
+      .map((term) => `${normalizeText(term.latin_key)}: ${normalizeText(term.short_definition)}`)
+      .filter(Boolean)
+      .join('\n') || '(глоссарий недоступен)';
 
-    const languageRule =
-      language === 'es'
-        ? 'Escribe TODO en español.'
-        : language === 'en'
+    const languageRule = language === 'es'
+      ? 'Escribe TODO en español.'
+      : language === 'en'
         ? 'Write everything in English.'
-        : 'Пиши на русском языке.';
+        : 'Пиши всё на русском языке.';
 
-    const prompt = `Ты — процессуально-ориентированный фасилитатор (Process Work / Арнольд Минделл). Твоя задача — построить ПЕРСОНАЛЬНУЮ ПРОЦЕССУАЛЬНУЮ ПРАКТИКУ (НЕ медитацию, НЕ визуализацию на расслабление). Цель практики — не успокоить человека, а помочь ему сделать следующий шаг процесса, который уже проявился как повторяющийся в его сессиях.
+    const prompt = `Ты — процессуально-ориентированный фасилитатор (Process Work / Арнольд Минделл). Построй персональную ПРОЦЕССУАЛЬНУЮ ПРАКТИКУ по материалу конкретного пользователя. Это не релаксационная медитация: цель — продолжить уже проявившийся процесс, не интерпретируя человека за него.
 
-Глоссарий (используй эти понятия точно так, как они определены, не искажай):
+Глоссарий:
 ${glossaryBlock}
 
-Повторяющаяся тема (по данным карты процесса): ${clusterLabel || '(недостаточно данных — тестовый режим, придумай нейтральную заземляющую практику на основе того материала, что есть, и явно избегай специфичных утверждений о человеке)'}
+Повторяющаяся тема: ${clusterLabel || '(недостаточно данных — тестовый режим; не выдумывай персональные факты)'}
 Связанные сигналы/темы: ${neighbors.join(', ') || '—'}
 
-История сессий:
+История завершённых сессий:
 ${sessionsBlock}
 
-Активная память пользователя:
+Активная память:
 ${memoryBlock}
 
 СТРОГИЕ ПРАВИЛА:
-1. Никогда не называй это "медитацией" или "визуализацией для расслабления". Это "процессуальная практика" (personal process practice).
-2. Не интерпретируй за человека. Формулируй вопросы, приглашающие его найти собственный смысл.
-3. Шаг "вторичный процесс" — НИКОГДА директивно (запрещено "теперь почувствуйте свободу"). Только приглашающе: "если это движение продолжит разворачиваться..."
-4. Тип вопроса на шаге "Исследование" выбери по доминирующему каналу: body→движение тела, dream→голос/образ, conflict→роль/диалог, journaling/mixed→свободная ассоциация.
-5. ${languageRule}
-6. Если данных мало (тестовый режим) — сделай практику нейтральной и заземляющей, НЕ выдумывай специфичные детали о человеке, которых нет в материале.
+1. Не называй это медитацией или расслабляющей визуализацией; это процессуальная практика.
+2. Не диагностируй, не объясняй человеку его смысл и не добавляй биографические детали, которых нет в данных.
+3. Вторичный процесс не навязывай. Используй приглашение: «если это движение продолжит разворачиваться…», «что могло бы появиться…» и т.п.
+4. Если проявилась краевая фигура (например внутренний критик, запрещающий голос или часть, которая мешает/не позволяет), не обходи её. Исследуй её функцию, качество, голос, движение или послание, не объявляя её врагом и не пытаясь уничтожить.
+5. Для сильного края не давай директивы «пройти через него любой ценой». Оставляй человеку возможность уменьшить интенсивность, остановиться или вернуться к опоре.
+6. exploration выбирай по доминирующему каналу: body→движение/ощущение, dream→образ/голос, conflict→роль/диалог, journaling/mixed→свободная ассоциация.
+7. transition должен связать минимум два конкретных источника из разных фрагментов материала выше. Не выдумывай связь, если её нет.
+8. grounding — только контакт с телом и текущим окружением, без обещания успокоения.
+9. Ровно семь шагов и строго в указанном порядке.
+10. ${languageRule}
 
-Структура (ровно 7 шагов, каждый — 1-3 коротких предложения, разговорный тон фасилитатора):
-1. grounding — приземление, только тело, без психологии
-2. contact — контакт с главным сигналом/симптомом из материала выше (не "представьте", а именно тем, что повторялось)
-3. amplification — "Позвольте этому стать немного сильнее"
-4. exploration — вопрос по каналу (см. правило 4)
-5. transition — свяжи минимум 2 источника из разного материала выше (например тему из одной сессии + сигнал из другой) — это персонализация
-6. secondary_process — приглашающая формулировка (см. правило 3)
-7. integration — короткая, не больше 1-2 фраз, привязана к жизни
+Шаги:
+1 grounding
+2 contact
+3 amplification
+4 exploration
+5 transition
+6 secondary_process
+7 integration
 
-Также сгенерируй:
-- theme_label — короткая рабочая метка темы (3-6 слов)
-- dominant_channel — один из: body, dream, conflict, journaling, mixed
-- offer_text — короткое сообщение-приглашение перед практикой в духе: "Замечаю, что в последних сессиях повторяется одна и та же динамика. Могу предложить персональную процессуальную практику. Она не интерпретирует и не ставит целью изменить вас — её задача помочь продолжить исследование того, что уже начало проявляться в нашей работе." (адаптируй под язык и материал, не копируй дословно)
+Каждый шаг — 1–3 коротких предложения, пригодных для естественного озвучивания. Не добавляй технических пометок, markdown или инструкции диктору в text.
 
-Верни ТОЛЬКО JSON.`;
+Также верни theme_label (3–6 слов), dominant_channel (body/dream/conflict/journaling/mixed), offer_text (короткое приглашение без обещаний результата).
+Верни только JSON.`;
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
       response_json_schema: {
         type: 'object',
+        required: ['theme_label', 'dominant_channel', 'offer_text', 'steps'],
         properties: {
           theme_label: { type: 'string' },
-          dominant_channel: { type: 'string', enum: ['body', 'dream', 'conflict', 'journaling', 'mixed'] },
+          dominant_channel: {
+            type: 'string',
+            enum: ['body', 'dream', 'conflict', 'journaling', 'mixed'],
+          },
           offer_text: { type: 'string' },
           steps: {
             type: 'array',
+            minItems: 7,
+            maxItems: 7,
             items: {
               type: 'object',
+              required: ['key', 'text'],
               properties: {
-                key: { type: 'string', enum: ['grounding', 'contact', 'amplification', 'exploration', 'transition', 'secondary_process', 'integration'] },
+                key: { type: 'string', enum: EXPECTED_STEP_KEYS },
                 label: { type: 'string' },
                 text: { type: 'string' },
               },
@@ -218,8 +278,14 @@ ${memoryBlock}
       },
     });
 
-    const steps = Array.isArray(result?.steps) ? result.steps : [];
-    const fullText = steps.map((s) => `${s.label ? s.label + '.\n' : ''}${s.text}`).join('\n\n');
+    const validated = validateGeneratedPractice(result);
+    if (!validated.ok) {
+      console.error('[generateProcessPractice] invalid LLM output:', validated.reason);
+      return Response.json(
+        { error: 'Generated practice failed structural validation', reason: validated.reason },
+        { status: 502 },
+      );
+    }
 
     const now = new Date().toISOString();
     const record = await base44.asServiceRole.entities.ProcessPractice.create({
@@ -227,12 +293,12 @@ ${memoryBlock}
       language,
       is_test: forceTest,
       confidence_score: confidenceScore,
-      theme_label: result?.theme_label || clusterLabel || 'test practice',
-      dominant_channel: result?.dominant_channel || 'mixed',
-      source_session_ids: sessions.map((s) => s.id),
-      offer_text: result?.offer_text || '',
-      steps,
-      full_text: fullText,
+      theme_label: normalizeText(result.theme_label) || clusterLabel || 'process practice',
+      dominant_channel: result.dominant_channel || 'mixed',
+      source_session_ids: sessions.map((session) => session.id),
+      offer_text: normalizeText(result.offer_text),
+      steps: validated.steps,
+      full_text: validated.fullText,
       low_data_warning: lowDataWarning,
       edge_recurrence_streak: edgeRecurrenceStreak,
       suggest_live_facilitator: suggestLiveFacilitator,
@@ -243,10 +309,19 @@ ${memoryBlock}
       created_at: now,
     });
 
-    console.log('[generateProcessPractice] created practice', record.id, 'confidence:', confidenceScore, 'test:', forceTest, 'lowData:', lowDataWarning);
+    console.log(
+      '[generateProcessPractice] created',
+      record.id,
+      'confidence:',
+      confidenceScore,
+      'test:',
+      forceTest,
+      'edgeStreak:',
+      edgeRecurrenceStreak,
+    );
     return Response.json({ ready: true, practice: record });
   } catch (error) {
     console.error('[generateProcessPractice] fatal:', error?.message, String(error));
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error?.message || 'Internal error' }, { status: 500 });
   }
 });
