@@ -15,11 +15,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields: session_id, role, content' }, { status: 400 });
     }
 
-    // Verify the session belongs to this user (or user is admin).
-    // NOTE: ownership uses the custom `user_id` field, not created_by/
-    // created_by_id — those are stamped with the SERVICE ROLE's identity
-    // because sessions are created server-side (startSession) and never
-    // match the real user.
     const sessions = await base44.asServiceRole.entities.Session.filter({ id: session_id });
     const session = sessions[0];
 
@@ -31,9 +26,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Access denied: session does not belong to current user' }, { status: 403 });
     }
 
-    // Create message as service role (bypasses frontend RLS)
+    // Persist the same owner id as the parent Session. This keeps Message RLS
+    // consistent even though the record itself is created with service role.
     const message = await base44.asServiceRole.entities.Message.create({
       session_id,
+      user_id: session.user_id,
       mode_id: mode_id || null,
       step_number: step_number || null,
       role,
@@ -43,6 +40,6 @@ Deno.serve(async (req) => {
 
     return Response.json({ message });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error?.message || 'Internal error' }, { status: 500 });
   }
 });
