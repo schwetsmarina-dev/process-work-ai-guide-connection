@@ -12,10 +12,7 @@ export default [
       "src/Layout.jsx",
       "src/lib/**/*.{js,jsx}",
     ],
-    ignores: [
-      "src/components/ui/**/*",
-      "src/lib/**/*.test.js",
-    ],
+    ignores: ["src/components/ui/**/*"],
     ...pluginJs.configs.recommended,
     ...pluginReact.configs.flat.recommended,
     languageOptions: {
