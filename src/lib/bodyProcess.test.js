@@ -16,26 +16,42 @@ function primaryBase(extra = []) {
 }
 
 describe("Mindell body state machine", () => {
-  it("keeps ordinary light/noise impact inside small u, not X", () => {
+  it("keeps ordinary light/noise impact inside small u, not X image", () => {
     const stage = detectBodyProcessStage(primaryBase());
     expect(stage.stage).toBe("body_amplify_signal");
-    expect(stage.x_channel).toBe(null);
+    expect(stage.x_image_emerged).toBe(false);
   });
 
-  it("remembers a spontaneous concrete X but does not skip incomplete small u", () => {
+  it("remembers a spontaneous X image but does not skip incomplete small u", () => {
     const stage = detectBodyProcessStage([
       u("Болит голова в висках, давление как каменная плита."),
     ]);
     expect(stage.stage).toBe("body_small_u");
-    expect(stage.x_channel).toBe("visual");
+    expect(stage.x_image_emerged).toBe(true);
+    expect(stage.x_image).toContain("плита");
   });
 
-  it("moves to identification after small u is sufficient and X exists", () => {
+  it("moves to identification after small u is sufficient and an image exists", () => {
     const stage = detectBodyProcessStage(primaryBase([
       u("И само давление похоже на каменную плиту."),
     ]));
     expect(stage.stage).toBe("body_identify_x");
-    expect(stage.x_channel).toBe("visual");
+    expect(stage.x_image_emerged).toBe(true);
+  });
+
+  it("detects all six Process Work channels without treating them as substitutes for the image", () => {
+    const stage = detectBodyProcessStage(primaryBase([
+      u("Давление похоже на монстра. Я вижу его чёрным, ощущаю жар в теле, слышу его голос, он смотрит на меня, я двигаюсь как он, и весь мир вокруг становится тяжёлым."),
+    ]));
+    expect(stage.x_image_emerged).toBe(true);
+    expect(stage.x_channels).toEqual(expect.arrayContaining([
+      "visual",
+      "proprioceptive",
+      "auditory",
+      "relationship",
+      "movement",
+      "world",
+    ]));
   });
 
   it("does not mark X identified until the user answers the identification prompt", () => {
@@ -54,13 +70,13 @@ describe("Mindell body state machine", () => {
       u("Давление похоже на каменную плиту."),
       a("Попробуй стать этой плитой. Что ты замечаешь изнутри?"),
       u("Я плотная и тяжёлая."),
-      a("Если ты сейчас эта плита, как тебе хочется двигаться или не двигаться, дышать или занимать пространство?"),
+      a("Как тебе хочется двигаться или не двигаться, дышать или занимать пространство?"),
       u("Я стою очень устойчиво, блестю и чувствую себя красивой."),
     ]);
     expect(detectBodyProcessStage(messages).stage).toBe("body_discover_big_u");
   });
 
-  it("treats big U as secondary only after qualities are named", () => {
+  it("treats big U as secondary only after the explicit big-U question is answered", () => {
     const messages = primaryBase([
       u("Давление похоже на каменную плиту."),
       a("Попробуй стать этой плитой. Что ты замечаешь изнутри?"),
