@@ -13,7 +13,12 @@ export default function SocialButtons() {
   const language = getStoredLanguage();
 
   const handleProvider = (provider) => {
-    base44.auth.loginWithProvider(provider, "/dashboard");
+    // Always give Base44 an absolute return URL on the current origin.
+    // This is important on custom domains and mobile browsers: a relative
+    // callback can be resolved against the auth host instead of talvira.app,
+    // leaving the user authenticated but outside the application.
+    const returnUrl = `${window.location.origin}/dashboard`;
+    base44.auth.loginWithProvider(provider, returnUrl);
   };
 
   return (
