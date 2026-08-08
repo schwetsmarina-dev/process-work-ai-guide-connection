@@ -162,6 +162,24 @@ Deno.serve(async (req) => {
       '-created_date',
       10,
     );
+
+    // Double clicks and overlapping browser requests must not create duplicate
+    // practices (or duplicate paid TTS work) for the same newest session.
+    const newestSessionId = sessions[0]?.id || null;
+    if (!forceTest && newestSessionId) {
+      const existingPractices = await base44.asServiceRole.entities.ProcessPractice.filter(
+        { user_id: userId, is_test: false },
+        '-generated_at',
+        10,
+      );
+      const existing = existingPractices.find((practice) =>
+        Array.isArray(practice.source_session_ids)
+        && practice.source_session_ids.includes(newestSessionId)
+      );
+      if (existing) {
+        return Response.json({ ready: true, practice: existing, reused: true });
+      }
+    }
     const confidenceScore = scoreFromMap(nodes, edges, sessions.length);
     if (!forceTest && confidenceScore < READY_THRESHOLD) {
       return Response.json({ ready: false, confidence_score: confidenceScore });
@@ -187,7 +205,10 @@ Deno.serve(async (req) => {
         const summary = normalizeText(session.summary) || '(без summary)';
         const themes = (session.themes || []).map(normalizeText).filter(Boolean).join(', ');
         const signals = (session.signals || []).map(normalizeText).filter(Boolean).join(', ');
-        return `Сессия ${index + 1} [${normalizeText(session.mode_id || session.mode)}]: ${summary} | темы: ${themes || '—'} | сигналы: ${signals || '—'}`;
+        const edgeSignals = (session.edge_signals || []).map(normalizeText).filter(Boolean).join(', ');
+        const primary = (session.primary_process || []).map(normalizeText).filter(Boolean).join(', ');
+        const secondary = (session.secondary_process || []).map(normalizeText).filter(Boolean).join(', ');
+        return `Сессия ${index + 1} [${normalizeText(session.mode_id || session.mode)}]: ${summary} | темы: ${themes || '—'} | сигналы: ${signals || '—'} | край: ${edgeSignals || '—'} | первичный процесс: ${primary || '—'} | вторичный процесс: ${secondary || '—'}`;
       })
       .join('\n') || '(нет завершённых сессий — тестовый прогон)';
 
