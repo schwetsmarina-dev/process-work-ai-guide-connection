@@ -4,11 +4,12 @@
   "properties": {
     "user_id": {
       "type": "string",
-      "description": "Reference to AppUser (owner of this practice)"
+      "description": "Authenticated owner user id"
     },
     "language": {
       "type": "string",
-      "description": "ru/es/en \u2014 language of the generated practice"
+      "enum": ["ru", "es", "en"],
+      "description": "Language of the generated practice"
     },
     "is_test": {
       "type": "boolean",
@@ -17,6 +18,8 @@
     },
     "confidence_score": {
       "type": "number",
+      "minimum": 0,
+      "maximum": 100,
       "description": "0-100 process-recurrence confidence at time of generation"
     },
     "theme_label": {
@@ -25,25 +28,17 @@
     },
     "dominant_channel": {
       "type": "string",
-      "enum": [
-        "body",
-        "dream",
-        "conflict",
-        "journaling",
-        "mixed"
-      ],
+      "enum": ["body", "dream", "conflict", "journaling", "mixed"],
       "description": "Perceptual channel the exploration question is built around"
     },
     "source_session_ids": {
       "type": "array",
-      "items": {
-        "type": "string"
-      },
+      "items": { "type": "string" },
       "description": "Sessions that informed this practice"
     },
     "offer_text": {
       "type": "string",
-      "description": "The reflective offer message shown to the user before generating/accepting the practice"
+      "description": "Reflective offer message shown before the practice"
     },
     "steps": {
       "type": "array",
@@ -51,56 +46,60 @@
         "type": "object",
         "properties": {
           "key": {
-            "type": "string"
+            "type": "string",
+            "enum": ["grounding", "contact", "amplification", "exploration", "transition", "secondary_process", "integration"]
           },
-          "label": {
-            "type": "string"
-          },
-          "text": {
-            "type": "string"
-          }
-        }
+          "label": { "type": "string" },
+          "text": { "type": "string" }
+        },
+        "required": ["key", "text"]
       },
       "description": "The 7-step Personal Process Practice script, structured"
     },
     "full_text": {
       "type": "string",
-      "description": "Full practice script concatenated, used for display and as TTS input"
+      "description": "Full practice script used for display and TTS input"
     },
     "low_data_warning": {
       "type": "boolean",
       "default": false,
-      "description": "True when generated from insufficient material (test mode with little/no session history)"
+      "description": "True when generated from insufficient material in admin test mode"
+    },
+    "edge_recurrence_streak": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Number of consecutive recent completed sessions carrying an edge signal"
+    },
+    "suggest_live_facilitator": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether repeated edge material warrants a soft suggestion to explore with a live facilitator"
+    },
+    "live_facilitator_note": {
+      "type": "string",
+      "description": "Localized non-blocking facilitator note when a stable recurring edge is detected"
     },
     "status": {
       "type": "string",
-      "enum": [
-        "ready",
-        "failed"
-      ],
+      "enum": ["ready", "failed"],
       "default": "ready"
     },
     "audio_status": {
       "type": "string",
-      "enum": [
-        "none",
-        "generating",
-        "ready",
-        "failed"
-      ],
+      "enum": ["none", "generating", "ready", "failed"],
       "default": "none"
     },
     "audio_url": {
       "type": "string",
-      "description": "Public URL of the generated audio (cloned voice)"
+      "description": "Public URL of the generated ElevenLabs audio"
     },
     "audio_error": {
       "type": "string",
-      "description": "Error detail when audio generation failed, e.g. missing secret"
+      "description": "Bounded error detail when audio generation failed"
     },
     "voice_id": {
       "type": "string",
-      "description": "ElevenLabs voice_id used for this audio"
+      "description": "ElevenLabs voice id used for this audio"
     },
     "generated_at": {
       "type": "string",
@@ -116,43 +115,24 @@
       "description": "Optional free-text description"
     }
   },
-  "required": [
-    "user_id",
-    "full_text"
-  ],
+  "required": ["user_id", "full_text"],
   "rls": {
     "create": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "user_condition": { "role": "admin" }
     },
     "read": {
       "$or": [
-        {
-          "data.user_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
+        { "data.user_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } }
       ]
     },
     "update": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "user_condition": { "role": "admin" }
     },
     "delete": {
       "$or": [
-        {
-          "data.user_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
+        { "data.user_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } }
       ]
     }
   }
