@@ -8,6 +8,8 @@ import { ClipboardList, Loader2, Play } from "lucide-react";
 import { format } from "date-fns";
 import { MODE_LABELS } from "@/lib/modeSteps";
 import { startSession } from "@/lib/sessionApi";
+import { normalizeLang } from "@/lib/i18n";
+import PersonalProcessPracticeCard from "@/components/client/PersonalProcessPracticeCard";
 
 // Key used to remember which Assignment a session was started for, so the
 // summary page can mark it done once the session completes.
@@ -16,6 +18,32 @@ export const PENDING_ASSIGNMENT_KEY = "talvira_pending_assignment";
 export default function SuggestedPractices({ clientEmail }) {
   const navigate = useNavigate();
   const [startingId, setStartingId] = useState(null);
+
+  const { data: authUser = null } = useQuery({
+    queryKey: ["suggested-practices-auth-user", clientEmail],
+    queryFn: () => base44.auth.me(),
+    enabled: !!clientEmail,
+    staleTime: 5 * 60_000,
+  });
+
+  const { data: appUsers = [] } = useQuery({
+    queryKey: ["suggested-practices-app-user", clientEmail],
+    queryFn: () => base44.entities.AppUser.filter({ email: clientEmail }),
+    enabled: !!clientEmail,
+    staleTime: 5 * 60_000,
+  });
+  const lang = normalizeLang(appUsers[0]?.language || "ru");
+
+  const { data: completedSessions = [] } = useQuery({
+    queryKey: ["suggested-practices-completed", authUser?.id],
+    queryFn: () => base44.entities.Session.filter(
+      { user_id: authUser.id, status: "completed" },
+      "-created_date",
+      20,
+    ),
+    enabled: !!authUser?.id,
+    staleTime: 60_000,
+  });
 
   const { data: assignments = [], isLoading } = useQuery({
     queryKey: ["clientAssignments", clientEmail],
@@ -36,7 +64,6 @@ export default function SuggestedPractices({ clientEmail }) {
         navigate("/dashboard");
         return;
       }
-      // Remember the link so the summary page can complete it after the session.
       sessionStorage.setItem(
         PENDING_ASSIGNMENT_KEY,
         JSON.stringify({ assignmentId: assignment.id, sessionId: result.session.id }),
@@ -48,45 +75,57 @@ export default function SuggestedPractices({ clientEmail }) {
     }
   };
 
-  if (isLoading || assignments.length === 0) return null;
-
   return (
-    <Card className="p-6">
-      <div className="flex items-center gap-2 mb-4">
-        <ClipboardList className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-sm">Prácticas sugeridas</h3>
-      </div>
-      <div className="space-y-3">
-        {assignments.map((a) => (
-          <div key={a.id} className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-medium">
-                {MODE_LABELS[a.mode_id]?.es || a.mode_id}
-                {a.tema ? ` · ${a.tema}` : ""}
-              </span>
-              {a.due_date && (
-                <span className="text-xs text-muted-foreground shrink-0">
-                  {format(new Date(a.due_date), "d MMM yyyy")}
-                </span>
-              )}
-            </div>
-            {a.instructions && <p className="text-xs text-muted-foreground mt-1">{a.instructions}</p>}
-            <Button
-              size="sm"
-              className="mt-3 gap-1.5"
-              onClick={() => startPractice(a)}
-              disabled={startingId === a.id}
-            >
-              {startingId === a.id ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Play className="w-3.5 h-3.5" />
-              )}
-              Empezar sesión
-            </Button>
+    <div className="space-y-4">
+      {authUser?.id && (
+        <PersonalProcessPracticeCard
+          userId={authUser.id}
+          lang={lang}
+          completedSessions={completedSessions}
+        />
+      )}
+
+      {!isLoading && assignments.length > 0 && (
+        <Card className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <ClipboardList className="w-4 h-4 text-primary" />
+            <h3 className="font-semibold text-sm">
+              {lang === "ru" ? "Практики от специалиста" : lang === "en" ? "Practices from your practitioner" : "Prácticas sugeridas"}
+            </h3>
           </div>
-        ))}
-      </div>
-    </Card>
+          <div className="space-y-3">
+            {assignments.map((a) => (
+              <div key={a.id} className="rounded-xl border border-border bg-card p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-medium">
+                    {MODE_LABELS[a.mode_id]?.[lang] || MODE_LABELS[a.mode_id]?.es || a.mode_id}
+                    {a.tema ? ` · ${a.tema}` : ""}
+                  </span>
+                  {a.due_date && (
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {format(new Date(a.due_date), "d MMM yyyy")}
+                    </span>
+                  )}
+                </div>
+                {a.instructions && <p className="text-xs text-muted-foreground mt-1">{a.instructions}</p>}
+                <Button
+                  size="sm"
+                  className="mt-3 gap-1.5"
+                  onClick={() => startPractice(a)}
+                  disabled={startingId === a.id}
+                >
+                  {startingId === a.id ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Play className="w-3.5 h-3.5" />
+                  )}
+                  {lang === "ru" ? "Начать сессию" : lang === "en" ? "Start session" : "Empezar sesión"}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+    </div>
   );
 }
