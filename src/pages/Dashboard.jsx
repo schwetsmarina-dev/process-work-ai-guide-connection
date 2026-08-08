@@ -13,8 +13,57 @@ import ContinueThemeDialog from "@/components/dashboard/ContinueThemeDialog";
 import ConsistencyCalendar from "@/components/dashboard/ConsistencyCalendar";
 import { normalizeLang, t } from "@/lib/i18n";
 import { startSession } from "@/lib/sessionApi";
+import { listMessages } from "@/lib/messageApi";
 import UpgradePrompt from "@/components/billing/UpgradePrompt";
 import SuggestedPractices from "@/components/client/SuggestedPractices";
+
+const UNAVAILABLE_SUMMARY_MARKERS = [
+  "резюме недоступно",
+  "сессия завершена. резюме недоступно",
+  "summary unavailable",
+  "resumen no disponible",
+];
+
+const EDGE_FIGURE_MARKERS = [
+  "внутренний критик", "внутренняя критика", "внутренний цензор",
+  "внутренний голос", "голос внутри", "запрещающая часть", "критикующая часть",
+  "осуждающая часть", "контролирующая часть",
+  "crítico interior", "crítica interior", "voz interior", "voz crítica",
+  "parte que prohíbe", "parte crítica", "parte controladora",
+];
+
+const EDGE_FUNCTION_MARKERS = [
+  "запрещает", "не разрешает", "не позволяет", "мешает", "останавливает",
+  "удерживает", "не пускает", "критикует", "осуждает", "обесценивает",
+  "нельзя", "стыдно", "не имею права", "не заслуживаю",
+  "no me deja", "no me permite", "me impide", "me frena", "me critica", "me juzga",
+];
+
+function isUnavailableSummary(value) {
+  const lower = String(value || "").trim().toLowerCase();
+  return !!lower && UNAVAILABLE_SUMMARY_MARKERS.some((m) => lower.includes(m));
+}
+
+function textArray(value) {
+  return Array.isArray(value) ? value.filter(Boolean).join("; ") : "";
+}
+
+function detectEdgeFigureText(text) {
+  const raw = String(text || "").trim();
+  const lower = raw.toLowerCase();
+  if (!lower) return null;
+  const direct = EDGE_FIGURE_MARKERS.some((m) => lower.includes(m));
+  const functional = EDGE_FUNCTION_MARKERS.some((m) => lower.includes(m));
+  if (!direct && !functional) return null;
+
+  const lines = raw.split(/\n+/).map((s) => s.trim()).filter(Boolean);
+  const hit = lines.find((line) => {
+    const l = line.toLowerCase();
+    return EDGE_FIGURE_MARKERS.some((m) => l.includes(m)) ||
+      (EDGE_FUNCTION_MARKERS.some((m) => l.includes(m)) && (l.includes("голос") || l.includes("част") || l.includes("voz") || l.includes("parte")));
+  });
+  return (hit || raw).slice(0, 700);
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -61,15 +110,60 @@ export default function Dashboard() {
   const activeSession = sessions.find((s) => s.status === "active");
   const recentSessions = sessions.filter((s) => s.status !== "active").slice(0, 5);
 
-  const hasContinuationMaterial = (session) => {
+  const hasStoredContinuationMaterial = (session) => {
     if (!session) return false;
+    const summary = String(session.summary || "").trim();
+    const hasRealSummary = summary && !isUnavailableSummary(summary);
     return Boolean(
-      String(session.summary || "").trim() ||
+      hasRealSummary ||
       String(session.next_step_suggestion || "").trim() ||
       (Array.isArray(session.edge_signals) && session.edge_signals.some(Boolean)) ||
       (Array.isArray(session.primary_process) && session.primary_process.some(Boolean)) ||
       (Array.isArray(session.secondary_process) && session.secondary_process.some(Boolean))
     );
+  };
+
+  const enrichFromTranscript = async (session) => {
+    try {
+      const msgs = await listMessages(session.id);
+      const transcript = (msgs || [])
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
+        .join("\n");
+      if (!transcript.trim()) return null;
+
+      const edgeFigure = detectEdgeFigureText(transcript);
+      const lastUser = [...(msgs || [])].reverse().find((m) => m.role === "user")?.content || "";
+      const lastAssistant = [...(msgs || [])].reverse().find((m) => m.role === "assistant")?.content || "";
+      const fallbackPreview = lastUser || lastAssistant;
+
+      if (edgeFigure) {
+        return {
+          ...session,
+          _recovered_from_transcript: true,
+          _continuation_preview: edgeFigure,
+          _continuation_context:
+            `ПРОДОЛЖЕНИЕ ЗАВЕРШЁННОЙ СЕССИИ. В предыдущей работе уже выявилась краевая фигура/функция: «${edgeFigure}». ` +
+            `Это не новая тема и не новый сон. Не проси повторять материал и не возвращайся к картированию с нуля. ` +
+            `Продолжай работу с этой фигурой: её голосом, запретом, функцией и тем, что она не допускает.\n\n` +
+            `Фрагмент предыдущей сессии для контекста:\n${transcript.slice(-2400)}`,
+        };
+      }
+
+      if (!hasStoredContinuationMaterial(session) && fallbackPreview) {
+        return {
+          ...session,
+          _recovered_from_transcript: true,
+          _continuation_preview: String(fallbackPreview).slice(0, 700),
+          _continuation_context:
+            `ПРОДОЛЖЕНИЕ ЗАВЕРШЁННОЙ СЕССИИ. Резюме в записи отсутствует, поэтому восстанови контекст по фрагменту диалога. ` +
+            `Не начинай режим с нуля и не проси повторять уже сказанное.\n\n${transcript.slice(-2400)}`,
+        };
+      }
+    } catch (e) {
+      console.warn("[SessionFlow] transcript recovery failed for", session?.id, e?.message);
+    }
+    return null;
   };
 
   const findContinuationSession = async (modeId) => {
@@ -79,7 +173,46 @@ export default function Dashboard() {
         "-created_date",
         50
       );
-      return (completedInMode || []).find(hasContinuationMaterial) || null;
+      const rows = completedInMode || [];
+
+      // First priority: a previously identified edge figure, even if the old
+      // session summary failed. Inspect recent completed transcripts so a real
+      // theme such as an internal critic cannot be hidden by a newer broken
+      // "Резюме недоступно" record.
+      for (const candidate of rows.slice(0, 15)) {
+        const storedEvidence = [
+          isUnavailableSummary(candidate.summary) ? "" : candidate.summary,
+          candidate.next_step_suggestion,
+          textArray(candidate.edge_signals),
+          textArray(candidate.primary_process),
+          textArray(candidate.secondary_process),
+        ].filter(Boolean).join("\n");
+
+        const storedEdge = detectEdgeFigureText(storedEvidence);
+        if (storedEdge) {
+          return {
+            ...candidate,
+            _continuation_preview: storedEdge,
+            _continuation_context: storedEvidence,
+          };
+        }
+
+        const recovered = await enrichFromTranscript(candidate);
+        if (recovered && detectEdgeFigureText(recovered._continuation_context || recovered._continuation_preview)) {
+          return recovered;
+        }
+      }
+
+      // Second priority: latest genuinely meaningful completed session.
+      const stored = rows.find(hasStoredContinuationMaterial);
+      if (stored) return stored;
+
+      // Last fallback: recover a completed transcript even if summary generation failed.
+      for (const candidate of rows.slice(0, 15)) {
+        const recovered = await enrichFromTranscript(candidate);
+        if (recovered) return recovered;
+      }
+      return null;
     } catch (e) {
       console.error("[SessionFlow] lookup of continuation session failed:", e?.message);
       return null;
@@ -98,10 +231,6 @@ export default function Dashboard() {
 
   const handleModeSelect = async (mode) => {
     const modeId = mode.mode_id;
-
-    // FLOW A: unfinished session. This is only about resuming or discarding
-    // the currently active session. It is intentionally separate from
-    // FLOW B (deepening a completed past theme).
     const existing = sessions.find((s) => s.status === "active" && (s.mode_id || s.mode) === modeId);
     if (existing) {
       console.log("[SessionFlow] existing active session found for mode:", modeId, "→", existing.id);
@@ -109,9 +238,6 @@ export default function Dashboard() {
       setExistingActive(existing);
       return;
     }
-
-    // FLOW B: no unfinished session exists, so now we may offer to deepen a
-    // meaningful COMPLETED session. This is a different action/state.
     await offerContinuationOrCreate(mode);
   };
 
@@ -122,9 +248,15 @@ export default function Dashboard() {
     setPendingMode(null);
     if (!mode || !prev) return;
 
-    const carrySource = prev.next_step_suggestion || prev.summary || "";
+    const carrySource =
+      prev._continuation_context ||
+      prev.next_step_suggestion ||
+      (!isUnavailableSummary(prev.summary) ? prev.summary : "") ||
+      prev._continuation_preview ||
+      "";
+
     const carryOverContext = carrySource
-      ? `Пользователь возвращается к теме прошлой завершённой сессии. Тогда пришли к следующему: «${carrySource}». Продолжай со следующего незавершённого слоя — не начинай с нуля и не повторяй пройденное.`
+      ? `Пользователь возвращается к теме прошлой завершённой сессии. ${carrySource}`
       : "";
 
     await createSession(mode, { continuedFromSessionId: prev.id, carryOverContext });
@@ -151,21 +283,11 @@ export default function Dashboard() {
         ended_at: new Date().toISOString(),
       }).catch(() => {});
     }
-
     setExistingActive(null);
     setPendingMode(null);
-
-    // "Начать новую" in the unfinished-session dialog means exactly that:
-    // discard the unfinished session and start a fresh one. Do NOT inject a
-    // completed-session continuation dialog here. The user can choose the mode
-    // again later to get the separate "deepen previous completed theme" offer.
     if (mode) await createSession(mode);
   };
 
-  /**
-   * @param {any} mode
-   * @param {{ continuedFromSessionId?: any, carryOverContext?: any }} [opts]
-   */
   const createSession = async (mode, { continuedFromSessionId, carryOverContext } = {}) => {
     const modeId = mode.mode_id;
     const stepKey = `${modeId}_1`;
@@ -194,23 +316,18 @@ export default function Dashboard() {
       const allSample = await base44.entities.ModeStep.list("step_number", 10).catch(() => []);
       const allModeIds = [...new Set(allSample.map((s) => s.mode_id).filter(Boolean))];
       const allKeys = allModeSteps.map((s) => s.step_key || `[no key, step_number=${s.step_number}]`).join(", ") || "(none)";
-      console.error(
-        `[SessionFlow] First step not found!\n  mode_id = ${modeId}\n  step_key = ${stepKey}\n  steps for mode = ${allKeys}\n  DB mode_ids = ${allModeIds.join(", ")}\n  ModeStep rows readable = ${allSample.length}`
-      );
+      console.error(`[SessionFlow] First step not found! mode_id=${modeId} step_key=${stepKey}`);
       alert(
         `First step not found for mode "${modeId}".\n\n` +
         `step_key: ${stepKey}\n` +
         `Steps for this mode: ${allKeys}\n` +
         `All mode_id values in DB: ${allModeIds.join(", ") || "(empty)"}\n` +
-        `ModeStep records visible to this user: ${allSample.length}\n\n` +
-        `→ Open /admin/status → "Test step lookup" to diagnose.\n` +
-        `→ Or open /admin/import and upload mode_steps.csv.`
+        `ModeStep records visible to this user: ${allSample.length}`
       );
       return;
     }
 
     if (!currentUser?.id) {
-      console.error("[SessionFlow] Cannot create session — current user not loaded");
       alert(t("profile_not_loaded", lang));
       return;
     }
@@ -222,14 +339,6 @@ export default function Dashboard() {
     }
     const session = result.session;
 
-    console.log(
-      "[SessionFlow] session created:",
-      session.id,
-      "mode_id:", session.mode_id,
-      "step:", session.current_step,
-      "user:", currentUser?.email
-    );
-
     if (appUser?.id) {
       await base44.entities.AppUser.update(appUser.id, { last_session_id: session.id }).catch(() => {});
     }
@@ -239,25 +348,20 @@ export default function Dashboard() {
 
   const continuationPreview = lastCompletedForMode
     ? (
+        lastCompletedForMode._continuation_preview ||
         lastCompletedForMode.next_step_suggestion ||
-        lastCompletedForMode.summary ||
-        (Array.isArray(lastCompletedForMode.edge_signals) ? lastCompletedForMode.edge_signals.filter(Boolean).join("; ") : "") ||
-        (Array.isArray(lastCompletedForMode.secondary_process) ? lastCompletedForMode.secondary_process.filter(Boolean).join("; ") : "") ||
-        (Array.isArray(lastCompletedForMode.primary_process) ? lastCompletedForMode.primary_process.filter(Boolean).join("; ") : "")
+        (!isUnavailableSummary(lastCompletedForMode.summary) ? lastCompletedForMode.summary : "") ||
+        textArray(lastCompletedForMode.edge_signals) ||
+        textArray(lastCompletedForMode.secondary_process) ||
+        textArray(lastCompletedForMode.primary_process)
       )
     : "";
-
-  const isLoading = modesLoading || sessionsLoading;
 
   return (
     <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
       <div className="mb-10">
-        <h1 className="font-serif text-3xl md:text-4xl font-semibold mb-2">
-          {t("welcome", lang)}
-        </h1>
-        <p className="text-muted-foreground">
-          {t("choose_direction", lang)}
-        </p>
+        <h1 className="font-serif text-3xl md:text-4xl font-semibold mb-2">{t("welcome", lang)}</h1>
+        <p className="text-muted-foreground">{t("choose_direction", lang)}</p>
       </div>
 
       {isAdmin && <AdminPanel />}
@@ -290,65 +394,45 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-primary mb-1">{t("unfinished_session", lang)}</p>
-              <p className="text-sm text-muted-foreground">
-                {activeSession.mode_id || activeSession.mode}
-              </p>
+              <p className="text-sm text-muted-foreground">{activeSession.mode_id || activeSession.mode}</p>
             </div>
-            <Button onClick={() => navigate(`/session/${activeSession.id}`)}>
-              {t("continue", lang)}
-            </Button>
+            <Button onClick={() => navigate(`/session/${activeSession.id}`)}>{t("continue", lang)}</Button>
           </div>
         </div>
       )}
 
       {modesLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
+        <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
       ) : modes.length === 0 ? (
         <div className="flex items-start gap-3 p-5 rounded-2xl border border-amber-200 bg-amber-50 mb-8">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
             <p className="font-medium text-amber-800 text-sm">{t("modes_not_configured", lang)}</p>
-            <p className="text-amber-700 text-xs mt-1">
-              {t("modes_not_configured_text", lang)}
-            </p>
+            <p className="text-amber-700 text-xs mt-1">{t("modes_not_configured_text", lang)}</p>
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
-          {modes.map((mode) => (
-            <ModeCardDB key={mode.id} mode={mode} onClick={handleModeSelect} />
-          ))}
+          {modes.map((mode) => <ModeCardDB key={mode.id} mode={mode} onClick={handleModeSelect} />)}
         </div>
       )}
 
       {currentUser?.email && (
-        <div className="mb-12">
-          <SuggestedPractices clientEmail={currentUser.email} />
-        </div>
+        <div className="mb-12"><SuggestedPractices clientEmail={currentUser.email} /></div>
       )}
 
-      {completedSessions.length > 0 && (
-        <ConsistencyCalendar sessions={completedSessions} lang={lang} />
-      )}
+      {completedSessions.length > 0 && <ConsistencyCalendar sessions={completedSessions} lang={lang} />}
 
       {sessionsLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
+        <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
       ) : recentSessions.length > 0 ? (
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-serif text-xl font-semibold">{t("recent_sessions", lang)}</h2>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/history")}>
-              {t("all_sessions", lang)}
-            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/history")}>{t("all_sessions", lang)}</Button>
           </div>
           <div className="space-y-2">
-            {recentSessions.map((session) => (
-              <RecentSessionCard key={session.id} session={session} />
-            ))}
+            {recentSessions.map((session) => <RecentSessionCard key={session.id} session={session} />)}
           </div>
         </div>
       ) : null}
