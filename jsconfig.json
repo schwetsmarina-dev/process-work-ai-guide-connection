@@ -20,23 +20,15 @@
     "src/components/**/*.js",
     "src/pages/**/*.jsx",
     "src/Layout.jsx",
-    "src/lib/stageExtraction.js",
-    "src/lib/stageLocks.js",
-    "src/lib/sessionSignals.js",
-    "src/lib/sessionValidation.js",
-    "src/lib/modeStepIntegrity.js",
-    "src/lib/summaryFallback.js",
-    "src/lib/sessionApi.js",
-    "src/lib/messageApi.js",
-    "src/lib/userMemory.js",
-    "src/lib/sessionAI.js",
-    "src/lib/systemPrompt.js"
+    "src/lib/**/*.js",
+    "src/lib/**/*.jsx"
   ],
   "exclude": [
     "node_modules",
     "dist",
     "src/vite-plugins",
     "src/components/ui",
-    "src/api"
+    "src/api",
+    "src/lib/**/*.test.js"
   ]
 }
