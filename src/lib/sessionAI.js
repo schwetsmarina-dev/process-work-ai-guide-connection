@@ -1079,7 +1079,9 @@ export async function getAIResponse(session, step, messages, userMessage, langua
     }
   }
 
-  const secondaryAnswerIndex = messages.findLastIndex((m) => m.role === "user" && mappingStage.secondary_answer && m.content.includes(mappingStage.secondary_answer.substring(0, 30)));
+  const secondaryAnswerIndex = modeKey === "body"
+    ? -1
+    : messages.findLastIndex((m) => m.role === "user" && mappingStage.secondary_answer && m.content.includes(mappingStage.secondary_answer.substring(0, 30)));
   const messagesAfterSecondary = secondaryAnswerIndex >= 0 ? messages.slice(secondaryAnswerIndex + 1) : [];
   const ENERGY_SELECTION_MARKERS = [
     "знакомое", "непривычное", "на что тебе сейчас хочется",
@@ -1088,7 +1090,7 @@ export async function getAIResponse(session, step, messages, userMessage, langua
     "внимание само возвращается", "самым необычным",
   ];
   const assistantReflectedMap = messagesAfterSecondary.some((m) => m.role === "assistant" && ENERGY_SELECTION_MARKERS.some((mk) => m.content.toLowerCase().includes(mk)));
-  if (mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer && !assistantReflectedMap) {
+  if (modeKey !== "body" && mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer && !assistantReflectedMap) {
     console.warn("[ENERGY_SELECTION_REQUIRED]", { mode: getModeKey(currentMode), reflectionPending: true });
   }
   const userSelectedFocus = assistantReflectedMap && messagesAfterSecondary.some((m) => m.role === "user");
@@ -1156,7 +1158,7 @@ export async function getAIResponse(session, step, messages, userMessage, langua
       ? `• last_intervention_type: ${sessionState.last_intervention_type} — do NOT use the same intervention type again this turn; pick a different one (immersion, amplification, body, resource, polarity, movement, atmosphere, dialogue, edge, temporal).\n`
       : "");
 
-  const mappingCompleteContext = mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer
+  const mappingCompleteContext = modeKey !== "body" && mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer
     ? !assistantReflectedMap
       ? `\n\n✅ КАРТА ЗАВЕРШЕНА — СЛЕДУЮЩИЙ ШАГ: ОТРАЖЕНИЕ ВТОРИЧНОГО ПОЛЯ + ВЫБОР ЭНЕРГИИ\n` +
         `Отрази ВСЕ вторичные элементы нейтрально (используй точные слова пользователя).\n` +
