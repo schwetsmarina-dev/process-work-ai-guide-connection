@@ -18,6 +18,7 @@ const COPY = {
     createAudio: "Создать аудио",
     audioFailed: "Не удалось создать аудио. Текст практики сохранён и доступен.",
     retryAudio: "Повторить аудио",
+    refresh: "Создать новую практику по последним сессиям",
     error: "Не удалось подготовить практику. Попробуйте позже.",
   },
   es: {
@@ -32,6 +33,7 @@ const COPY = {
     createAudio: "Crear audio",
     audioFailed: "No se pudo crear el audio. El texto de la práctica está guardado y disponible.",
     retryAudio: "Reintentar audio",
+    refresh: "Crear una práctica nueva con las últimas sesiones",
     error: "No se pudo preparar la práctica. Inténtalo más tarde.",
   },
   en: {
@@ -46,6 +48,7 @@ const COPY = {
     createAudio: "Create audio",
     audioFailed: "Audio could not be generated. The practice text is saved and available.",
     retryAudio: "Retry audio",
+    refresh: "Create a new practice from recent sessions",
     error: "The practice could not be prepared. Please try again later.",
   },
 };
@@ -175,6 +178,13 @@ export default function PersonalProcessPracticeCard({ userId, lang = "ru", compl
                 <summary className="cursor-pointer text-muted-foreground">{lang === "es" ? "Leer el texto" : lang === "en" ? "Read text" : "Прочитать текст"}</summary>
                 <div className="mt-3 whitespace-pre-wrap leading-relaxed text-foreground/90">{visiblePractice.full_text}</div>
               </details>
+            )}
+
+            {!latestPracticeCoversNewestSession && readiness?.ready && (
+              <Button className="mt-4" onClick={handleGenerate} disabled={working || audioWorking}>
+                {working || audioWorking ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                {working ? c.generating : audioWorking ? c.audioGenerating : c.refresh}
+              </Button>
             )}
           </div>
         </div>
