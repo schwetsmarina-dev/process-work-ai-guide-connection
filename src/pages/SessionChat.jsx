@@ -55,10 +55,10 @@ function getInitialOpeningQuestion(modeId, language, step, carryOverContext) {
   if (base === undefined) base = step?.question || "";
 
   if (carryOverContext) {
-    const bridge = isEs
-      ? "Antes de continuar: la última vez, en esta misma dirección, llegamos a esto — ¿quieres profundizar justo ahí, o prefieres empezar por algo distinto?"
-      : "Прежде чем продолжим: в прошлый раз в этом же направлении мы пришли вот к чему — хочешь углубить именно это, или начать с чего-то другого?";
-    return `${bridge}\n\n${base}`;
+    const compact = String(carryOverContext).replace(/\s+/g, " ").trim().slice(0, 700);
+    return isEs
+      ? `Retomamos el proceso anterior, sin empezar de cero. Punto de continuidad: «${compact}».\n\n¿Qué de esto sigue más vivo o inacabado ahora mismo?`
+      : `Мы продолжаем предыдущую работу, не начиная заново. Точка продолжения: «${compact}».\n\nЧто из этого сейчас остаётся самым живым или незавершённым?`;
   }
 
   return base;
@@ -76,7 +76,7 @@ async function createFallbackGreeting({ sessionId, modeId, stepNum, language, re
     mode_id: modeId,
     step_number: stepNum || 1,
     role: "assistant",
-    content: `${t("greeting_start", language)}\n\n${fallbackOpening}`,
+    content: carryOverContext ? fallbackOpening : `${t("greeting_start", language)}\n\n${fallbackOpening}`,
   });
 
   console.warn("[SESSION_INIT_FALLBACK_GREETING_CREATED]", { sessionId, modeId, stepNum, reason });
@@ -302,7 +302,7 @@ export default function SessionChat() {
       // Use canonical, mode-specific opening question (never DB step.question for first greeting)
       const openingQuestion = getInitialOpeningQuestion(modeId, language, step, session.carry_over_context);
       console.log("[CANONICAL_OPENING_USED]", { modeId, language, openingQuestion });
-      const greeting = `${t("greeting_start", language)}\n\n${openingQuestion}`;
+      const greeting = session.carry_over_context ? openingQuestion : `${t("greeting_start", language)}\n\n${openingQuestion}`;
       try {
         await createMessage({ session_id: sessionId, mode_id: modeId, step_number: stepNum, role: "assistant", content: greeting });
       } catch (createErr) {
