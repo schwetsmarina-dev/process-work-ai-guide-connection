@@ -20,6 +20,7 @@ export default [
       "src/lib/messageApi.js",
       "src/lib/userMemory.js",
       "src/lib/sessionAI.js",
+      "src/lib/systemPrompt.js",
     ],
     ignores: ["src/components/ui/**/*"],
     ...pluginJs.configs.recommended,
