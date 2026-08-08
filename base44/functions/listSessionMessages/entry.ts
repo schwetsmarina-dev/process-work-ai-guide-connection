@@ -14,26 +14,33 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'session_id is required' }, { status: 400 });
     }
 
-    // Load session via service role to check ownership
     const sessions = await base44.asServiceRole.entities.Session.filter({ id: session_id });
     const session = sessions[0];
     if (!session) {
       return Response.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    // Only owner or admin can read messages.
-    // NOTE: ownership uses `user_id`, not created_by/created_by_id — those are
-    // stamped with the SERVICE ROLE's identity since sessions are created
-    // server-side (startSession) and never match the real user.
     if (session.user_id !== user.id && user.role !== 'admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Load all messages for this session via service role
-    const messages = await base44.asServiceRole.entities.Message.filter(
-      { session_id },
-      'created_date'
-    );
+    // Continuation sessions are created together with a seeded assistant message.
+    // Base44 reads can be eventually consistent, so an immediate first read may
+    // temporarily return [] and cause the client to generate a brand-new mode
+    // greeting. Retry only for continuation sessions before declaring the chat empty.
+    const isContinuation = Boolean(session.continued_from_session_id || session.carry_over_context);
+    const attempts = isContinuation ? 6 : 1;
+    let messages = [];
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      messages = await base44.asServiceRole.entities.Message.filter(
+        { session_id },
+        'created_date'
+      );
+      if (messages.length > 0) break;
+      if (attempt < attempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+      }
+    }
 
     return Response.json({ messages });
   } catch (error) {
