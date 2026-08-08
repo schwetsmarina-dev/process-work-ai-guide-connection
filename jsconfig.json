@@ -22,7 +22,10 @@
     "src/Layout.jsx",
     "src/lib/stageExtraction.js",
     "src/lib/stageLocks.js",
-    "src/lib/sessionSignals.js"
+    "src/lib/sessionSignals.js",
+    "src/lib/sessionValidation.js",
+    "src/lib/modeStepIntegrity.js",
+    "src/lib/summaryFallback.js"
   ],
   "exclude": [
     "node_modules",
