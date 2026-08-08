@@ -28,7 +28,6 @@
     "dist",
     "src/vite-plugins",
     "src/components/ui",
-    "src/api",
-    "src/lib/**/*.test.js"
+    "src/api"
   ]
 }
