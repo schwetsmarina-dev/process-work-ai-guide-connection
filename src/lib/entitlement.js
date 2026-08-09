@@ -41,6 +41,7 @@ export const FEATURES = {
   MEMORY: "memory", // continuity between sessions
   ANALYTICS: "analytics", // progress, process map, timeline
   PHYSIO: "physio", // physiological data
+  PRACTICE: "practice", // personalized process practice and its audio
 };
 
 /**
