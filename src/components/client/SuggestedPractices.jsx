@@ -10,6 +10,8 @@ import { MODE_LABELS } from "@/lib/modeSteps";
 import { startSession } from "@/lib/sessionApi";
 import { normalizeLang } from "@/lib/i18n";
 import PersonalProcessPracticeCard from "@/components/client/PersonalProcessPracticeCard";
+import useEntitlement from "@/hooks/useEntitlement";
+import { FEATURES } from "@/lib/entitlement";
 
 // Key used to remember which Assignment a session was started for, so the
 // summary page can mark it done once the session completes.
@@ -33,6 +35,8 @@ export default function SuggestedPractices({ clientEmail }) {
     staleTime: 5 * 60_000,
   });
   const lang = normalizeLang(appUsers[0]?.language || "ru");
+  const { can } = useEntitlement();
+  const canUsePersonalPractice = can(FEATURES.PRACTICE);
 
   const { data: completedSessions = [] } = useQuery({
     queryKey: ["suggested-practices-completed", authUser?.id],
@@ -77,7 +81,7 @@ export default function SuggestedPractices({ clientEmail }) {
 
   return (
     <div className="space-y-4">
-      {authUser?.id && (
+      {authUser?.id && canUsePersonalPractice === true && (
         <PersonalProcessPracticeCard
           userId={authUser.id}
           lang={lang}
