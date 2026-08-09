@@ -26,6 +26,10 @@ export default function LegalFooter() {
 
   useEffect(() => {
     let cancelled = false;
+    const handleLanguageChange = (event) => {
+      if (!cancelled) setLang(normalizeLang(event.detail));
+    };
+    window.addEventListener("talvira-language-change", handleLanguageChange);
     (async () => {
       try {
         const u = await base44.auth.me();
@@ -38,6 +42,7 @@ export default function LegalFooter() {
     })();
     return () => {
       cancelled = true;
+      window.removeEventListener("talvira-language-change", handleLanguageChange);
     };
   }, []);
 
