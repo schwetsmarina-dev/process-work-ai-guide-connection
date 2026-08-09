@@ -1005,7 +1005,11 @@ export function getStoredLanguage() {
 }
 
 export function setStoredLanguage(lang) {
+  const normalized = normalizeLang(lang);
   if (typeof localStorage !== "undefined") {
-    localStorage.setItem(STORAGE_KEY, normalizeLang(lang));
+    localStorage.setItem(STORAGE_KEY, normalized);
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("talvira-language-change", { detail: normalized }));
   }
 }
