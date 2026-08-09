@@ -25,6 +25,12 @@ Deno.serve(async (req) => {
     const caller = await base44.auth.me().catch(() => null);
     if (!caller) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 
+    const entitlementRes = await base44.functions.invoke('getEntitlement', {});
+    const entitlement = entitlementRes?.data || entitlementRes;
+    if (caller.role !== 'admin' && !entitlement?.hasAccess) {
+      return Response.json({ error: 'feature_requires_full_access' }, { status: 403 });
+    }
+
     const body = await req.json().catch(() => ({}));
     const practiceId = body.practice_id;
     if (!practiceId) return Response.json({ error: 'Missing practice_id' }, { status: 400 });
