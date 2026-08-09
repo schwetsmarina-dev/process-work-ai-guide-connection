@@ -6,6 +6,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 // when enough recurring process material has accumulated.
 
 const READY_THRESHOLD = 70;
+const MIN_COMPLETED_SESSIONS = 3;
 const EDGE_PATTERN = /край|edge|сопротивл|блок|стопор|не могу|избега|внутренн(?:ий|яя|ее)?\s+(?:критик|голос|част)|критик|запрещ|не позволяет|мешает|resisten|no puedo|bloque|evita|cr[ií]tic[oa]\s+interior|voz\s+interior|no me permite/i;
 
 function normalizeText(value) {
@@ -53,12 +54,13 @@ Deno.serve(async (req) => {
     );
 
     // No point building the map before there is enough longitudinal material.
-    if (sessions.length < 2) {
+    if (sessions.length < MIN_COMPLETED_SESSIONS) {
       return Response.json({
         ready: false,
         confidence_score: 0,
         threshold: READY_THRESHOLD,
         completed_sessions: sessions.length,
+        required_sessions: MIN_COMPLETED_SESSIONS,
         latest_session_id: sessions[0]?.id || null,
         theme_label: '',
       });
