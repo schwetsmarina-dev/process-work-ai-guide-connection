@@ -17,7 +17,7 @@ export const CONTROLLER = {
   legalName: "", // e.g. "Marina Schwets"
   taxId: "", // NIE / NIF
   address: "", // full postal address
-  email: "processworkmarina@gmail.com",
+  email: "help@talvira.app",
   site: "https://talvira.app",
   lastUpdated: "2026-07-23",
 };

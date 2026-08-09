@@ -1,4 +1,4 @@
-# Architecture — Process Work AI Guide
+# Architecture — Talvira
 
 > AI-guided self-reflection assistant based on Arnold Mindell's Process-Oriented
 > Psychology. Runs structured sessions across four modes, keeps memory between

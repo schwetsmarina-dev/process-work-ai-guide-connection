@@ -46,6 +46,7 @@ const translations = {
     ai_error_fallback: "Сейчас произошла ошибка генерации ответа. Попробуй ещё раз.",
     // Landing
     start_session: "Начать сессию",
+    landing_hero_alt: "Talvira — направляемые сессии самопознания с ИИ",
     landing_body_title: "Сигнал тела",
     landing_body_desc: "Исследуйте телесные ощущения и скрытые послания",
     landing_dream_title: "Работа со сном",
@@ -57,6 +58,8 @@ const translations = {
     important: "Важно",
     landing_disclaimer_text:
       "Этот инструмент предназначен для самоисследования и саморефлексии. Он не заменяет профессиональную психологическую помощь, терапию, диагностику или лечение. Если вам нужна помощь — обратитесь к специалисту.",
+    footer_about: "О Talvira",
+    footer_contact: "Контакты",
     // Session feedback
     feedback_title: "Поделись отзывом",
     feedback_rating: "Насколько полезной была эта сессия?",
@@ -516,7 +519,8 @@ const translations = {
       "Cuéntame tu sueño tal como lo recuerdas. ¿Qué momentos o sensaciones son los más importantes?",
     ai_error_fallback: "Ahora ha ocurrido un error al generar la respuesta. Inténtalo de nuevo.",
     // Landing
-    start_session: "Iniciar sesión",
+    start_session: "Empezar una sesión",
+    landing_hero_alt: "Talvira — sesiones guiadas de autoconocimiento con IA",
     landing_body_title: "Señal corporal",
     landing_body_desc: "Explora sensaciones corporales y mensajes internos",
     landing_dream_title: "Trabajo con sueños",
@@ -528,6 +532,8 @@ const translations = {
     important: "Importante",
     landing_disclaimer_text:
       "Esta herramienta está diseñada para la autoexploración y la autorreflexión. No sustituye la ayuda psicológica profesional, la terapia, el diagnóstico ni el tratamiento. Si necesitas ayuda, consulta con un profesional.",
+    footer_about: "Sobre Talvira",
+    footer_contact: "Contacto",
     // Session feedback
     feedback_title: "Comparte tu feedback",
     feedback_rating: "¿Qué tan útil fue esta sesión?",
@@ -977,6 +983,22 @@ export function getStoredLanguage() {
   if (typeof localStorage !== "undefined") {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (SUPPORTED_LANGUAGES.includes(stored)) return stored;
+  }
+
+  if (typeof window !== "undefined") {
+    const requested = new URLSearchParams(window.location.search).get("lang");
+    if (SUPPORTED_LANGUAGES.includes(requested)) return requested;
+
+    // Preserve the language of the marketing page that sent the visitor.
+    // talvira.es is Spanish by default; /ru/ is the explicit Russian version.
+    try {
+      const referrer = new URL(document.referrer);
+      if (referrer.hostname === "talvira.es" || referrer.hostname === "www.talvira.es") {
+        return referrer.pathname === "/ru/" || referrer.pathname.startsWith("/ru/") ? "ru" : "es";
+      }
+    } catch {
+      // Empty or non-URL referrer — continue with the browser language.
+    }
   }
   if (typeof navigator !== "undefined" && navigator.language?.startsWith("es")) return "es";
   return DEFAULT_LANGUAGE;

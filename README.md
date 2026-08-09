@@ -1,4 +1,4 @@
-# Process Work AI Guide
+# Talvira
 
 AI-guided self-reflection assistant based on Arnold Mindell's **Process-Oriented
 Psychology**. Users move through structured sessions in four modes — **body

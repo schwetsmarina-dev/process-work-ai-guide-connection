@@ -1,6 +1,6 @@
 # Security & Data Handling Policy
 
-Process Work AI Guide handles **sensitive personal reflections** related to
+Talvira handles **sensitive personal reflections** related to
 emotional and psychological wellbeing. We treat this data with corresponding
 care. This document describes how the system protects it and how to report a
 problem.

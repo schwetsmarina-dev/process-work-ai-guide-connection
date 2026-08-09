@@ -5,9 +5,18 @@ import { normalizeLang, t, getStoredLanguage } from "@/lib/i18n";
 // Global footer with the three external legal links, shown on every page.
 // Each link opens in a new tab; labels follow the current interface language.
 const LEGAL_LINKS = [
-  { labelKey: "footer_terms", href: "https://talvira.es/terminos-y-condiciones/" },
-  { labelKey: "footer_privacy", href: "https://talvira.es/privacy-policy/" },
-  { labelKey: "footer_legal_notice", href: "https://talvira.es/aviso-legal/" },
+  {
+    labelKey: "footer_terms",
+    href: { es: "https://talvira.es/terminos-y-condiciones/", ru: "https://talvira.es/terminos-y-condiciones/" },
+  },
+  {
+    labelKey: "footer_privacy",
+    href: { es: "https://talvira.es/privacy-policy/", ru: "https://talvira.es/politika-konfidentsialnosti/" },
+  },
+  {
+    labelKey: "footer_legal_notice",
+    href: { es: "https://talvira.es/aviso-legal/", ru: "https://talvira.es/pravovaya-informatsiya/" },
+  },
 ];
 
 export default function LegalFooter() {
@@ -38,7 +47,7 @@ export default function LegalFooter() {
         {LEGAL_LINKS.map((link) => (
           <a
             key={link.labelKey}
-            href={link.href}
+            href={link.href[lang]}
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-foreground transition-colors"

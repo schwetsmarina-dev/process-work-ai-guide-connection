@@ -1,5 +1,5 @@
 {
-  "name": "Process Work AI Guide",
+  "name": "Talvira",
   "site": {
     "installCommand": "npm install",
     "buildCommand": "npm run build",
