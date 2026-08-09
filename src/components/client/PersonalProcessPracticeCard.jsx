@@ -89,7 +89,7 @@ export default function PersonalProcessPracticeCard({ userId, lang = "ru", compl
       const res = await base44.functions.invoke("checkProcessPracticeReadiness", {});
       return res.data || {};
     },
-    enabled: !!userId && completedSessions.length >= 2 && !latestPracticeCoversNewestSession,
+    enabled: !!userId && completedSessions.length >= 3 && !latestPracticeCoversNewestSession,
     staleTime: 5 * 60_000,
     retry: 1,
   });
