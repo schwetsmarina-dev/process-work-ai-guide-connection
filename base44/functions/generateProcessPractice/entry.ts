@@ -132,6 +132,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden: admin only for test generation' }, { status: 403 });
     }
 
+    if (!forceTest) {
+      const entitlementRes = await base44.functions.invoke('getEntitlement', {});
+      const entitlement = entitlementRes?.data || entitlementRes;
+      if (!entitlement?.hasAccess) {
+        return Response.json({ error: 'feature_requires_full_access' }, { status: 403 });
+      }
+    }
+
     // Critical privacy boundary: service-role reads below can see any user's
     // sessions. A normal caller must never be allowed to choose another user_id.
     const requestedUserId = normalizeText(body.user_id);
