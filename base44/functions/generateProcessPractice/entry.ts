@@ -6,6 +6,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 // user's completed sessions and memory.
 
 const READY_THRESHOLD = 70;
+const MIN_COMPLETED_SESSIONS = 3;
 const TERM_KEYS = [
   'primary_process',
   'secondary_process',
@@ -60,7 +61,7 @@ function liveFacilitatorNote(language) {
   if (language === 'en') {
     return "The same edge seems to be recurring across your recent sessions. A recorded practice cannot read what is happening for you in real time, so it may also be useful to explore it with a live facilitator at some point if you want to. That is optional; the practice remains available.";
   }
-  return 'В последних сессиях один и тот же край повторяется снова и снова. Записанная практика не может считывать происходящее с вами в реальном времени, поэтому при желании это также можно исследовать с живым фасилитатором. Это не обязательно: практика всё равно остаётся доступна.';
+  return 'В последних сессиях один и тот же край повторяется снова и снова. Записанная практика не может считывать происходящее с тобой в реальном времени, поэтому, если захочешь, это также можно исследовать с живым фасилитатором. Это не обязательно: практика всё равно остаётся доступна.';
 }
 
 function scoreFromMap(nodes, edges, sessionsCount) {
@@ -141,7 +142,14 @@ Deno.serve(async (req) => {
 
     let language = 'ru';
     try {
-      const owners = await base44.asServiceRole.entities.AppUser.filter({ created_by_id: userId });
+      // AppUser ownership is canonical by email; created_by_id is not reliable
+      // for records created through older onboarding flows.
+      const ownersByEmail = caller.email
+        ? await base44.asServiceRole.entities.AppUser.filter({ email: caller.email })
+        : [];
+      const owners = ownersByEmail.length
+        ? ownersByEmail
+        : await base44.asServiceRole.entities.AppUser.filter({ created_by_id: userId });
       if (['ru', 'es', 'en'].includes(owners[0]?.language)) language = owners[0].language;
     } catch (e) {
       console.warn('[generateProcessPractice] language lookup failed; defaulting to ru:', e?.message);
@@ -162,6 +170,15 @@ Deno.serve(async (req) => {
       '-created_date',
       10,
     );
+
+    if (!forceTest && sessions.length < MIN_COMPLETED_SESSIONS) {
+      return Response.json({
+        ready: false,
+        confidence_score: 0,
+        completed_sessions: sessions.length,
+        required_sessions: MIN_COMPLETED_SESSIONS,
+      });
+    }
 
     // Double clicks and overlapping browser requests must not create duplicate
     // practices (or duplicate paid TTS work) for the same newest session.
