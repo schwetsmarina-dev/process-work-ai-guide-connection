@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Lock, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
 import { t } from "@/lib/i18n";
+import { openPaddleCheckout, PADDLE_PRICES } from "@/lib/paddle";
 
 /**
  * Shown in place of a feature the free trial does not include, and when the
@@ -14,19 +14,18 @@ import { t } from "@/lib/i18n";
  * it appears inline. Someone in the middle of writing about their inner life
  * should never have a payment screen thrown over the top of it.
  */
-export default function UpgradePrompt({ lang, variant = "feature", onDismiss = null }) {
+export default function UpgradePrompt({ lang, variant = "feature", onDismiss }) {
   const [busy, setBusy] = useState(false);
 
   const openCheckout = async () => {
     setBusy(true);
     try {
-      const res = await base44.functions.invoke("createCheckoutSession", {});
-      const data = res?.data ?? res;
-      if (data?.url) {
-        window.location.href = data.url;
-        return;
-      }
-      if (data?.alreadyHasAccess) window.location.reload();
+      // Paddle overlay checkout for the active plan (Starter Monthly).
+      // Access is granted by the paddle-webhook writing the Entitlement, not
+      // by the browser — so on completion we just reload and re-read it.
+      await openPaddleCheckout(PADDLE_PRICES.STARTER_MONTHLY, {
+        onComplete: () => window.location.reload(),
+      });
     } catch (e) {
       console.error("[upgrade] checkout failed:", e?.message);
     } finally {
