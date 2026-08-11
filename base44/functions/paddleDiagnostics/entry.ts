@@ -152,6 +152,38 @@ Deno.serve(async (req) => {
       target.traffic_source = updated.json?.data?.traffic_source ?? "all";
     }
 
+    const requiredEvents = [
+      "subscription.created",
+      "subscription.trialing",
+      "subscription.activated",
+      "subscription.updated",
+      "subscription.past_due",
+      "subscription.paused",
+      "subscription.resumed",
+      "subscription.canceled",
+      "transaction.completed",
+      "customer.created",
+      "customer.updated",
+    ];
+    if (requiredEvents.some((name) => !target.subscribed_events.includes(name))) {
+      const updatedEvents = await paddleRequest(
+        base,
+        `/notification-settings/${encodeURIComponent(target.id)}`,
+        apiKey,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ subscribed_events: requiredEvents, traffic_source: "all" }),
+        },
+      );
+      result.notification_events_update_http = updatedEvents.response.status;
+      if (!updatedEvents.response.ok) {
+        result.simulation_error = updatedEvents.json?.error?.type ?? "could_not_update_webhook_events";
+        result.simulation_error_code = updatedEvents.json?.error?.code ?? null;
+        return Response.json(result, { status: 502 });
+      }
+      target.subscribed_events = eventNames(updatedEvents.json?.data?.subscribed_events);
+    }
+
     const isSubscriptionProbe = action === "simulate-subscription";
     const simulationName = isSubscriptionProbe
       ? "Talvira subscription provisioning check"
