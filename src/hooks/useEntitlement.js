@@ -60,6 +60,7 @@ export default function useEntitlement() {
     usageByMode: data?.usageByMode || {},
     hasAccess: isLoading ? undefined : Boolean(data?.hasAccess),
     plan: data?.plan || "free",
+    source: data?.source || null,
     isLifetime: Boolean(data?.isLifetime),
     isGranted: data?.plan === "beta",
     expiresAt: data?.expiresAt || null,
