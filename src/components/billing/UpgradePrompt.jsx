@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Lock, Sparkles, Loader2 } from "lucide-react";
+import { Lock, Sparkles, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { t } from "@/lib/i18n";
 import { openPaddleCheckout, PADDLE_PRICES } from "@/lib/paddle";
@@ -16,9 +16,11 @@ import { openPaddleCheckout, PADDLE_PRICES } from "@/lib/paddle";
  */
 export default function UpgradePrompt({ lang, variant = "feature", onDismiss }) {
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
 
   const openCheckout = async () => {
     setBusy(true);
+    setErr(null);
     try {
       // Paddle overlay checkout for the active plan (Starter Monthly).
       // Access is granted by the paddle-webhook writing the Entitlement, not
@@ -27,7 +29,12 @@ export default function UpgradePrompt({ lang, variant = "feature", onDismiss }) 
         onComplete: () => window.location.reload(),
       });
     } catch (e) {
-      console.error("[upgrade] checkout failed:", e?.message);
+      // Surface the real reason on screen. A silent failure here is impossible
+      // to diagnose for a non-technical owner; the message (e.g. a missing
+      // client token, or a Paddle configuration error) is what we need to see.
+      const msg = e?.message || String(e);
+      console.error("[upgrade] checkout failed:", msg);
+      setErr(msg);
     } finally {
       setBusy(false);
     }
@@ -55,6 +62,13 @@ export default function UpgradePrompt({ lang, variant = "feature", onDismiss }) 
           </Button>
         )}
       </div>
+
+      {err && (
+        <div className="flex items-start gap-2 mt-3 text-sm text-destructive">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span className="break-words">{err}</span>
+        </div>
+      )}
 
       <p className="text-xs text-muted-foreground mt-3">
         <Link to="/terminos" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
