@@ -34,6 +34,36 @@ async function paddleGet(base: string, path: string, key: string) {
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
+  if (url.searchParams.get("action") === "checkout") {
+    const clientToken = Deno.env.get("VITE_PADDLE_CLIENT_TOKEN") ?? "";
+    if (!clientToken) return Response.json({ error: "client token missing" }, { status: 500 });
+    const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Talvira Paddle Sandbox Probe</title>
+  <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+  <style>body{font-family:system-ui,sans-serif;max-width:520px;margin:60px auto;padding:24px}button,input{width:100%;box-sizing:border-box;padding:14px;border-radius:10px}input{border:1px solid #ccc;margin:12px 0}button{border:0;background:#6b3f58;color:#fff;font-weight:700;cursor:pointer}#status{margin-top:16px;color:#555;white-space:pre-wrap}</style>
+</head>
+<body>
+  <h1>Talvira Paddle Sandbox</h1><p>Temporary end-to-end payment test. No real money.</p>
+  <input id="email" type="email" value="talvira.paddle.test.20260811@example.com" aria-label="Test email">
+  <button id="open" type="button">Open sandbox checkout</button><div id="status"></div>
+  <script>
+    const status = document.getElementById("status");
+    Paddle.Environment.set("sandbox");
+    Paddle.Initialize({token: ${JSON.stringify(clientToken)}, eventCallback: (event) => {
+      status.textContent = event?.name || "event";
+      if (event?.name === "checkout.completed") document.body.dataset.checkoutCompleted = "true";
+    }});
+    document.getElementById("open").addEventListener("click", () => {
+      const email = document.getElementById("email").value.trim();
+      Paddle.Checkout.open({items:[{priceId:"pri_01kz9pndmfjywzbhyedrf9eqca",quantity:1}],customer:email?{email}:undefined,settings:{variant:"one-page",displayMode:"overlay"}});
+    });
+  </script>
+</body></html>`;
+    return new Response(html, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+  }
   if (url.searchParams.get("token") !== PROBE_TOKEN) {
     return Response.json({ error: "forbidden" }, { status: 403 });
   }
