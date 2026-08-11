@@ -127,7 +127,8 @@ Deno.serve(async (req) => {
     result.notification_settings_error = destinations.json?.error?.type ?? "request_failed";
   }
 
-  if (url.searchParams.get("action") === "simulate") {
+  const action = url.searchParams.get("action");
+  if (action === "simulate" || action === "simulate-subscription") {
     const target = result.notification_settings.find(
       (d: any) => d.destination === "https://talvira-app.base44.app/functions/paddle-webhook" && d.active,
     );
@@ -151,23 +152,72 @@ Deno.serve(async (req) => {
       target.traffic_source = updated.json?.data?.traffic_source ?? "all";
     }
 
+    const isSubscriptionProbe = action === "simulate-subscription";
+    const simulationName = isSubscriptionProbe
+      ? "Talvira subscription provisioning check"
+      : "Talvira webhook health check";
+    let simulationType = "customer.updated";
+    let simulationConfig: any = undefined;
+
+    if (isSubscriptionProbe) {
+      const testEmail = "talvira.paddle.test.20260811@example.com";
+      const customers = await paddleGet(
+        base,
+        `/customers?email=${encodeURIComponent(testEmail)}&per_page=50`,
+        apiKey,
+      );
+      let customer = Array.isArray(customers.json?.data) ? customers.json.data[0] : null;
+      if (!customer) {
+        const createdCustomer = await paddleRequest(base, "/customers", apiKey, {
+          method: "POST",
+          body: JSON.stringify({ email: testEmail, name: "Talvira Paddle Test" }),
+        });
+        result.customer_create_http = createdCustomer.response.status;
+        if (!createdCustomer.response.ok) {
+          result.simulation_error = createdCustomer.json?.error?.type ?? "could_not_create_test_customer";
+          result.simulation_error_code = createdCustomer.json?.error?.code ?? null;
+          result.simulation_error_detail = createdCustomer.json?.error?.detail ?? null;
+          return Response.json(result, { status: 502 });
+        }
+        customer = createdCustomer.json?.data;
+      }
+      result.test_customer_id = customer?.id ?? null;
+      simulationType = "subscription_creation";
+      simulationConfig = {
+        subscription_creation: {
+          entities: {
+            customer_id: customer.id,
+            items: [{ price_id: "pri_01kz9pndmfjywzbhyedrf9eqca", quantity: 1 }],
+          },
+          options: {
+            customer_simulated_as: "existing_details_prefilled",
+            business_simulated_as: "not_provided",
+            discount_simulated_as: "not_provided",
+          },
+        },
+      };
+    }
+
     const list = await paddleGet(
       base,
       `/simulations?notification_setting_id=${encodeURIComponent(target.id)}&per_page=50`,
       apiKey,
     );
     let simulation = Array.isArray(list.json?.data)
-      ? list.json.data.find((s: any) => s.name === "Talvira webhook health check" && s.status === "active")
+      ? list.json.data.find((s: any) => s.name === simulationName && s.status === "active")
       : null;
 
     if (!simulation) {
+      const payload: any = {
+        notification_setting_id: target.id,
+        name: simulationName,
+        type: simulationType,
+      };
+      if (simulationConfig) payload.config = simulationConfig;
+
       const created = await paddleRequest(base, "/simulations", apiKey, {
         method: "POST",
-        body: JSON.stringify({
-          notification_setting_id: target.id,
-          name: "Talvira webhook health check",
-          type: "customer.updated",
-        }),
+        body: JSON.stringify(payload),
       });
       result.simulation_create_http = created.response.status;
       if (!created.response.ok) {
