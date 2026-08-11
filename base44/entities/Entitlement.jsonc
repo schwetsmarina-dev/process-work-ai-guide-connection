@@ -18,7 +18,7 @@
         "paid"
       ],
       "default": "free",
-      "description": "beta = granted access (testers, invited therapists); paid = active Stripe subscription"
+      "description": "beta = granted access (testers, invited therapists); paid = active Paddle or Stripe subscription"
     },
     "status": {
       "type": "string",
@@ -40,10 +40,11 @@
       "enum": [
         "beta_grant",
         "stripe",
+        "paddle",
         "admin",
         "migration"
       ],
-      "description": "Where this entitlement came from, for audit"
+      "description": "Where this entitlement came from, for audit (Paddle is the primary launch provider; Stripe remains as fallback)"
     },
     "note": {
       "type": "string",
@@ -51,13 +52,34 @@
     },
     "granted_by": {
       "type": "string",
-      "description": "Email of the admin who granted it, empty for Stripe"
+      "description": "Email of the admin who granted it, empty for paid providers"
     },
     "stripe_customer_id": {
       "type": "string"
     },
     "stripe_subscription_id": {
       "type": "string"
+    },
+    "paddle_customer_id": {
+      "type": "string",
+      "description": "Paddle customer ID (ctm_...) used to open the hosted customer portal"
+    },
+    "paddle_subscription_id": {
+      "type": "string",
+      "description": "Paddle subscription ID (sub_...) used for webhook upserts and portal deep links"
+    },
+    "price_id": {
+      "type": "string",
+      "description": "Current Paddle price ID"
+    },
+    "product_id": {
+      "type": "string",
+      "description": "Current Paddle product ID"
+    },
+    "scheduled_change": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When a scheduled cancellation or pause becomes effective"
     },
     "description": {
       "type": "string",
