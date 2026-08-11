@@ -125,6 +125,8 @@ Deno.serve(async (req) => {
       result.simulation_create_http = created.response.status;
       if (!created.response.ok) {
         result.simulation_error = created.json?.error?.type ?? "could_not_create_simulation";
+        result.simulation_error_code = created.json?.error?.code ?? null;
+        result.simulation_error_detail = created.json?.error?.detail ?? null;
         return Response.json(result, { status: 502 });
       }
       simulation = created.json?.data;
@@ -139,6 +141,8 @@ Deno.serve(async (req) => {
     result.simulation_run_http = run.response.status;
     if (!run.response.ok) {
       result.simulation_error = run.json?.error?.type ?? "could_not_start_simulation";
+      result.simulation_error_code = run.json?.error?.code ?? null;
+      result.simulation_error_detail = run.json?.error?.detail ?? null;
       return Response.json(result, { status: 502 });
     }
 
