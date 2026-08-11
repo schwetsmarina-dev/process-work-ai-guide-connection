@@ -54,7 +54,12 @@ Deno.serve(async (req) => {
 
     switch (event?.eventType) {
       case "subscription.created":
+      case "subscription.trialing":
+      case "subscription.activated":
       case "subscription.updated":
+      case "subscription.past_due":
+      case "subscription.paused":
+      case "subscription.resumed":
       case "subscription.canceled": {
         const s: any = event.data;
 
