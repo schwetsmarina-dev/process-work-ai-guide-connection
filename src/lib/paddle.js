@@ -11,8 +11,14 @@
 
 import { base44 } from "@/api/base44Client";
 
-const CLIENT_TOKEN = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
 const ENV = import.meta.env.VITE_PADDLE_ENV || "sandbox";
+// Paddle client-side tokens are public by design. This sandbox fallback lets
+// the Base44-hosted preview open Checkout without storing a production token
+// in source. Live mode still requires VITE_PADDLE_CLIENT_TOKEN.
+const SANDBOX_CLIENT_TOKEN = "test_1352fd0772cbdc4339dd664f7e2";
+const CLIENT_TOKEN =
+  import.meta.env.VITE_PADDLE_CLIENT_TOKEN ||
+  (ENV === "sandbox" ? SANDBOX_CLIENT_TOKEN : "");
 const CDN = "https://cdn.paddle.com/paddle/v2/paddle.js";
 
 // One launch offer: Founder, €9.99/month. Keep the sandbox fallback only for
