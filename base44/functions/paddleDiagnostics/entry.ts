@@ -89,6 +89,7 @@ Deno.serve(async (req) => {
         destination: d.destination,
         active: d.active,
         type: d.type,
+        traffic_source: d.traffic_source,
         subscribed_events: eventNames(d.subscribed_events),
       }))
     : [];
@@ -102,6 +103,22 @@ Deno.serve(async (req) => {
     );
     if (!target) {
       return Response.json({ ...result, simulation_error: "active webhook destination not found" }, { status: 500 });
+    }
+
+    if (target.traffic_source !== "all") {
+      const updated = await paddleRequest(
+        base,
+        `/notification-settings/${encodeURIComponent(target.id)}`,
+        apiKey,
+        { method: "PATCH", body: JSON.stringify({ traffic_source: "all" }) },
+      );
+      result.notification_setting_update_http = updated.response.status;
+      if (!updated.response.ok) {
+        result.simulation_error = updated.json?.error?.type ?? "could_not_enable_simulation_traffic";
+        result.simulation_error_code = updated.json?.error?.code ?? null;
+        return Response.json(result, { status: 502 });
+      }
+      target.traffic_source = updated.json?.data?.traffic_source ?? "all";
     }
 
     const list = await paddleGet(
