@@ -14,7 +14,7 @@ import { openPaddleCheckout, PADDLE_PRICE_ID } from "@/lib/paddle";
  * it appears inline. Someone in the middle of writing about their inner life
  * should never have a payment screen thrown over the top of it.
  */
-export default function UpgradePrompt({ lang, variant = "feature", onDismiss }) {
+export default function UpgradePrompt({ lang, variant = "feature", onDismiss = null }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
 
