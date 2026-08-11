@@ -11,19 +11,16 @@
 
 import { base44 } from "@/api/base44Client";
 
-// Price IDs created in Paddle (sandbox). Starter Monthly is the active plan.
-export const PADDLE_PRICES = {
-  STARTER_MONTHLY: "pri_01kz9pndmfjywzbhyedrf9eqca",
-  STARTER_YEARLY: "pri_01kz9pndrjqghappxjabn723sp",
-  PRO_MONTHLY: "pri_01kz9pne9ecpxm2qp114p9p64t",
-  PRO_YEARLY: "pri_01kz9pned8c4merzrdmvemdz3x",
-  ADVANCED_MONTHLY: "pri_01kz9pnerq60qwt8t72axawmjv",
-  ADVANCED_YEARLY: "pri_01kz9pnewvgn8e7dnf38xa1th7",
-};
-
 const CLIENT_TOKEN = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
 const ENV = import.meta.env.VITE_PADDLE_ENV || "sandbox";
 const CDN = "https://cdn.paddle.com/paddle/v2/paddle.js";
+
+// One launch offer: Founder, €9.99/month. Keep the sandbox fallback only for
+// the already-created sandbox catalog; production must receive its own live
+// price through VITE_PADDLE_PRICE_ID so a sandbox ID can never leak into live.
+const SANDBOX_FOUNDER_PRICE_ID = "pri_01kz9pndmfjywzbhyedrf9eqca";
+export const PADDLE_PRICE_ID =
+  import.meta.env.VITE_PADDLE_PRICE_ID || (ENV === "sandbox" ? SANDBOX_FOUNDER_PRICE_ID : "");
 
 /**
  * Minimal surface of the Paddle browser SDK used by this module.
@@ -106,6 +103,9 @@ export async function getPaddle() {
  * @param {{ onComplete?: () => void }} [opts]
  */
 export async function openPaddleCheckout(priceId, opts = {}) {
+  if (!priceId) {
+    throw new Error("VITE_PADDLE_PRICE_ID is not set for this environment");
+  }
   const Paddle = await getPaddle();
   onCompleteRef = typeof opts.onComplete === "function" ? opts.onComplete : null;
 
