@@ -67,6 +67,9 @@ Deno.serve(async (req) => {
           const customer = await paddle.customers.get(s.customerId);
           email = customer?.email ?? "";
         }
+        // ВАЖНО: приложение хранит и ищет entitlements по email в НИЖНЕМ регистре
+        // (см. getEntitlement). Нормализуем, иначе "оплачено, а доступа нет".
+        email = email.trim().toLowerCase();
         if (!email) {
           // Без email не к кому привязать доступ — вернём не-2xx, Paddle повторит.
           throw new Error("cannot resolve customer email for subscription " + s.id);
