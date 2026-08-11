@@ -5,6 +5,7 @@ import { Sparkles, Loader2, Infinity as InfinityIcon, CreditCard, AlertTriangle 
 import { base44 } from "@/api/base44Client";
 import { t } from "@/lib/i18n";
 import useEntitlement from "@/hooks/useEntitlement";
+import { openPaddleCheckout, PADDLE_PRICE_ID } from "@/lib/paddle";
 
 /**
  * Subscription card in Settings.
@@ -14,14 +15,14 @@ import useEntitlement from "@/hooks/useEntitlement";
  *   granted (beta) — founding testers and invited therapists. They see a thank
  *     you and NO upgrade button. Showing a paywall to someone who was promised
  *     the product for free is the fastest way to lose them.
- *   paid           — link to the Stripe portal to change card or cancel.
+ *   paid           — link to the matching provider portal to change card or cancel.
  *   free           — the only state with a payment button.
  *
  * While the entitlement is loading, `hasAccess` is undefined and nothing is
  * rendered, so a paying user never sees a paywall flash on a slow connection.
  */
 export default function SubscriptionCard({ lang }) {
-  const { isLoading, hasAccess, plan, isLifetime, expiresAt } = useEntitlement();
+  const { isLoading, hasAccess, plan, source, isLifetime, expiresAt } = useEntitlement();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -29,20 +30,14 @@ export default function SubscriptionCard({ lang }) {
     setBusy(true);
     setError("");
     try {
-      const res = await base44.functions.invoke("createCheckoutSession", {});
-      const data = res?.data ?? res;
-      if (data?.url) {
-        window.location.href = data.url;
-        return;
-      }
-      if (data?.alreadyHasAccess) {
-        window.location.reload();
-        return;
-      }
-      setError(t("billing_error", lang));
+      await openPaddleCheckout(PADDLE_PRICE_ID, {
+        // Webhook processing is asynchronous; allow a short moment before the
+        // page asks Base44 for the new entitlement.
+        onComplete: () => setTimeout(() => window.location.reload(), 1500),
+      });
     } catch (e) {
-      console.error("[checkout] failed:", e?.message);
-      setError(t("billing_error", lang));
+      console.error("[paddle checkout] failed:", e?.message);
+      setError(e?.message || t("billing_error", lang));
     } finally {
       setBusy(false);
     }
@@ -52,7 +47,8 @@ export default function SubscriptionCard({ lang }) {
     setBusy(true);
     setError("");
     try {
-      const res = await base44.functions.invoke("createPortalSession", {});
+      const functionName = source === "paddle" ? "createPaddlePortalSession" : "createPortalSession";
+      const res = await base44.functions.invoke(functionName, {});
       const data = res?.data ?? res;
       if (data?.url) {
         window.location.href = data.url;
