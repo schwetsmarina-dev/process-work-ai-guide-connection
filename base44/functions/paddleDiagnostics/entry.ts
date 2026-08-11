@@ -9,15 +9,27 @@ function eventNames(value: unknown): string[] {
   return value.map((item: any) => typeof item === "string" ? item : item?.name).filter(Boolean);
 }
 
-async function paddleGet(base: string, path: string, key: string) {
+async function paddleRequest(
+  base: string,
+  path: string,
+  key: string,
+  options: RequestInit = {},
+) {
   const response = await fetch(base + path, {
+    ...options,
     headers: {
       Authorization: `Bearer ${key}`,
       "Paddle-Version": "1",
+      "Content-Type": "application/json",
+      ...(options.headers ?? {}),
     },
   });
   const json = await response.json().catch(() => ({}));
   return { response, json };
+}
+
+async function paddleGet(base: string, path: string, key: string) {
+  return paddleRequest(base, path, key);
 }
 
 Deno.serve(async (req) => {
@@ -82,6 +94,77 @@ Deno.serve(async (req) => {
     : [];
   if (!destinations.response.ok) {
     result.notification_settings_error = destinations.json?.error?.type ?? "request_failed";
+  }
+
+  if (url.searchParams.get("action") === "simulate") {
+    const target = result.notification_settings.find(
+      (d: any) => d.destination === "https://talvira-app.base44.app/functions/paddle-webhook" && d.active,
+    );
+    if (!target) {
+      return Response.json({ ...result, simulation_error: "active webhook destination not found" }, { status: 500 });
+    }
+
+    const list = await paddleGet(
+      base,
+      `/simulations?notification_setting_id=${encodeURIComponent(target.id)}&per_page=50`,
+      apiKey,
+    );
+    let simulation = Array.isArray(list.json?.data)
+      ? list.json.data.find((s: any) => s.name === "Talvira webhook health check" && s.status === "active")
+      : null;
+
+    if (!simulation) {
+      const created = await paddleRequest(base, "/simulations", apiKey, {
+        method: "POST",
+        body: JSON.stringify({
+          notification_setting_id: target.id,
+          name: "Talvira webhook health check",
+          type: "customer.updated",
+        }),
+      });
+      result.simulation_create_http = created.response.status;
+      if (!created.response.ok) {
+        result.simulation_error = created.json?.error?.type ?? "could_not_create_simulation";
+        return Response.json(result, { status: 502 });
+      }
+      simulation = created.json?.data;
+    }
+
+    const run = await paddleRequest(
+      base,
+      `/simulations/${encodeURIComponent(simulation.id)}/runs`,
+      apiKey,
+      { method: "POST" },
+    );
+    result.simulation_run_http = run.response.status;
+    if (!run.response.ok) {
+      result.simulation_error = run.json?.error?.type ?? "could_not_start_simulation";
+      return Response.json(result, { status: 502 });
+    }
+
+    const runId = run.json?.data?.id;
+    result.simulation_id = simulation.id;
+    result.simulation_run_id = runId;
+
+    let runState: any = run.json?.data ?? {};
+    for (let attempt = 0; attempt < 8 && runState?.status === "pending"; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      const current = await paddleGet(
+        base,
+        `/simulations/${encodeURIComponent(simulation.id)}/runs/${encodeURIComponent(runId)}?include=events`,
+        apiKey,
+      );
+      if (current.response.ok) runState = current.json?.data ?? runState;
+    }
+
+    result.simulation_status = runState?.status ?? "unknown";
+    result.simulation_events = Array.isArray(runState?.events)
+      ? runState.events.map((event: any) => ({
+          id: event.id,
+          status: event.status,
+          response_code: event.response_code ?? event.response?.status_code ?? null,
+        }))
+      : [];
   }
 
   return Response.json(result);
