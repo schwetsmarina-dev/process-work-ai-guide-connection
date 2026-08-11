@@ -12,7 +12,12 @@
 const WEBHOOK_URL = "https://talvira-app.base44.app/functions/paddle-webhook";
 const EVENTS = [
   "subscription.created",
+  "subscription.trialing",
+  "subscription.activated",
   "subscription.updated",
+  "subscription.past_due",
+  "subscription.paused",
+  "subscription.resumed",
   "subscription.canceled",
   "transaction.completed",
   "customer.created",
