@@ -63,6 +63,8 @@ Deno.serve(async (req) => {
         destination: WEBHOOK_URL,
         type: "url",
         active: true,
+        api_version: 1,
+        traffic_source: "all",
         subscribed_events: EVENTS,
       }),
     });
