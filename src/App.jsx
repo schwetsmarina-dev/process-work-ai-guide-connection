@@ -39,6 +39,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import PaddleCheckoutTest from './pages/PaddleCheckoutTest';
 import LegalFooter from '@/components/layout/LegalFooter';
 
 function ProtectedAdminRoute({ children }) {
@@ -123,6 +124,7 @@ const AuthenticatedApp = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/paddle-checkout-test" element={<PaddleCheckoutTest />} />
 
       {/* Authenticated routes — gated by ProtectedRoute, unauthenticated users go to /login */}
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
