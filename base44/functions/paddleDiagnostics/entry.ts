@@ -127,6 +127,7 @@ Deno.serve(async (req) => {
         result.simulation_error = created.json?.error?.type ?? "could_not_create_simulation";
         result.simulation_error_code = created.json?.error?.code ?? null;
         result.simulation_error_detail = created.json?.error?.detail ?? null;
+        result.simulation_error_fields = created.json?.error?.errors ?? null;
         return Response.json(result, { status: 502 });
       }
       simulation = created.json?.data;
