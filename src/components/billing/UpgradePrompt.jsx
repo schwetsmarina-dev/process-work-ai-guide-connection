@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Lock, Sparkles, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { t } from "@/lib/i18n";
-import { openPaddleCheckout, PADDLE_PRICES } from "@/lib/paddle";
+import { openPaddleCheckout, PADDLE_PRICE_ID } from "@/lib/paddle";
 
 /**
  * Shown in place of a feature the free trial does not include, and when the
@@ -22,10 +22,10 @@ export default function UpgradePrompt({ lang, variant = "feature", onDismiss }) 
     setBusy(true);
     setErr(null);
     try {
-      // Paddle overlay checkout for the active plan (Starter Monthly).
+      // Paddle overlay checkout for the Founder plan (€9.99/month).
       // Access is granted by the paddle-webhook writing the Entitlement, not
       // by the browser — so on completion we just reload and re-read it.
-      await openPaddleCheckout(PADDLE_PRICES.STARTER_MONTHLY, {
+      await openPaddleCheckout(PADDLE_PRICE_ID, {
         onComplete: () => window.location.reload(),
       });
     } catch (e) {
