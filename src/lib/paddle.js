@@ -1,14 +1,15 @@
-// Paddle.js (v2) loader + overlay checkout helper for the frontend.
+// Paddle.js (v2) overlay checkout helper for the frontend.
 //
-// Loads Paddle from the official CDN (no npm dependency to install), initialises
-// it once with the PUBLIC client-side token, and opens overlay checkout for a
-// price. The client-side token is safe to expose in the frontend by design.
+// The official Paddle wrapper is the supported loader for bundled Vite apps.
+// It downloads and initialises Paddle.js once with the public client-side token,
+// then exposes the same Checkout API as Paddle.js itself.
 //
 // Env vars (Base44 → app settings; the VITE_ prefix exposes them to the frontend):
 //   VITE_PADDLE_CLIENT_TOKEN — public client-side token from Paddle → Authentication
 //                              (starts with test_ in sandbox, live_ in production)
 //   VITE_PADDLE_ENV          — "sandbox" or "production" (defaults to "sandbox")
 
+import { initializePaddle } from "@paddle/paddle-js";
 import { base44 } from "@/api/base44Client";
 
 const ENV = import.meta.env.VITE_PADDLE_ENV || "sandbox";
@@ -19,7 +20,6 @@ const SANDBOX_CLIENT_TOKEN = "test_1352fd0772cbdc4339dd664f7e2";
 const CLIENT_TOKEN =
   import.meta.env.VITE_PADDLE_CLIENT_TOKEN ||
   (ENV === "sandbox" ? SANDBOX_CLIENT_TOKEN : "");
-const CDN = "https://cdn.paddle.com/paddle/v2/paddle.js";
 
 // One launch offer: Founder, €9.99/month. Keep the sandbox fallback only for
 // the already-created sandbox catalog; production must receive its own live
@@ -28,77 +28,41 @@ const SANDBOX_FOUNDER_PRICE_ID = "pri_01kz9pndmfjywzbhyedrf9eqca";
 export const PADDLE_PRICE_ID =
   import.meta.env.VITE_PADDLE_PRICE_ID || (ENV === "sandbox" ? SANDBOX_FOUNDER_PRICE_ID : "");
 
-/**
- * Minimal surface of the Paddle browser SDK used by this module.
- * Keeping this local avoids weakening typechecking for the rest of the app.
- * @typedef {{
- *   Environment: { set: (environment: string) => void },
- *   Initialize: (options: { token: string, eventCallback: (event: { name?: string } | undefined) => void }) => void,
- *   Checkout: { open: (options: object) => void }
- * }} PaddleBrowserSdk
- */
-
-/** @returns {PaddleBrowserSdk | undefined} */
-function readPaddleGlobal() {
-  return /** @type {Window & { Paddle?: PaddleBrowserSdk }} */ (window).Paddle;
-}
-
 // The overlay's completion handler is set per-open but delivered through the
-// single global eventCallback Paddle v2 expects, so we route it via this ref.
+// single eventCallback Paddle expects, so we route it via this ref.
 /** @type {(() => void) | null} */
 let onCompleteRef = null;
-/** @type {Promise<PaddleBrowserSdk> | null} */
+/** @type {ReturnType<typeof initializePaddle> | null} */
 let paddlePromise = null;
-
-/** @returns {Promise<PaddleBrowserSdk>} */
-function loadScript() {
-  return new Promise((resolve, reject) => {
-    const loaded = readPaddleGlobal();
-    if (loaded) return resolve(loaded);
-
-    const existing = document.querySelector(`script[src="${CDN}"]`);
-    if (existing) {
-      existing.addEventListener("load", () => {
-        const Paddle = readPaddleGlobal();
-        if (Paddle) resolve(Paddle);
-        else reject(new Error("Paddle SDK loaded but window.Paddle is unavailable"));
-      });
-      existing.addEventListener("error", reject);
-      return;
-    }
-
-    const s = document.createElement("script");
-    s.src = CDN;
-    s.async = true;
-    s.onload = () => {
-      const Paddle = readPaddleGlobal();
-      if (Paddle) resolve(Paddle);
-      else reject(new Error("Paddle SDK loaded but window.Paddle is unavailable"));
-    };
-    s.onerror = reject;
-    document.head.appendChild(s);
-  });
-}
 
 /** Load + initialise Paddle once. Resolves to the Paddle browser SDK. */
 export async function getPaddle() {
   if (!CLIENT_TOKEN) {
     throw new Error("VITE_PADDLE_CLIENT_TOKEN is not set");
   }
-  if (paddlePromise) return paddlePromise;
-  paddlePromise = (async () => {
-    const Paddle = await loadScript();
-    if (ENV === "sandbox") Paddle.Environment.set("sandbox");
-    Paddle.Initialize({
+  if (!paddlePromise) {
+    paddlePromise = initializePaddle({
+      environment: ENV === "sandbox" ? "sandbox" : "production",
       token: CLIENT_TOKEN,
       eventCallback: (ev) => {
         if (ev?.name === "checkout.completed" && typeof onCompleteRef === "function") {
           onCompleteRef();
         }
       },
-    });
-    return Paddle;
-  })();
+    })
+      .then((Paddle) => {
+        if (!Paddle) {
+          throw new Error("Paddle.js did not initialize");
+        }
+        return Paddle;
+      })
+      .catch((error) => {
+        // Allow a retry after a transient CDN or browser-network failure.
+        paddlePromise = null;
+        const message = error instanceof Error ? error.message : "Paddle.js failed to load";
+        throw new Error(message, { cause: error });
+      });
+  }
   return paddlePromise;
 }
 
