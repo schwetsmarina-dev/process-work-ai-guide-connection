@@ -82,6 +82,13 @@ Deno.serve(async (req) => {
 
         const mapped = mapStatus(s.status);
         const scheduled = s.scheduledChange?.effectiveAt ?? null;
+        const occurredAtValue = (event as any).occurredAt;
+        const parsedOccurredAt = occurredAtValue instanceof Date
+          ? occurredAtValue
+          : new Date(occurredAtValue ?? 0);
+        const eventOccurredAt = Number.isNaN(parsedOccurredAt.getTime())
+          ? new Date(0).toISOString()
+          : parsedOccurredAt.toISOString();
         const data = {
           user_email: email,
           plan: "paid",
@@ -92,21 +99,56 @@ Deno.serve(async (req) => {
           price_id: s.items?.[0]?.price?.id ?? "",
           product_id: s.items?.[0]?.price?.productId ?? "",
           scheduled_change: scheduled,
+          paddle_event_occurred_at: eventOccurredAt,
           // Доступ заканчивается на дату запланированной отмены/паузы,
           // либо сразу, если подписка уже canceled; иначе не ограничиваем.
           expires_at: scheduled ?? (mapped === "canceled" ? new Date().toISOString() : null),
         };
 
-        // Upsert: по paddle_subscription_id → иначе апгрейдим строку того же email → иначе создаём.
+        const updateIfCurrent = async (row: any) => {
+          const storedAt = row?.paddle_event_occurred_at
+            ? new Date(row.paddle_event_occurred_at).getTime()
+            : Number.NEGATIVE_INFINITY;
+          const incomingAt = parsedOccurredAt.getTime();
+          // Paddle does not guarantee delivery order. Never let an older event
+          // overwrite a newer subscription state already stored in Talvira.
+          if (!Number.isNaN(incomingAt) && incomingAt >= storedAt) {
+            await Entitlement.update(row.id, data);
+          }
+        };
+
+        const consolidateSubscriptionRows = async () => {
+          const rows = await Entitlement.filter({ paddle_subscription_id: s.id });
+          if (!rows?.length) return;
+          const ordered = [...rows].sort((a: any, b: any) =>
+            String(a.created_date ?? "").localeCompare(String(b.created_date ?? ""))
+          );
+          const [primary, ...duplicates] = ordered;
+          await updateIfCurrent(primary);
+          // Parallel lifecycle events can race on first delivery. Keep one
+          // canonical entitlement for the Paddle subscription.
+          await Promise.allSettled(
+            duplicates.map((row: any) => Entitlement.delete(row.id))
+          );
+        };
+
+        // subscription.created is the only event allowed to create a new row.
+        // Later lifecycle events may arrive first; returning non-2xx makes
+        // Paddle retry them after the canonical row has been created.
         if (bySub?.length) {
-          await Entitlement.update(bySub[0].id, data);
+          await consolidateSubscriptionRows();
         } else {
           const byEmail = await Entitlement.filter({ user_email: email });
           if (byEmail?.length) {
-            await Entitlement.update(byEmail[0].id, data);
-          } else {
+            await updateIfCurrent(byEmail[0]);
+          } else if (event.eventType === "subscription.created") {
             await Entitlement.create(data);
+          } else {
+            throw new Error(
+              "subscription entitlement not initialized yet: " + s.id
+            );
           }
+          await consolidateSubscriptionRows();
         }
         break;
       }
