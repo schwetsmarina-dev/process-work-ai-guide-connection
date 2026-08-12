@@ -81,6 +81,11 @@
       "format": "date-time",
       "description": "When a scheduled cancellation or pause becomes effective"
     },
+    "paddle_event_occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of the newest Paddle event applied. Prevents out-of-order webhooks from restoring stale subscription state."
+    },
     "description": {
       "type": "string",
       "maxLength": 1000,
