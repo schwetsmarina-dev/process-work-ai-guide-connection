@@ -7,15 +7,15 @@ const CRISIS_KEYWORDS = [
   "суицид", "убить себя", "покончить", "самоубийство",
   "самоповреждение", "порезать себя", "резать вены",
   "не хочу жить", "нет смысла жить", "лучше бы меня не было",
-  "хочу умереть", "убить", "насилие",
+  "хочу умереть", "не проснуться", "уснуть навсегда", "исчезнуть навсегда",\n  "причинить вред другому", "убить его", "убить её", "голоса велят",\n  "голоса приказывают", "за мной следят", "не могу отличить реальность",\n  "не чувствую себя в реальности", "сильная боль в груди", "не могу дышать", "передозировка",
   // Spanish
   "suicidio", "suicidarme", "matarme", "quitarme la vida",
   "hacerme daño", "autolesión", "cortarme", "no quiero vivir",
-  "no quiero seguir viviendo", "quiero morir", "mejor no existir",
+  "no quiero seguir viviendo", "quiero morir", "mejor no existir",\n  "no despertar", "dormirme para siempre", "desaparecer para siempre",\n  "hacer daño a otra persona", "matarlo", "matarla", "las voces me dicen",\n  "las voces me ordenan", "me están persiguiendo", "no distingo la realidad",\n  "no me siento en la realidad", "dolor fuerte en el pecho", "no puedo respirar", "sobredosis",
   // English
   "suicide", "kill myself", "end my life", "self-harm",
   "hurt myself", "cut myself", "don't want to live",
-  "want to die", "better off dead",
+  "want to die", "better off dead", "never wake up", "sleep forever",\n  "disappear forever", "hurt someone else", "voices tell me", "voices command me",\n  "being followed", "cannot tell what is real", "not feeling real",\n  "severe chest pain", "cannot breathe", "overdose",
 ];
 
 // Localized crisis resources, shown when a crisis signal is detected.
