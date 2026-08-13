@@ -7,9 +7,9 @@ import { format } from "date-fns";
 
 const iconMap = { Heart, Moon, GitBranch, PenLine };
 
-export default function RecentSessionCard({ session }) {
+export default function RecentSessionCard({ session, lang = getStoredLanguage() }) {
   const Icon = iconMap[MODE_ICONS[session.mode]] || Heart;
-  const label = MODE_LABELS[session.mode]?.ru || session.mode;
+  const label = MODE_LABELS[session.mode]?.[lang] || MODE_LABELS[session.mode]?.ru || session.mode;
   const isActive = session.status === "active";
 
   return (
@@ -25,7 +25,7 @@ export default function RecentSessionCard({ session }) {
           <span className="font-medium text-sm">{label}</span>
           {isActive && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-              {t("active", getStoredLanguage())}
+              {t("active", lang)}
             </span>
           )}
         </div>

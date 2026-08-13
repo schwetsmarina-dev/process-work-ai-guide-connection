@@ -34,8 +34,8 @@ problem.
 - Server-side secrets (payment keys, notification address, etc.) live in
   **Base44 app settings** and are read in backend functions via
   `Deno.env.get(...)` only.
-- Payment card data is **never** handled by our servers — it is processed by the
-  payment provider (Stripe/PayPal). We store only non-sensitive references
+- Payment card data is **never** handled by our servers — it is processed by
+  Paddle, Talvira's Merchant of Record. We store only non-sensitive references
   (customer/subscription ids, plan status).
 
 ## Safety module
@@ -62,7 +62,7 @@ are removed.
 If you discover a security or privacy issue, please report it privately rather
 than opening a public issue:
 
-- **Contact:** security@pwguide.uwu.ai *(update to a monitored address)*
+- **Contact:** help@talvira.app
 - Please include steps to reproduce and any relevant details.
 - We aim to acknowledge reports within **5 business days** and to keep you
   updated on remediation.

@@ -1,7 +1,14 @@
 import React from "react";
 import { Sparkles } from "lucide-react";
+import { MODE_LABELS } from "@/lib/modeSteps";
 
-export default function ModeCardDB({ mode, onClick }) {
+export default function ModeCardDB({ mode, onClick, lang = "ru" }) {
+  const modeId = mode.mode_id || mode.id;
+  const label = MODE_LABELS[modeId]?.[lang] || mode.mode_name_ru || modeId;
+  const description = lang === "es"
+    ? (mode.description_es || mode.description)
+    : mode.description;
+
   return (
     <button
       onClick={() => onClick(mode)}
@@ -11,10 +18,10 @@ export default function ModeCardDB({ mode, onClick }) {
         <Sparkles className="w-5 h-5 text-primary" />
       </div>
       <h3 className="font-serif text-lg font-semibold mb-1">
-        {mode.mode_name_ru || mode.mode_id}
+        {label}
       </h3>
       <p className="text-muted-foreground text-sm leading-relaxed">
-        {mode.description || ""}
+        {description || ""}
       </p>
     </button>
   );

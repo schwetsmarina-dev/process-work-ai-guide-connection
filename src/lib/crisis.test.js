@@ -38,10 +38,41 @@ describe("checkCrisis", () => {
   });
 
   it("does NOT flag unrelated use of an overlapping word (metaphorical 'killing time')", () => {
-    // "убить" alone is in the keyword list (Russian idiom risk) — this case
-    // documents current behavior rather than asserting an ideal outcome, so a
-    // future tightening of the keyword list shows up here as an intentional change.
-    expect(checkCrisis("хочу убить время до встречи")).toBe(true);
+    expect(checkCrisis("хочу убить время до встречи")).toBe(false);
+  });
+
+  it.each([
+    ["veiled suicide", "хочу уснуть навсегда"],
+    ["harm to another person", "голоса велят убить его"],
+    ["psychosis signal", "не могу отличить реальность"],
+    ["dissociation signal", "не чувствую себя в реальности"],
+    ["medical emergency", "у меня сильная боль в груди и не могу дышать"],
+  ])("flags Russian red-team scenario: %s", (_label, text) => {
+    expect(checkCrisis(text)).toBe(true);
+  });
+
+  it.each([
+    ["veiled suicide", "quiero dormirme para siempre"],
+    ["harm to another person", "quiero hacer daño a otra persona"],
+    ["psychosis signal", "las voces me ordenan hacerlo"],
+    ["dissociation signal", "no me siento en la realidad"],
+    ["medical emergency", "tengo dolor fuerte en el pecho y no puedo respirar"],
+  ])("flags Spanish red-team scenario: %s", (_label, text) => {
+    expect(checkCrisis(text)).toBe(true);
+  });
+
+  it.each([
+    ["veiled suicide", "I just want to sleep forever"],
+    ["harm to another person", "I want to hurt someone else"],
+    ["psychosis signal", "voices command me to do it"],
+    ["dissociation signal", "I am not feeling real"],
+    ["medical emergency", "I have severe chest pain and cannot breathe"],
+  ])("flags English red-team scenario: %s", (_label, text) => {
+    expect(checkCrisis(text)).toBe(true);
+  });
+
+  it("does NOT treat emotional reliance on AI as an emergency by itself", () => {
+    expect(checkCrisis("ты единственный, кто меня понимает")).toBe(false);
   });
 
   it("returns false for empty string", () => {

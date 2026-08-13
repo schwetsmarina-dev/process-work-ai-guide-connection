@@ -9,7 +9,7 @@ every message with a real-time safety module.
 > **Not a medical device and not a substitute for professional psychological
 > help.** A wellbeing / self-exploration tool. See `SECURITY.md`.
 
-- **Live:** https://pwguide.uwu.ai
+- **Live:** https://talvira.app
 - **Platform:** Base44 (managed backend, DB, auth, AI gateway)
 - **Status:** MVP in beta testing
 - **Architecture:** see [`ARCHITECTURE.md`](./ARCHITECTURE.md)
@@ -19,7 +19,7 @@ every message with a real-time safety module.
 
 React 18 · Vite 6 · React Router 6 · TanStack Query 5 · Tailwind 3 · shadcn/ui ·
 react-hook-form + zod · Base44 (Deno backend functions, entities, AI gateway) ·
-Stripe SDK (integration pending).
+Paddle.js + Paddle Billing (checkout, subscriptions, webhooks and customer portal).
 
 ## Local development
 
@@ -40,7 +40,7 @@ VITE_BASE44_APP_ID=<your app id>
 VITE_BASE44_APP_BASE_URL=<your backend url, e.g. https://<app>.base44.app>
 ```
 
-Server-side secrets (Stripe keys, `TEAM_NOTIFICATION_EMAIL`, etc.) are configured
+Server-side secrets (Paddle API/webhook keys, `TEAM_NOTIFICATION_EMAIL`, etc.) are configured
 in **Base44 app settings**, read in functions via `Deno.env.get(...)`, and must
 **never** appear in `src/` (client bundle) or in git.
 
@@ -77,9 +77,9 @@ base44/agents     AI agent configs          src/lib          domain logic
 1. **Hygiene & docs** — real README/ARCHITECTURE/SECURITY, remove dev/diagnostic
    artifacts, archive one-off migrations. *(in progress)*
 2. **Structure** — decompose large modules; standardize ownership fields.
-3. **Payments** — Stripe Checkout + Customer Portal + webhook + server-side
-   entitlement checks; `Subscription` entity. Apple Pay / Google Pay / PayPal
-   supported in web/PWA without app-store fees.
+3. **Payments** — finish Paddle Live verification and production credentials;
+   checkout, customer portal, webhook handling and server-side entitlement
+   checks are implemented. Paddle acts as Merchant of Record.
 4. **Mobile** — PWA-first; optional Capacitor native wrapper post-funding.
 5. **Scale readiness** — error tracking, product analytics, smoke tests, GDPR
    data-export/deletion flows.

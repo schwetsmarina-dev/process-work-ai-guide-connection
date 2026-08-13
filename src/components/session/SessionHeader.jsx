@@ -4,6 +4,7 @@ import { Heart, X, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { t } from "@/lib/i18n";
+import { MODE_LABELS } from "@/lib/modeSteps";
 import {
   Popover,
   PopoverContent,
@@ -24,7 +25,7 @@ import {
 export default function SessionHeader({ session, totalSteps, onEndSession, lang = "ru" }) {
   const navigate = useNavigate();
   const modeId = session.mode_id || session.mode || "";
-  const label = session.mode_name_ru || modeId;
+  const label = MODE_LABELS[modeId]?.[lang] || session.mode_name_ru || modeId;
   const currentStep = session.current_step || 1;
   const progress = totalSteps > 0 ? ((currentStep - 1) / totalSteps) * 100 : 0;
 

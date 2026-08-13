@@ -8,7 +8,7 @@
 > replacement for professional care.** See `SECURITY.md` for data-handling rules.
 
 Platform: **Base44** (BaaS — managed database, auth, backend functions, AI gateway)
-Domain: **pwguide.uwu.ai** · Languages: **ru / es** (en partial)
+Domain: **talvira.app** · Marketing site: **talvira.es** · Languages: **ru / es** (en partial)
 
 ---
 
@@ -22,7 +22,7 @@ Domain: **pwguide.uwu.ai** · Languages: **ru / es** (en partial)
 | Backend    | Base44 functions (Deno runtime, `entry.ts` per function)          |
 | Data       | Base44 entities (12 tables, see §3)                               |
 | AI         | Base44 AI gateway via the `invokeAI` function                     |
-| Payments   | Stripe SDK installed (`@stripe/stripe-js`) — integration pending  |
+| Payments   | Paddle Billing: overlay checkout, webhooks, entitlements and customer portal |
 
 ## 2. Repository layout
 
@@ -99,11 +99,12 @@ flow — safety signals stay logged for human review.
 
 ## 7. Roadmap (see also README §Roadmap)
 
-- **Payments:** add `Subscription`/entitlement entity, Stripe Checkout + Customer
-  Portal, a Stripe **webhook** function, and **server-side** entitlement checks
-  (never trust the client `plan` field to gate paid features).
-- **Mobile:** PWA-first (installable, no store fees; Stripe/PayPal/Apple Pay/
-  Google Pay all work in web). Optional Capacitor wrapper later for App/Play Store
+- **Payments:** Paddle is the primary launch provider and Merchant of Record.
+  Checkout, customer portal, signed webhook processing and server-side
+  entitlement checks are implemented. Production rollout requires Paddle Live
+  approval and separate production credentials.
+- **Mobile:** PWA-first (installable and distributed on the web). Payment methods
+  available to a buyer are presented by Paddle Checkout. Optional Capacitor wrapper later for App/Play Store
   (triggers Apple/Google in-app-purchase rules).
 - **Structure:** decompose monoliths (`sessionAI.js` ~1540 lines,
   `systemPrompt.js`, `SessionChat.jsx`); standardize ownership fields (§3);

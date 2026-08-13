@@ -411,7 +411,7 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
-          {modes.map((mode) => <ModeCardDB key={mode.id} mode={mode} onClick={handleModeSelect} />)}
+          {modes.map((mode) => <ModeCardDB key={mode.id} mode={mode} onClick={handleModeSelect} lang={lang} />)}
         </div>
       )}
 
@@ -430,7 +430,7 @@ export default function Dashboard() {
             <Button variant="ghost" size="sm" onClick={() => navigate("/history")}>{t("all_sessions", lang)}</Button>
           </div>
           <div className="space-y-2">
-            {recentSessions.map((session) => <RecentSessionCard key={session.id} session={session} />)}
+            {recentSessions.map((session) => <RecentSessionCard key={session.id} session={session} lang={lang} />)}
           </div>
         </div>
       ) : null}

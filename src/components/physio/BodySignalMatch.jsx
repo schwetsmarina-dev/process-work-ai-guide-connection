@@ -1,4 +1,4 @@
-import { t, getStoredLanguage } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
 import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -19,8 +19,7 @@ const METRIC_LABELS = {
 
 // Pairs the body-mode session's signals with physiological data recorded in the
 // same period (±12h window around the session). Body mode only.
-export default function BodySignalMatch({ session, userId }) {
-  const lang = getStoredLanguage();
+export default function BodySignalMatch({ session, userId, lang = "ru" }) {
   const [physioData, setPhysioData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showImport, setShowImport] = useState(false);

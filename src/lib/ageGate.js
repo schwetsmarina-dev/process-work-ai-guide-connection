@@ -16,7 +16,7 @@
 // calendar year. This can turn away someone for a few months, which is the
 // right direction to err.
 
-export const MIN_AGE = 16;
+export const MIN_AGE = 18;
 
 /** How old the person turns during the current calendar year. */
 export function ageThisYear(birthYear) {
