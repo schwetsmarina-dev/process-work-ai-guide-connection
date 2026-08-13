@@ -108,7 +108,7 @@ Puedes reclamar ante la **Agencia Española de Protección de Datos** (www.aepd.
 
 ## 9. Menores
 
-El servicio está dirigido a personas mayores de **16 años**. Comprobamos la edad en el registro y eliminamos las cuentas que no cumplan este requisito.
+El servicio está dirigido exclusivamente a personas adultas, **mayores de 18 años**. Comprobamos la edad en el registro y eliminamos las cuentas que no cumplan este requisito.
 
 ## 10. Seguridad
 
@@ -137,7 +137,7 @@ Esto es lo más importante de este documento:
 
 ## 3. Quién puede usarlo
 
-Personas mayores de 16 años. Al registrarte confirmas que cumples este requisito.
+Personas adultas mayores de 18 años. Al registrarte confirmas que cumples este requisito.
 
 No es adecuado durante una crisis psicológica aguda, un episodio psicótico o con ideación suicida activa. En esos casos busca atención profesional presencial.
 
@@ -254,7 +254,7 @@ const privacyRu = () => {
 
 ## 9. Несовершеннолетние
 
-Сервис предназначен для лиц **старше 16 лет**. Возраст проверяется при регистрации; аккаунты, не отвечающие этому требованию, удаляются.
+Сервис предназначен только для совершеннолетних лиц **старше 18 лет**. Возраст проверяется при регистрации; аккаунты, не отвечающие этому требованию, удаляются.
 
 ## 10. Безопасность
 
@@ -283,7 +283,7 @@ const termsRu = () => `# Условия использования
 
 ## 3. Кто может пользоваться
 
-Люди старше 16 лет. Регистрируясь, ты подтверждаешь это.
+Совершеннолетние лица старше 18 лет. Регистрируясь, ты подтверждаешь это.
 
 Сервис не подходит при острой психологической кризисной ситуации, психотическом эпизоде или активных суицидальных мыслях. В этих случаях нужна очная профессиональная помощь.
 
