@@ -217,7 +217,7 @@ export default function SessionSummary() {
 
   const resolvedMode = session.mode_id || session.mode || "journaling";
   const Icon = iconMap[MODE_ICONS[resolvedMode]] || Heart;
-  const label = MODE_LABELS[resolvedMode]?.ru || resolvedMode;
+  const label = MODE_LABELS[resolvedMode]?.[language] || MODE_LABELS[resolvedMode]?.ru || resolvedMode;
   const isAdmin = hasAdminRole(currentUser);
   const isAdminViewing = isAdmin && session.user_id !== currentUser.id;
 
@@ -392,7 +392,7 @@ export default function SessionSummary() {
           transition={{ duration: 0.5, delay: 0.45 }}
           className="mt-6"
         >
-          <BodySignalMatch session={session} userId={currentUser.id} />
+          <BodySignalMatch session={session} userId={currentUser.id} lang={language} />
         </motion.div>
       )}
 
