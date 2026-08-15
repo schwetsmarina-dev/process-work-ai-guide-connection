@@ -99,6 +99,16 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const sessionId = body.session_id || body.event?.entity_id;
 
+    // Cross-session memory is optional. Existing users without the field keep
+    // the previous default (enabled); an explicit false always wins.
+    const caller = await base44.auth.me().catch(() => null);
+    if (caller?.email) {
+      const profiles = await base44.asServiceRole.entities.AppUser.filter({ email: caller.email }).catch(() => []);
+      if (profiles[0]?.memory_enabled === false) {
+        return Response.json({ skipped: true, reason: 'memory_disabled' });
+      }
+    }
+
     if (!sessionId) {
       return Response.json({ error: 'Missing session_id' }, { status: 400 });
     }
