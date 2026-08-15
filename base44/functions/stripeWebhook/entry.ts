@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     /** Create or update the paid entitlement for one subscription. */
     async function upsertPaid({ email, subscriptionId, customerId, status, currentPeriodEnd }) {
       if (!email) {
-        console.warn('[stripeWebhook] event without user_email, skipping', subscriptionId);
+        console.warn('[stripeWebhook] event without user email; skipping');
         return;
       }
 
@@ -85,10 +85,10 @@ Deno.serve(async (req) => {
 
       if (existing && existing.length > 0) {
         await svc.update(existing[0].id, payload);
-        console.log('[stripeWebhook] updated entitlement', { email, subscriptionId, status: mapped });
+        console.log('[stripeWebhook] entitlement updated', { status: mapped });
       } else {
         await svc.create(payload);
-        console.log('[stripeWebhook] created entitlement', { email, subscriptionId, status: mapped });
+        console.log('[stripeWebhook] entitlement created', { status: mapped });
       }
     }
 
