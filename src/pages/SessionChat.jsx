@@ -143,7 +143,7 @@ export default function SessionChat() {
     (async () => {
       try {
         const u = await base44.auth.me();
-        console.log("[SessionChat] currentUser loaded:", u?.email, "role:", u?.role);
+        if (import.meta.env.DEV) console.log("[SessionChat] current user loaded", { role: u?.role });
         setCurrentUser(u);
         const rows = await base44.entities.AppUser.filter({ email: u?.email });
         setAppUser(rows[0] || null);
@@ -159,7 +159,7 @@ export default function SessionChat() {
   const { data: session, isLoading: sessionLoading } = useQuery({
     queryKey: ["session", sessionId, currentUser?.email],
     queryFn: async () => {
-      console.log("[SessionChat] loading session:", sessionId, "for user:", currentUser?.email);
+      if (import.meta.env.DEV) console.log("[SessionChat] loading session");
       // A session just created by the startSession backend function can take a
       // moment to become visible to this client-side RLS-gated read — the
       // create happens via the service role, this read happens via the user's
@@ -184,7 +184,7 @@ export default function SessionChat() {
         }
       }
       if (!found) {
-        console.warn("[SessionChat] session not found after retries", { sessionId, attempts: maxAttempts });
+        console.warn("[SessionChat] session not found after retries", { attempts: maxAttempts });
         setAccessDenied(true);
         return null;
       }
@@ -198,7 +198,7 @@ export default function SessionChat() {
           setIsAdminView(true);
           return found;
         }
-        console.warn("[SessionChat] access denied — session owned by", found.user_id);
+        console.warn("[SessionChat] access denied");
         setAccessDenied(true);
         return null;
       }
@@ -211,9 +211,9 @@ export default function SessionChat() {
   const { data: dbMessages = [], isLoading: msgsLoading, refetch: refetchMessages } = useQuery({
     queryKey: ["messages", sessionId, currentUser?.email],
     queryFn: async () => {
-      console.log("[SessionFlow] loading messages — session:", sessionId, "user:", currentUser?.email);
+      if (import.meta.env.DEV) console.log("[SessionFlow] loading messages");
       const msgs = await listMessages(sessionId);
-      console.log("[SessionFlow] messages loaded:", msgs.length, "for session:", sessionId);
+      if (import.meta.env.DEV) console.log("[SessionFlow] messages loaded", { count: msgs.length });
       return msgs;
     },
     // Only load messages AFTER session ownership has been confirmed (session !== null + not denied)
@@ -387,7 +387,7 @@ export default function SessionChat() {
     const modeId = String(session.mode_id || session.mode || "").trim();
     const currentStep = session.current_step || 1;
 
-    console.log("[CHAT_FLOW] 1. user message received:", text.substring(0, 60), "step:", currentStep);
+    if (import.meta.env.DEV) console.log("[CHAT_FLOW] user message received", { step: currentStep });
 
     // Optimistic: show user message immediately in UI
     const optimisticUserMsg = {
@@ -628,13 +628,12 @@ export default function SessionChat() {
 
       const userMessages = sessionMessages.filter((m) => m.role === "user");
 
-      console.log(
-        "[SessionFlow] finalizing session:", sessionId,
-        "owner:", currentUser?.email,
-        "total messages:", sessionMessages.length,
-        "user messages:", userMessages.length,
-        "first preview:", userMessages[0]?.content?.substring(0, 60) || "(none)"
-      );
+      if (import.meta.env.DEV) {
+        console.log("[SessionFlow] finalizing session", {
+          messageCount: sessionMessages.length,
+          userMessageCount: userMessages.length,
+        });
+      }
 
       // Guard: if no real user messages, skip LLM and save fallback only
       if (userMessages.length === 0) {
@@ -676,7 +675,9 @@ export default function SessionChat() {
       // Fire-and-forget: do NOT await — must not delay the redirect or surface errors.
       base44.functions
         .invoke("persistSessionMemory", { session_id: sessionId })
-        .then((res) => console.log("[SessionFlow] memory persist requested:", res?.data))
+        .then(() => {
+          if (import.meta.env.DEV) console.log("[SessionFlow] memory persist requested");
+        })
         .catch((memErr) => console.error("[SessionFlow] memory persist request failed (silent):", memErr?.message));
     } catch (e) {
       console.error("[SessionFlow] finalization error:", e.message);
@@ -929,14 +930,15 @@ export default function SessionChat() {
                 // Input is disabled ONLY for states where typing makes no sense.
                 // stepError NO LONGER disables input — user must always be able to type.
                 const inputDisabled = !!shiftSuggestion || isAdminView || sessionComplete;
-                console.log("[CHAT_INPUT_STATE]", {
-                  disabled: inputDisabled,
-                  loading: isAiLoading,
-                  isGenerating: isAiLoading,
-                  sessionLoaded: !!session,
-                  currentStep: session?.current_step ?? null,
-                  stepError,
-                });
+                if (import.meta.env.DEV) {
+                  console.log("[CHAT_INPUT_STATE]", {
+                    disabled: inputDisabled,
+                    loading: isAiLoading,
+                    sessionLoaded: !!session,
+                    currentStep: session?.current_step ?? null,
+                    stepError,
+                  });
+                }
                 return (
                   <ChatInput
                     onSend={handleSend}
