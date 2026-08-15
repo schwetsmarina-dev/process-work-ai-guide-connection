@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -71,6 +71,10 @@ export default function PrivacyControls({ user, appUser, lang = "ru" }) {
   const [memorySaving, setMemorySaving] = useState(false);
   const [memoryDeleting, setMemoryDeleting] = useState(false);
   const [memoryDeleted, setMemoryDeleted] = useState(false);
+
+  useEffect(() => {
+    setMemoryEnabled(appUser?.memory_enabled !== false);
+  }, [appUser?.memory_enabled]);
 
   const handleExport = async () => {
     if (!email) return;
