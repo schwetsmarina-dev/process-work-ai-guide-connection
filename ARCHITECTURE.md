@@ -20,7 +20,7 @@ Domain: **talvira.app** · Marketing site: **talvira.es** · Languages: **ru / e
 | UI kit     | shadcn/ui (Radix primitives), lucide-react, framer-motion         |
 | Forms/valid| react-hook-form, zod                                              |
 | Backend    | Base44 functions (Deno runtime, `entry.ts` per function)          |
-| Data       | Base44 entities (12 tables, see §3)                               |
+| Data       | Base44 entities (15 app schemas plus the platform User schema, see §3) |
 | AI         | Base44 AI gateway via the `invokeAI` function                     |
 | Payments   | Paddle Billing: overlay checkout, webhooks, entitlements and customer portal |
 
@@ -28,11 +28,11 @@ Domain: **talvira.app** · Marketing site: **talvira.es** · Languages: **ru / e
 
 ```
 base44/
-  entities/      # 12 data-model schemas (.jsonc) — auto-synced on write
-  functions/     # 20 backend functions (Deno), one dir + entry.ts each
+  entities/      # 16 schemas (.jsonc; one extends platform User) — auto-synced on write
+  functions/     # 29 backend-function directories (Deno), including maintenance/migrations
   agents/        # AI agent configs (insight_guide)
 src/
-  pages/         # 20 route-level screens (Dashboard, SessionChat, Journal, …)
+  pages/         # 25 route-level screens (Dashboard, SessionChat, Journal, …)
   components/    # ~100 UI + feature components (session/, dashboard/, ui/, …)
   lib/           # domain logic: sessionAI, systemPrompt, stage detection, i18n, …
   hooks/  api/  utils/
@@ -59,7 +59,7 @@ Safety & data: **RiskEvent** (logged safety signal — type/severity/status),
 
 ## 4. Session lifecycle
 
-1. User gives consent (`AppUser.consent_given`) and picks a language.
+1. User confirms 18+, accepts versioned consent, explicitly consents to relevant special-category processing and acknowledges the AI interaction.
 2. User selects a mode → a **Session** is created (`status=active`).
 3. Opening greeting is posted (canonical per-mode question).
 4. **Turn loop** (see `src/pages/SessionChat.jsx` + `src/lib/sessionAI.js`):
@@ -72,7 +72,7 @@ Safety & data: **RiskEvent** (logged safety signal — type/severity/status),
      rolls `current_step` back (used by the in-chat "undo" control)
 5. On close: `generateSessionSummary` fills summary/themes/signals;
    `persistSessionMemory` extracts durable **UserMemory** from the transcript
-   (idempotent, runs once per session).
+   (idempotent, runs once per session, and skips when the user has disabled memory).
 
 ## 5. Safety module
 
