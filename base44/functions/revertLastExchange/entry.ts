@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
         await base44.asServiceRole.entities.Message.delete(m.id);
         removedCount++;
       } catch (delErr) {
-        console.error('[revertLastExchange] delete failed for', m.id, '—', delErr?.message);
+        console.error('[revertLastExchange] message delete failed:', delErr?.message);
       }
     }
 
