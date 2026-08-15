@@ -8,7 +8,7 @@
 // Access model:
 //   free  — trial. One session per mode, chat only. See FREE_FEATURES.
 //   beta  — granted access (founding testers, invited therapists). Full, free.
-//   paid  — active Stripe subscription. Full.
+//   paid  — active Paddle subscription. Full.
 //
 // expires_at === null means LIFETIME. Founding testers are recorded this way,
 // so nothing about the paywall ever needs to special-case them.
