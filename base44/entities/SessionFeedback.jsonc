@@ -22,6 +22,15 @@
       "type": "string",
       "description": "Language at time of feedback"
     },
+    "summary_accuracy": {
+      "type": "string",
+      "enum": [
+        "yes",
+        "partial",
+        "no"
+      ],
+      "description": "Whether the AI summary corresponds to the user\u2019s own experience"
+    },
     "rating": {
       "type": "number",
       "minimum": 1,
