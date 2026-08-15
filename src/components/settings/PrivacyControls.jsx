@@ -291,7 +291,7 @@ export default function PrivacyControls({ user, appUser, lang = "ru" }) {
             ))}
           </div>
         )}
-        {memoryDeleted && <p className="text-xs text-primary mt-2">{tx.memory_deleted}</p>
+        {memoryDeleted && <p className="text-xs text-primary mt-2">{tx.memory_deleted}</p>}
       </div>
 
       {/* Danger zone */}
