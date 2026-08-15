@@ -9,13 +9,13 @@ const L = {
   ru: {
     title: "Твои данные",
     intro:
-      "Твои сессии и записи принадлежат тебе. Ты можешь скачать всё в любой момент или удалить без следа.",
+      "Твои сессии и записи принадлежат тебе. Ты можешь скачать полный экспорт или удалить пользовательские данные Talvira.",
     export: "Скачать мои данные",
     export_hint:
-      "Полный экспорт в файл JSON: профиль, сессии, сообщения, инсайты, память и отзывы.",
+      "Полный экспорт в файл JSON: профиль, сессии, сообщения, инсайты, память, практики, физиологические данные, связи с терапевтом и отзывы.",
     danger_title: "Удалить все мои данные",
     danger_hint:
-      "Безвозвратно удаляет все твои сессии, сообщения, инсайты и память. Это действие нельзя отменить.",
+      "Безвозвратно удаляет сессии, сообщения, инсайты, память, практики и другие пользовательские данные Talvira. Техническая учётная запись и платёжные записи могут храниться, когда этого требует закон.",
     delete_btn: "Удалить мои данные",
     confirm_label: "Чтобы подтвердить, впиши слово УДАЛИТЬ:",
     confirm_word: "УДАЛИТЬ",
@@ -27,13 +27,13 @@ const L = {
   es: {
     title: "Tus datos",
     intro:
-      "Tus sesiones y notas te pertenecen. Puedes descargarlo todo en cualquier momento o borrarlo sin dejar rastro.",
+      "Tus sesiones y notas te pertenecen. Puedes descargar una copia completa o eliminar tus datos de usuario de Talvira.",
     export: "Descargar mis datos",
     export_hint:
-      "Exportación completa a un archivo JSON: perfil, sesiones, mensajes, insights, memoria y valoraciones.",
+      "Exportación completa en JSON: perfil, sesiones, mensajes, insights, memoria, prácticas, datos fisiológicos, vínculos con terapeutas y valoraciones.",
     danger_title: "Eliminar todos mis datos",
     danger_hint:
-      "Elimina de forma permanente todas tus sesiones, mensajes, insights y memoria. Esta acción no se puede deshacer.",
+      "Elimina de forma permanente tus sesiones, mensajes, insights, memoria, prácticas y demás datos de usuario de Talvira. La cuenta técnica y los registros de facturación podrán conservarse cuando lo exija la ley.",
     delete_btn: "Eliminar mis datos",
     confirm_label: "Para confirmar, escribe la palabra ELIMINAR:",
     confirm_word: "ELIMINAR",
@@ -65,9 +65,12 @@ export default function PrivacyControls({ user, appUser, lang = "ru" }) {
       // UserMemory.user_id is ALSO the platform User.id (set by
       // persistSessionMemory as session.user_id) — not AppUser.id, which is a
       // different record entirely.
-      const [sessions, insights] = await Promise.all([
+      const [sessions, insights, practices, physiological, riskEvents] = await Promise.all([
         base44.entities.Session.filter({ user_id: user?.id }, "-created_date", 1000).catch(() => []),
         base44.entities.Insight.filter({ created_by: email }, "-created_date", 1000).catch(() => []),
+        base44.entities.ProcessPractice.filter({ user_id: user?.id }, "-created_date", 1000).catch(() => []),
+        base44.entities.PhysiologicalData.filter({ user_id: user?.id }, "-recorded_at", 1000).catch(() => []),
+        base44.entities.RiskEvent.filter({ user_id: user?.id }, "-detected_at", 1000).catch(() => []),
       ]);
       const memory = user?.id
         ? await base44.entities.UserMemory.filter({ user_id: user.id }).catch(() => [])
@@ -75,6 +78,16 @@ export default function PrivacyControls({ user, appUser, lang = "ru" }) {
       const feedback = await base44.entities.SessionFeedback
         .filter({ user_email: email })
         .catch(() => []);
+      const [clientLinksAsClient, clientLinksAsTherapist, assignmentsAsClient, assignmentsAsTherapist] =
+        await Promise.all([
+          base44.entities.ClientLink.filter({ client_email: email }).catch(() => []),
+          base44.entities.ClientLink.filter({ therapist_email: email }).catch(() => []),
+          base44.entities.Assignment.filter({ client_email: email }).catch(() => []),
+          base44.entities.Assignment.filter({ therapist_email: email }).catch(() => []),
+        ]);
+      const dedupe = (rows) => [...new Map(rows.map((row) => [row.id, row])).values()];
+      const client_links = dedupe([...clientLinksAsClient, ...clientLinksAsTherapist]);
+      const assignments = dedupe([...assignmentsAsClient, ...assignmentsAsTherapist]);
 
       const messages_by_session = {};
       for (const s of sessions.slice(0, 300)) {
@@ -93,11 +106,21 @@ export default function PrivacyControls({ user, appUser, lang = "ru" }) {
           insights: insights.length,
           memory: memory.length,
           feedback: feedback.length,
+          practices: practices.length,
+          physiological: physiological.length,
+          risk_events: riskEvents.length,
+          client_links: client_links.length,
+          assignments: assignments.length,
         },
         sessions,
         messages_by_session,
         insights,
         memory,
+        practices,
+        physiological,
+        risk_events: riskEvents,
+        client_links,
+        assignments,
         feedback,
       };
 
@@ -105,7 +128,7 @@ export default function PrivacyControls({ user, appUser, lang = "ru" }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `process-work-data-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `talvira-data-${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -131,7 +154,7 @@ export default function PrivacyControls({ user, appUser, lang = "ru" }) {
       }
       setDone(true);
       setTimeout(() => {
-        window.location.href = "/dashboard";
+        base44.auth.logout("/");
       }, 2500);
     } catch (e) {
       console.error("[deleteMyData] failed:", e?.message);
