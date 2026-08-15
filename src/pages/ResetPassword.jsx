@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, Loader2, AlertTriangle } from "lucide-react";
+import { Lock, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import { getStoredLanguage, t, translateAuthError } from "@/lib/i18n";
 
@@ -17,6 +17,7 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,13 +29,29 @@ export default function ResetPassword() {
     setLoading(true);
     try {
       await base44.auth.resetPassword({ resetToken, newPassword });
-      window.location.href = "/login";
+      setSuccess(true);
     } catch (err) {
       setError(translateAuthError(err?.message, language, "err_reset_failed"));
     } finally {
       setLoading(false);
     }
   };
+
+  if (success) {
+    return (
+      <AuthLayout
+        icon={CheckCircle2}
+        title={t("auth_reset_success_title", language)}
+        subtitle={t("auth_reset_success_text", language)}
+      >
+        <Link to="/login" className="block">
+          <Button className="w-full h-12 font-medium">
+            {t("auth_back_to_login", language)}
+          </Button>
+        </Link>
+      </AuthLayout>
+    );
+  }
 
   if (!resetToken) {
     return (
