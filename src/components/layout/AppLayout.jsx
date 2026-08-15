@@ -111,7 +111,7 @@ export default function AppLayout() {
   useEffect(() => {
     base44.auth.me().then(async (user) => {
       const admin = hasAdminRole(user);
-      console.log("[ADMIN_ACCESS]", { email: user?.email, role: user?.role, isAdmin: admin });
+      if (import.meta.env.DEV) console.log("[ADMIN_ACCESS]", { role: user?.role, isAdmin: admin });
       setIsAdmin(admin);
       setIsTherapist(hasTherapistRole(user));
       setCurrentUser(user);
