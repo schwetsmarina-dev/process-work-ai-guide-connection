@@ -917,7 +917,7 @@ export async function getAIResponse(session, step, messages, userMessage, langua
   const isBeginnerConfused = detectBeginnerConfusion(userMessage);
   const isBodyModeEarly = (currentMode || "").toLowerCase().includes("body");
   if (isBeginnerConfused) {
-    console.log("[BEGINNER_CHOICES_OFFERED]", { mode: currentMode, userMessage: userMessage.slice(0, 60) });
+    if (import.meta.env.DEV) console.log("[BEGINNER_CHOICES_OFFERED]", { mode: currentMode });
   }
   const beginnerChoicesInstruction = isBeginnerConfused
     ? `\n\n🟢 ПОЛЬЗОВАТЕЛЬ ЗАТРУДНЯЕТСЯ ОТВЕТИТЬ — НЕ УГЛУБЛЯЙ\n` +
@@ -1148,8 +1148,8 @@ export async function getAIResponse(session, step, messages, userMessage, langua
   });
   console.log("[SESSION_STATE]", {
     stage_rank: sessionState.current_stage_rank,
-    selected_focus: sessionState.selected_process_focus,
-    current_process_target: sessionState.current_process_target,
+    has_selected_focus: !!sessionState.selected_process_focus,
+    has_current_process_target: !!sessionState.current_process_target,
     focus_locked: sessionState.focus_locked,
     exploration_depth: sessionState.exploration_depth,
     integration_detected: sessionState.integration_detected,
@@ -1371,7 +1371,7 @@ ${userMessage}
       current_step: step.step_number ?? "?",
       step_key: step.step_key || "—",
       goal: step.goal || "—",
-      question: step.question || "—",
+      has_question: !!step.question,
       related_term_ids: step.related_term_ids || "—",
     });
   }
@@ -1390,7 +1390,7 @@ ${userMessage}
     closureDetected: completionDetection.isComplete,
     closureSignal: completionDetection.matchedSignal || null,
     isLooping,
-    primaryThread,
+    hasPrimaryThread: !!primaryThread,
     hasSecondaryMaterial,
   });
 
