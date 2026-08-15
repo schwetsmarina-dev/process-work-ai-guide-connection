@@ -23,7 +23,8 @@ import ChatInput from "@/components/session/ChatInput";
 import StepErrorDebug from "@/components/session/StepErrorDebug";
 import { normalizeLang, t } from "@/lib/i18n";
 import { getSummaryUnavailableText } from "@/lib/summaryFallback";
-import { track, EVENTS } from "@/lib/telemetry";
+import { reportOperationalError, track, EVENTS } from "@/lib/telemetry";
+import { AI_GATEWAY_VERSION, SYSTEM_PROMPT_VERSION } from "@/lib/aiVersion";
 import { fetchEntitlement } from "@/hooks/useEntitlement";
 
 // Canonical, mode-specific opening question (do NOT use DB step.question for the first greeting)
@@ -503,7 +504,8 @@ export default function SessionChat() {
         rawResponse = await getAIResponse({ ...session, current_step: currentStep }, step, updatedMessages, text, language, memoriesBlock);
         console.log("[CHAT_FLOW] 4. AI response generated, length:", rawResponse?.length);
       } catch (aiErr) {
-        console.error("[CHAT_FLOW] AI generation failed:", aiErr);
+        if (import.meta.env.DEV) console.error("[CHAT_FLOW] AI generation failed:", aiErr);
+        reportOperationalError("ai_generation_failed", { mode: modeId, language });
         rawResponse = t("ai_error_fallback", language);
         setSendErrorMessage(`${t("err_ai_generic", language)}: ${aiErr?.message || String(aiErr)}`);
       }
@@ -516,7 +518,8 @@ export default function SessionChat() {
         await createMessage({ session_id: sessionId, mode_id: modeId, step_number: currentStep, role: "assistant", content: cleanText });
         console.log("[CHAT_FLOW] 6. assistant message save success");
       } catch (saveErr) {
-        console.error("[CHAT_FLOW] assistant message save failed:", saveErr);
+        if (import.meta.env.DEV) console.error("[CHAT_FLOW] assistant message save failed:", saveErr);
+        reportOperationalError("assistant_message_save_failed", { mode: modeId });
         setSendErrorMessage(`${t("err_save_generic", language)}: ${saveErr?.message || String(saveErr)}`);
         setIsAiLoading(false);
         queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
@@ -529,7 +532,11 @@ export default function SessionChat() {
       const nextStep = step.next_step_on_answer ? Number(step.next_step_on_answer) : null;
 
       if (nextStep) {
-        await base44.entities.Session.update(sessionId, { current_step: nextStep });
+        await base44.entities.Session.update(sessionId, {
+          current_step: nextStep,
+          system_prompt_version: SYSTEM_PROMPT_VERSION,
+          ai_gateway_version: AI_GATEWAY_VERSION,
+        });
         // Update the cache synchronously as well. invalidateQueries only marks
         // the data stale and refetches asynchronously, which left a window
         // where the next turn still read the previous step and re-asked the
@@ -552,7 +559,8 @@ export default function SessionChat() {
         setShiftSuggestion({ suggestedMode });
       }
     } catch (err) {
-      console.error("[CHAT_FLOW] send failed at unknown stage:", err);
+      if (import.meta.env.DEV) console.error("[CHAT_FLOW] send failed:", err);
+      reportOperationalError("session_send_failed", { mode: modeId, step: currentStep });
       setOptimisticMessages([]);
       setIsAiLoading(false);
       setSendError(true);
@@ -647,6 +655,8 @@ export default function SessionChat() {
           themes: [],
           signals: [],
           next_step_suggestion: "",
+          system_prompt_version: SYSTEM_PROMPT_VERSION,
+          ai_gateway_version: AI_GATEWAY_VERSION,
         });
       } else {
         const summaryData = await generateSessionSummary(session, sessionMessages, language);
@@ -665,6 +675,8 @@ export default function SessionChat() {
           secondary_process: secondaryProcess,
           next_step_suggestion: summaryData.next_step_suggestion || "",
           confidence_note: summaryData.confidence_note || "",
+          system_prompt_version: SYSTEM_PROMPT_VERSION,
+          ai_gateway_version: AI_GATEWAY_VERSION,
         });
       }
 
@@ -682,7 +694,8 @@ export default function SessionChat() {
         })
         .catch((memErr) => console.error("[SessionFlow] memory persist request failed (silent):", memErr?.message));
     } catch (e) {
-      console.error("[SessionFlow] finalization error:", e.message);
+      if (import.meta.env.DEV) console.error("[SessionFlow] finalization error:", e);
+      reportOperationalError("session_finalization_failed", { mode: session?.mode_id || session?.mode || "unknown" });
       await base44.entities.Session.update(sessionId, {
         status: "completed",
         ended_at: new Date().toISOString(),
