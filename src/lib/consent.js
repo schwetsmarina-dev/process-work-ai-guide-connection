@@ -10,7 +10,7 @@
 // informed they are interacting with an AI system. `ai_disclosure_ack` records
 // that this was shown and acknowledged.
 
-export const CONSENT_VERSION = "2026-07-a";
+export const CONSENT_VERSION = "2026-08-b";
 
 /**
  * Fields to persist on AppUser when the user accepts the consent step.
@@ -21,6 +21,8 @@ export function buildConsentRecord(lang, birthYear) {
     birth_year: birthYear || null,
     age_confirmed_at: new Date().toISOString(),
     consent_given: true,
+    special_category_consent_given: true,
+    special_category_consent_given_at: new Date().toISOString(),
     ai_disclosure_ack: true,
     consent_version: CONSENT_VERSION,
     consent_given_at: new Date().toISOString(),
@@ -32,6 +34,7 @@ export function buildConsentRecord(lang, birthYear) {
 export function hasCurrentConsent(appUser) {
   return Boolean(
     appUser?.consent_given &&
+      appUser?.special_category_consent_given &&
       appUser?.ai_disclosure_ack &&
       appUser?.consent_version === CONSENT_VERSION,
   );
