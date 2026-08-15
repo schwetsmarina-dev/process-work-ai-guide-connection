@@ -56,7 +56,7 @@ ${conversation}`,
   }
 
   if (!result || typeof result !== 'object') {
-    console.warn('[persistSessionMemory] Claude returned non-object (silent):', result);
+    console.warn('[persistSessionMemory] LLM returned an invalid response type');
     return [];
   }
 
@@ -103,12 +103,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing session_id' }, { status: 400 });
     }
 
-    console.log('[persistSessionMemory] START session:', sessionId);
+    console.log('[persistSessionMemory] started');
 
     const sessions = await base44.asServiceRole.entities.Session.filter({ id: sessionId });
     const session = sessions[0];
     if (!session) {
-      console.warn('[persistSessionMemory] session not found:', sessionId);
+      console.warn('[persistSessionMemory] session not found');
       return Response.json({ error: 'Session not found' }, { status: 404 });
     }
 
@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
       console.warn('[persistSessionMemory] session has no user_id — cannot attribute memory');
       return Response.json({ error: 'No owner on session' }, { status: 400 });
     }
-    console.log('[persistSessionMemory] owner user_id:', userId, 'mode:', session.mode_id || session.mode);
+    console.log('[persistSessionMemory] owner resolved', { mode: session.mode_id || session.mode });
 
     // Idempotency is per source session. Crucially, memories from a NEW session
     // must not overwrite an older session merely because both have memory_key="edge"
@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
     }
 
     const items = await extractMemories(base44, messages);
-    console.log('[persistSessionMemory] extracted items:', items.length, items.map((i) => i.memory_key));
+    console.log('[persistSessionMemory] extracted item count:', items.length);
     if (items.length === 0) {
       console.log('[persistSessionMemory] no memory items extracted');
       return Response.json({ saved: 0 });
@@ -170,9 +170,9 @@ Deno.serve(async (req) => {
           updated_at: now,
         });
         savedCount++;
-        console.log('[persistSessionMemory] created historical memory:', item.memory_key);
+        console.log('[persistSessionMemory] memory item created');
       } catch (writeErr) {
-        console.error('[persistSessionMemory] write failed for', item.memory_key, '—', writeErr?.message);
+        console.error('[persistSessionMemory] memory write failed:', writeErr?.message);
       }
     }
 
@@ -187,8 +187,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log('[persistSessionMemory] DONE — saved:', savedCount, 'for session:', sessionId);
-    return Response.json({ saved: savedCount, session_id: sessionId, user_id: userId });
+    console.log('[persistSessionMemory] completed', { saved: savedCount });
+    return Response.json({ saved: savedCount });
   } catch (error) {
     console.error('[persistSessionMemory] fatal (silent):', error?.message, String(error));
     return Response.json({ error: error.message }, { status: 500 });
