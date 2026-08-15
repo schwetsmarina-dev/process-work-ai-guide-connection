@@ -3,8 +3,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 // GDPR "right to erasure": permanently deletes ALL data belonging to the
 // authenticated caller — and only the caller. Every query below is scoped to
 // this user's own email / AppUser id; nothing global is ever touched.
-// Returns per-type counts. The account row itself is left intact so the user
-// stays logged in on an empty state (they can log out from Settings).
+// Returns per-type counts. The Base44 authentication identity is retained by
+// the platform, but the Talvira AppUser profile and all user-generated or
+// derived content are removed. Billing records are retained only where needed
+// for subscription/accounting obligations.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -17,8 +19,9 @@ Deno.serve(async (req) => {
 
     // Resolve the AppUser id (used as user_id on most child records).
     let appUserId = null;
+    let appUsers = [];
     try {
-      const appUsers = await base44.asServiceRole.entities.AppUser.filter({ email });
+      appUsers = await base44.asServiceRole.entities.AppUser.filter({ email });
       appUserId = appUsers[0]?.id || null;
     } catch (_) { /* non-fatal */ }
 
@@ -33,7 +36,7 @@ Deno.serve(async (req) => {
           const rows = await svc[entityName].filter(f);
           for (const r of rows) byId.set(r.id, r);
         } catch (e) {
-          console.warn(`[deleteMyData] filter ${entityName} ${JSON.stringify(f)} — ${e?.message}`);
+          console.warn(`[deleteMyData] filter failed for ${entityName}: ${e?.message}`);
         }
       }
       return [...byId.values()];
@@ -46,7 +49,7 @@ Deno.serve(async (req) => {
           await svc[entityName].delete(r.id);
           n++;
         } catch (e) {
-          console.warn(`[deleteMyData] delete ${entityName} ${r.id} — ${e?.message}`);
+          console.warn(`[deleteMyData] delete failed for ${entityName}: ${e?.message}`);
         }
       }
       return n;
@@ -72,7 +75,7 @@ Deno.serve(async (req) => {
         const rows = await svc.Message.filter({ session_id: sid });
         for (const m of rows) messageMap.set(m.id, m);
       } catch (e) {
-        console.warn(`[deleteMyData] messages for session ${sid} — ${e?.message}`);
+        console.warn(`[deleteMyData] message lookup failed: ${e?.message}`);
       }
     }
     const messages = [...messageMap.values()];
@@ -87,9 +90,24 @@ Deno.serve(async (req) => {
     // RiskEvent.user_id is also the platform User.id (set from currentUser.id
     // client-side in SessionChat.jsx), not AppUser.id.
     const risk = await collect('RiskEvent', [{ user_id: user.id }]);
-    const physio = appUserId ? await collect('PhysiologicalData', [{ user_id: appUserId }]) : [];
+    const physioFilters = [{ user_id: user.id }];
+    if (appUserId) physioFilters.push({ user_id: appUserId });
+    const physio = await collect('PhysiologicalData', physioFilters);
+    const practiceFilters = [{ user_id: user.id }];
+    if (appUserId) practiceFilters.push({ user_id: appUserId });
+    const practices = await collect('ProcessPractice', practiceFilters);
+    const clientLinks = await collect('ClientLink', [
+      { client_email: email },
+      { therapist_email: email },
+    ]);
+    const assignments = await collect('Assignment', [
+      { client_email: email },
+      { therapist_email: email },
+    ]);
 
-    // Delete children before parents.
+    // Delete children before parents. Entitlement/payment references are not
+    // removed here because active cancellation and statutory billing retention
+    // must be handled through Paddle and the applicable accounting workflow.
     const deleted = {
       messages: await removeAll('Message', messages),
       insights: await removeAll('Insight', insights),
@@ -97,10 +115,14 @@ Deno.serve(async (req) => {
       feedback: await removeAll('SessionFeedback', feedback),
       risk_events: await removeAll('RiskEvent', risk),
       physiological: await removeAll('PhysiologicalData', physio),
+      practices: await removeAll('ProcessPractice', practices),
+      client_links: await removeAll('ClientLink', clientLinks),
+      assignments: await removeAll('Assignment', assignments),
       sessions: await removeAll('Session', sessions),
+      app_user_profiles: await removeAll('AppUser', appUsers),
     };
 
-    console.log('[deleteMyData] done', { email, appUserId, deleted });
+    console.log('[deleteMyData] completed', { deleted });
 
     return Response.json({ ok: true, deleted });
   } catch (error) {
