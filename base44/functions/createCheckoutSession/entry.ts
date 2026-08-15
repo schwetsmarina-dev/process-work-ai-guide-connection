@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
       cancel_url: `${appUrl}/settings?checkout=cancelled`,
     });
 
-    console.log('[createCheckoutSession] created', { email: user.email, id: session.id });
+    console.log('[createCheckoutSession] created');
     return Response.json({ url: session.url, id: session.id });
   } catch (error) {
     console.error('[createCheckoutSession] error:', error?.message, String(error));
