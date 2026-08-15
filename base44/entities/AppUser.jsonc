@@ -49,6 +49,11 @@
       "format": "date-time",
       "description": "Timestamp of explicit special-category consent"
     },
+    "memory_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether Talvira may derive and reuse cross-session memory for personalization"
+    },
     "research_consent_given": {
       "type": "boolean",
       "default": false,
