@@ -56,13 +56,13 @@ Deno.serve(async (req) => {
     const json = await response.json();
 
     if (!response.ok) {
-      console.error("[createPaddlePortalSession] Paddle API error", response.status, json);
+      console.error("[createPaddlePortalSession] Paddle API error", { status: response.status });
       return Response.json({ error: "Could not create customer portal session" }, { status: 502 });
     }
 
     const url = json?.data?.urls?.general?.overview;
     if (!url) {
-      console.error("[createPaddlePortalSession] portal URL missing", json?.data?.id);
+      console.error("[createPaddlePortalSession] portal URL missing");
       return Response.json({ error: "Customer portal URL is unavailable" }, { status: 502 });
     }
 
