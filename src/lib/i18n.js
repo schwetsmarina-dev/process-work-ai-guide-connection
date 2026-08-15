@@ -62,6 +62,10 @@ const translations = {
     footer_contact: "Контакты",
     // Session feedback
     feedback_title: "Поделись отзывом",
+    feedback_summary_accuracy: "Это резюме соответствует твоему опыту?",
+    feedback_summary_yes: "Да",
+    feedback_summary_partial: "Частично",
+    feedback_summary_no: "Нет",
     feedback_rating: "Насколько полезной была эта сессия?",
     feedback_useful: "Что было самым полезным?",
     feedback_confusing: "Что было непонятным или неудобным?",
@@ -538,6 +542,10 @@ const translations = {
     footer_contact: "Contacto",
     // Session feedback
     feedback_title: "Comparte tu feedback",
+    feedback_summary_accuracy: "¿Este resumen refleja tu experiencia?",
+    feedback_summary_yes: "Sí",
+    feedback_summary_partial: "En parte",
+    feedback_summary_no: "No",
     feedback_rating: "¿Qué tan útil fue esta sesión?",
     feedback_useful: "¿Qué fue lo más útil?",
     feedback_confusing: "¿Qué fue confuso o incómodo?",
