@@ -485,7 +485,9 @@ export default function SessionChat() {
       const updatedMessages = await listMessages(sessionId);
 
       // Load user memory and format it for the prompt
-      const memories = await loadUserMemories(currentUser?.id);
+      const memories = appUser?.memory_enabled === false
+        ? []
+        : await loadUserMemories(currentUser?.id);
       // Cross-session memory is a subscription feature. The entitlement is
       // awaited rather than read from render state: while the query is still
       // loading it reports "unknown", and treating unknown as "no" would turn
