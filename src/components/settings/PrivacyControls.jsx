@@ -17,6 +17,9 @@ const L = {
     memory_hint: "Если память включена, Talvira может использовать ключевые темы прошлых сессий для более связного сопровождения. Её можно отключить или удалить отдельно.",
     memory_on: "Память включена",
     memory_off: "Память выключена",
+    memory_view: "Посмотреть сохранённую память",
+    memory_hide: "Скрыть память",
+    memory_empty: "Сохранённой памяти пока нет.",
     memory_delete: "Удалить сохранённую память",
     memory_deleted: "Сохранённая память удалена.",
     memory_error: "Не удалось изменить настройки памяти.",
@@ -42,6 +45,9 @@ const L = {
     memory_hint: "Si la memoria está activada, Talvira puede usar temas clave de sesiones anteriores para ofrecer un acompañamiento más coherente. Puedes desactivarla o eliminarla por separado.",
     memory_on: "Memoria activada",
     memory_off: "Memoria desactivada",
+    memory_view: "Ver la memoria guardada",
+    memory_hide: "Ocultar la memoria",
+    memory_empty: "Todavía no hay memoria guardada.",
     memory_delete: "Eliminar la memoria guardada",
     memory_deleted: "La memoria guardada se ha eliminado.",
     memory_error: "No se pudo cambiar la configuración de memoria.",
@@ -71,6 +77,9 @@ export default function PrivacyControls({ user, appUser, lang = "ru" }) {
   const [memorySaving, setMemorySaving] = useState(false);
   const [memoryDeleting, setMemoryDeleting] = useState(false);
   const [memoryDeleted, setMemoryDeleted] = useState(false);
+  const [memoryOpen, setMemoryOpen] = useState(false);
+  const [memoryItems, setMemoryItems] = useState([]);
+  const [memoryLoading, setMemoryLoading] = useState(false);
 
   useEffect(() => {
     setMemoryEnabled(appUser?.memory_enabled !== false);
@@ -174,12 +183,31 @@ export default function PrivacyControls({ user, appUser, lang = "ru" }) {
     }
   };
 
+  const handleViewMemory = async () => {
+    if (memoryOpen) {
+      setMemoryOpen(false);
+      return;
+    }
+    if (!user?.id || memoryLoading) return;
+    setMemoryLoading(true);
+    try {
+      const rows = await base44.entities.UserMemory.filter({ user_id: user.id, is_active: true }, "-updated_at", 50);
+      setMemoryItems(rows || []);
+      setMemoryOpen(true);
+    } catch {
+      alert(tx.memory_error);
+    } finally {
+      setMemoryLoading(false);
+    }
+  };
+
   const handleDeleteMemory = async () => {
     if (!user?.id || memoryDeleting) return;
     setMemoryDeleting(true);
     try {
       const rows = await base44.entities.UserMemory.filter({ user_id: user.id }, "-updated_at", 1000);
       for (const row of rows) await base44.entities.UserMemory.delete(row.id);
+      setMemoryItems([]);
       setMemoryDeleted(true);
     } catch {
       alert(tx.memory_error);
@@ -242,12 +270,28 @@ export default function PrivacyControls({ user, appUser, lang = "ru" }) {
             {memorySaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {memoryEnabled ? tx.memory_on : tx.memory_off}
           </Button>
+          <Button variant="ghost" onClick={handleViewMemory} disabled={!user?.id || memoryLoading}>
+            {memoryLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {memoryOpen ? tx.memory_hide : tx.memory_view}
+          </Button>
           <Button variant="ghost" onClick={handleDeleteMemory} disabled={!user?.id || memoryDeleting} className="text-destructive">
             {memoryDeleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
             {tx.memory_delete}
           </Button>
         </div>
-        {memoryDeleted && <p className="text-xs text-primary mt-2">{tx.memory_deleted}</p>}
+        {memoryOpen && (
+          <div className="mt-3 rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+            {memoryItems.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{tx.memory_empty}</p>
+            ) : memoryItems.map((item) => (
+              <div key={item.id} className="text-xs leading-relaxed">
+                <span className="font-medium text-foreground">{item.memory_type || item.memory_key}: </span>
+                <span className="text-muted-foreground">{item.memory_value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {memoryDeleted && <p className="text-xs text-primary mt-2">{tx.memory_deleted}</p>
       </div>
 
       {/* Danger zone */}
