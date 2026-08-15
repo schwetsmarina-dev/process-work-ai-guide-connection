@@ -221,18 +221,12 @@ Deno.serve(async (req) => {
       return { source, target, weight };
     });
 
-    console.log(
-      '[buildLifeProcessMap] user',
-      userId,
-      '— nodes:',
-      nodeList.length,
-      'edges:',
-      edgeList.length,
-      'risk nodes:',
-      nodeList.filter((n) => n.type === 'risk').length,
-      'edge nodes:',
-      nodeList.filter((n) => n.type === 'edge').length
-    );
+    console.log('[buildLifeProcessMap] completed', {
+      nodeCount: nodeList.length,
+      edgeCount: edgeList.length,
+      riskNodeCount: nodeList.filter((n) => n.type === 'risk').length,
+      edgeNodeCount: nodeList.filter((n) => n.type === 'edge').length,
+    });
     return Response.json({ user_id: userId, nodes: nodeList, edges: edgeList });
   } catch (error) {
     console.error('[buildLifeProcessMap] fatal:', error?.message, String(error));
