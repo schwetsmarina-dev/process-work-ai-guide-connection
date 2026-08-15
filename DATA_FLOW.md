@@ -1,6 +1,6 @@
 # Talvira — Data Flow and Processor Register
 
-**Version:** 0.1 · **Date:** 13 August 2026  
+**Version:** 0.2 · **Date:** 15 August 2026  
 This file is the source-of-truth checklist for privacy, security and due-diligence reviews. Complete contractual fields from signed provider agreements; do not infer them from marketing pages.
 
 ## 1. High-level flow
@@ -8,7 +8,7 @@ This file is the source-of-truth checklist for privacy, security and due-diligen
 1. User opens Talvira and selects language.
 2. Authentication creates or retrieves an account through Base44.
 3. Age gate stores birth year and confirmation timestamp; users below 18 are blocked.
-4. Consent records the accepted language/version before a session can start.
+4. Consent records the accepted language/version, AI disclosure acknowledgement and explicit special-category consent before a session can start.
 5. User session content is stored in Base44 and sent through the configured AI gateway/model provider to generate a reply.
 6. Talvira screens messages for safety signals and may create a RiskEvent.
 7. Session completion may create summaries, memories, insights, reports and a personalised practice.
@@ -20,9 +20,9 @@ This file is the source-of-truth checklist for privacy, security and due-diligen
 
 | System | Role | Data | Purpose | Storage/transfer details to verify |
 |---|---|---|---|---|
-| Base44 | Hosting, database, authentication, backend functions and AI gateway | Account, consent, sessions, derived content, safety events, entitlements | Core service | Legal entity, hosting region, DPA, subprocessors, SCCs, backups, deletion |
-| Configured language-model provider via Base44 | Subprocessor for AI generation | Session prompt/context and relevant memory | Generate guided replies and summaries | Provider identity/model, retention, training exclusion, region, DPA/SCC |
-| Paddle | Merchant of Record and subscription billing | Email/customer reference, subscription/product/price/status; payment data handled by Paddle | Checkout, tax, receipts, subscription management | DPA, region/transfers, retention, subprocessors |
+| Base44 | Hosting, database, authentication, backend functions and AI gateway | Account, consent, sessions, derived content, safety events, entitlements | Core service | Public DPA: https://base44.com/dpa · subprocessors: https://base44.com/dpa/exhibitc · verify selected workspace region, backups and deletion behavior in the account |
+| Configured language-model provider via Base44 | Subprocessor for AI generation | Session prompt/context and relevant memory | Generate guided replies and summaries | Current Base44 list names OpenAI and Anthropic; record the actual routed provider/model, retention/training settings and transfer basis |
+| Paddle | Merchant of Record and subscription billing | Email/customer reference, subscription/product/price/status; payment data handled by Paddle | Checkout, tax, receipts, subscription management | Public DPA: https://www.paddle.com/legal/data-processing-addendum · verify account-specific role, notices, retention and subprocessors |
 | Sentry (if enabled in production) | Error monitoring | Technical error context; may contain identifiers unless scrubbed | Reliability and incident response | Production status, DSN, region, sampling, PII scrubbing, retention, DPA |
 | Email/notification provider (if enabled) | Operational/safety notifications | Destination and minimum necessary event metadata | Support or risk review | Provider, region, content minimisation, DPA, retention |
 | WordPress/Hostinger (talvira.es) | Marketing website and contact forms | Web logs, contact submissions, cookies where enabled | Marketing and support | Hosting region, form storage, email routing, cookie inventory, retention |
@@ -41,13 +41,14 @@ This file is the source-of-truth checklist for privacy, security and due-diligen
 | Entitlement | Paddle references and access status | Server-authoritative; no card data |
 | SessionFeedback | Rating and free text | Owner/support access as defined |
 
-## 4. Retention schedule to verify
+## 4. Retention and deletion schedule
 
 | Data | Target rule | Verification |
 |---|---|---|
-| Active account/session data | While account is active and needed for service | Confirm production behavior |
-| Deleted account data | Delete active records promptly; public policy states within 30 days where not immediate | Test all entities/functions |
-| Technical logs | Public policy currently states 90 days | Confirm Base44/Sentry/provider settings |
+| Active account/session data | While account is active and needed for service | Implemented; periodic necessity review remains required |
+| In-product data deletion | Immediate deletion of Talvira content/profile entities | Implemented by `deleteMyData`; authentication identity, billing records, provider logs and backups require provider/account handling |
+| Cross-session memory | User may disable future use or delete saved memory separately | Implemented in Settings → Privacy and enforced before prompt loading/persistence |
+| Technical logs | Never include transcript text, memory values, email or raw user/session identifiers; infrastructure retention per configured provider | Application logging sanitised; confirm Base44/DataDog/Sentry retention settings |
 | Billing/tax records | Paddle/controller statutory obligations | Document exact controller copies |
 | Backups | Shortest feasible rolling period | Obtain provider schedule |
 | RiskEvent | Defined, justified review period | Approve with safety/privacy reviewer |
