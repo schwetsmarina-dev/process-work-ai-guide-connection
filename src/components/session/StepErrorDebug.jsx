@@ -45,7 +45,7 @@ export default function StepErrorDebug({ session, stepDebugInfo, navigate, onGre
     setCreateError(null);
     try {
       const greeting = `${testResult.step.question}`;
-      console.log("[StepErrorDebug] Creating greeting message:", { session_id: session.id, modeId, stepNum });
+      if (import.meta.env.DEV) console.log("[StepErrorDebug] creating greeting", { modeId, stepNum });
       await createMessage({ session_id: session.id, mode_id: modeId, step_number: stepNum, role: "assistant", content: greeting });
       if (onGreetingCreated) onGreetingCreated();
     } catch (e) {
