@@ -1,7 +1,7 @@
 # Talvira — Data Protection Impact Assessment (working draft)
 
-**Version:** 0.1  
-**Date:** 13 August 2026  
+**Version:** 0.2  
+**Date:** 15 August 2026  
 **Owner:** Marina Shvets  
 **Contact:** help@talvira.app  
 **Status:** Working governance document; requires periodic review and legal/DPO validation before material scale-up.
@@ -54,7 +54,7 @@ Consent must be informed, specific, recorded, easy to withdraw and separate from
 - Payment card data is handled by Paddle, not Talvira.
 - Data export and deletion controls are available in Settings → Privacy.
 - The AI nature and product limits are disclosed before and during interaction.
-- Persistent memory and optional data should remain user-controlled and off by default where feasible.
+- Persistent memory is user-controlled: it can be disabled and erased separately; disabled memory is neither loaded into prompts nor created after sessions.
 
 ## 6. Main risks and controls
 
@@ -64,20 +64,20 @@ Consent must be informed, specific, recorded, easy to withdraw and separate from
 | User mistakes AI for a clinician | High | persistent AI disclosure, non-clinical positioning, no diagnosis/advice | Medium |
 | Harmful response during crisis | High | crisis screening, emergency routes, response constraints, RiskEvent logging, red-team tests | Medium |
 | Minor accesses the service | High | 18+ policy, birth-year gate, account blocking | Medium |
-| Excessive or opaque AI profiling | High | limited purposes, user access/export/deletion, no legal-effect automated decisions | Medium |
+| Excessive or opaque AI profiling | High | limited purposes, explicit special-category consent, memory on/off/erase controls, user export/deletion, no legal-effect automated decisions | Low/Medium |
 | International transfer without safeguards | High | processor register, SCC/DPA verification and region review | Medium pending contracts |
 | Billing data mismatch or entitlement fraud | Medium | signed Paddle webhooks, server-side entitlement checks, event ordering protection | Low |
-| Retention exceeds necessity | Medium | defined schedule, deletion workflow and periodic review | Low/Medium |
+| Retention exceeds necessity | Medium | documented schedule, in-product deletion, separate memory erasure and periodic review | Low/Medium |
 | Re-identification of research data | High | separate consent, minimisation, aggregation and release review | Medium |
 
 ## 7. Required actions before scale-up
 
-1. Complete the processor register with legal entity, region, DPA, subprocessors and transfer mechanism.
-2. Confirm retention periods against actual infrastructure and backups.
-3. Verify deletion across production database, AI/provider logs, monitoring and backups.
-4. Record lawful-basis and consent wording approval.
-5. Expand safety red-team coverage and retain test evidence.
-6. Define incident response owners and breach-notification workflow.
+1. Record the selected Base44 workspace region and obtain/account-file the current DPA, subprocessor list and transfer mechanism.
+2. Confirm infrastructure, AI-provider, monitoring and backup retention in provider account settings.
+3. Run and retain a production deletion drill covering database records plus provider/account follow-up.
+4. Obtain legal/DPO approval of the versioned explicit-consent wording and this DPIA.
+5. Continue safety red-team expansion and retain test evidence for all four modes and languages.
+6. Assign incident-response owners and approve the breach-notification workflow.
 7. Reassess after new languages, therapist/centre features, new AI providers or material profiling.
 
 ## 8. Consultation and sign-off
