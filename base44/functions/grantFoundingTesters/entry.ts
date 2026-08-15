@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
         });
         granted.push({ email });
       } catch (e) {
-        console.warn('[grantFoundingTesters] failed for', email, e?.message);
+        console.warn('[grantFoundingTesters] grant failed:', e?.message);
         failed.push({ email, error: e?.message });
       }
     }
