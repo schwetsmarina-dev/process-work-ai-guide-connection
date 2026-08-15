@@ -25,7 +25,7 @@ problem.
   (`created_by` / owner id) before returning or mutating data.
 - **Roles:** `user` (own data only) and `admin` (review dashboards, RiskEvents).
   Admin views of user sessions are read-only.
-- Consent (`AppUser.consent_given`) is required before any session is created.
+- Versioned consent is required before any session is created. Talvira records separate acknowledgement of the AI interaction and explicit consent for session content that may contain physical or psychological information (`special_category_consent_given`).
 
 ## Secrets
 
@@ -47,15 +47,11 @@ in-chat "step back" feature.
 
 ## Your data rights (GDPR)
 
-Users may request access to, correction of, or deletion of their personal data.
-Data-subject request handling (export and full deletion flows) is on the
-roadmap; until automated, requests are handled manually via the contact below.
+Users can export their data and delete Talvira user-generated data directly in Settings → Privacy. They can also disable cross-session memory or erase memory without deleting the account. Requests requiring correction, account-identity deletion, processor/back-up handling or billing-record review are handled through the contact below.
 
 ## Data retention
 
-Session and account data are retained while the account is active. On verified
-deletion request, associated sessions, messages, memory, insights, and feedback
-are removed.
+Session data is retained while the account is active and needed for the service. The in-product deletion flow removes sessions, messages, summaries, insights, memory, practices, physiological data, risk events, therapist links, assignments, feedback and the custom AppUser profile. Base44 authentication identity and Paddle/billing records may remain where platform or statutory obligations require them. Application logs are content-minimised and must never include transcript text, memory values, email addresses or raw user identifiers.
 
 ## Reporting a vulnerability
 
