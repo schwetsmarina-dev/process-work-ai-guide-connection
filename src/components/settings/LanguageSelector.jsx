@@ -33,7 +33,7 @@ export default function LanguageSelector({ authUser, appUser, lang, onChange }) 
       });
     }
 
-    console.log("[LANGUAGE_UPDATED]", { email: authUser?.email, language: value });
+    if (import.meta.env.DEV) console.log("[LANGUAGE_UPDATED]", { language: value });
     onChange?.(value);
     setSaving(false);
   };
