@@ -207,6 +207,14 @@ export function captureError(error, context = {}) {
   }
 }
 
+/** Report an operational failure without exporting the original error object or message. */
+export function reportOperationalError(code, context = {}) {
+  const safeCode = String(code || "unknown_failure").replace(/[^a-z0-9_-]/gi, "_").slice(0, 80);
+  const safeContext = sanitizeProps(context);
+  if (IS_DEV) console.error("[telemetry] operational error", safeCode, safeContext);
+  if (sentry) sentry.captureException(new Error(`[Talvira] ${safeCode}`), { extra: safeContext });
+}
+
 /**
  * Record a product event.
  * @param {string} event - must be a value from EVENTS
