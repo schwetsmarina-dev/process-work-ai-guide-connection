@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
       abandoned++;
     }
 
-    console.log('[abandonStaleSessions] user:', user.email, 'checked:', active.length, 'abandoned:', abandoned);
+    console.log('[abandonStaleSessions] completed', { checked: active.length, abandoned });
     return Response.json({ checked: active.length, abandoned });
   } catch (error) {
     console.error('[abandonStaleSessions] error:', error?.message);
