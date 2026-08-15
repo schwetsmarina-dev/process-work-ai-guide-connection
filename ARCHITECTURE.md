@@ -65,14 +65,16 @@ Safety & data: **RiskEvent** (logged safety signal — type/severity/status),
 4. **Turn loop** (see `src/pages/SessionChat.jsx` + `src/lib/sessionAI.js`):
    - user message saved via `createSessionMessage`
    - `fetchStep(mode, current_step)` loads the active **ModeStep**
-   - `getAIResponse` builds the prompt from **full message history + UserMemory +
-     ModeStep + stage detection**, calls `invokeAI`, validates, retries once
+   - `getAIResponse` builds the prompt from **full message history + optional UserMemory +
+     ModeStep + stage detection**, calls the Base44 AI gateway, validates, retries once
    - assistant reply saved; `Session.current_step` advances via `next_step_on_answer`
    - **Step back:** `revertLastExchange` removes the last user→assistant pair and
      rolls `current_step` back (used by the in-chat "undo" control)
 5. On close: `generateSessionSummary` fills summary/themes/signals;
    `persistSessionMemory` extracts durable **UserMemory** from the transcript
    (idempotent, runs once per session, and skips when the user has disabled memory).
+   Completed sessions persist `system_prompt_version` and `ai_gateway_version`
+   so incidents and evaluation results can be tied to a specific orchestration release.
 
 ## 5. Safety module
 
@@ -106,6 +108,7 @@ flow — safety signals stay logged for human review.
 - **Mobile:** PWA-first (installable and distributed on the web). Payment methods
   available to a buyer are presented by Paddle Checkout. Optional Capacitor wrapper later for App/Play Store
   (triggers Apple/Google in-app-purchase rules).
+- **Monitoring:** production operational failures use content-free error codes; transcript text, memory values, email and raw user/session identifiers are never sent as telemetry.
 - **Structure:** decompose monoliths (`sessionAI.js` ~1540 lines,
   `systemPrompt.js`, `SessionChat.jsx`); standardize ownership fields (§3);
   gate/remove dev & diagnostic artifacts; add error tracking + product analytics.
