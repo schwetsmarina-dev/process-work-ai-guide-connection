@@ -79,7 +79,7 @@ async function createFallbackGreeting({ sessionId, modeId, stepNum, language, re
     content: carryOverContext ? fallbackOpening : `${t("greeting_start", language)}\n\n${fallbackOpening}`,
   });
 
-  console.warn("[SESSION_INIT_FALLBACK_GREETING_CREATED]", { sessionId, modeId, stepNum, reason });
+  if (import.meta.env.DEV) console.warn("[SESSION_INIT_FALLBACK_GREETING_CREATED]", { modeId, stepNum, reason });
 }
 
 // Parse [SHIFT_SUGGEST:mode] tag from AI response
@@ -252,7 +252,7 @@ export default function SessionChat() {
     setStepDebugInfo(null);
 
     const stepKey = `${modeId}_${stepNum}`;
-    console.log("[SESSION_INIT] session loaded — mode:", modeId, "step_key:", stepKey, "session:", sessionId);
+    if (import.meta.env.DEV) console.log("[SESSION_INIT] session loaded", { modeId, stepKey });
 
     let cancelled = false;
 
@@ -298,7 +298,7 @@ export default function SessionChat() {
       }
 
       // Step found — create greeting, THEN mark init done
-      console.log("[SESSION_INIT] step found:", step.step_key || step._stepKey, "session.id:", sessionId);
+      if (import.meta.env.DEV) console.log("[SESSION_INIT] step found", { stepKey: step.step_key || step._stepKey });
       // Use canonical, mode-specific opening question (never DB step.question for first greeting)
       const openingQuestion = getInitialOpeningQuestion(modeId, language, step, session.carry_over_context);
       console.log("[CANONICAL_OPENING_USED]", { modeId, language, openingQuestion });
@@ -348,7 +348,7 @@ export default function SessionChat() {
     let cancelled = false;
     fetchStep(modeId, stepNum).then(async (step) => {
       if (cancelled || !step) return;
-      console.log("[SESSION_AUTORECOVERY] fetchStep succeeded — creating greeting, session.id:", sessionId);
+      if (import.meta.env.DEV) console.log("[SESSION_AUTORECOVERY] fetchStep succeeded");
       const recoveryQuestion = getInitialOpeningQuestion(modeId, language, step, session.carry_over_context);
       console.log("[CANONICAL_OPENING_USED]", { modeId, language, openingQuestion: recoveryQuestion });
       const greeting = `${t("greeting_start", language)}\n\n${recoveryQuestion}`;
@@ -421,7 +421,7 @@ export default function SessionChat() {
           detected_at: new Date().toISOString(),
           status: "open",
         });
-        console.log("[RISK_EVENT_CREATED]", { id: created?.id, severity: "high", session_id: sessionId });
+        console.log("[RISK_EVENT_CREATED]", { severity: "high" });
 
         // Escalate to a human. Deliberately NOT awaited: the crisis message and
         // the resource numbers must appear on screen immediately, and a slow or
@@ -453,7 +453,7 @@ export default function SessionChat() {
           detected_at: new Date().toISOString(),
           status: "open",
         });
-        console.log("[RISK_EVENT_CREATED]", { id: createdLow?.id, severity: "low", session_id: sessionId });
+        console.log("[RISK_EVENT_CREATED]", { severity: "low" });
       }
 
       // Fetch current step from DB
