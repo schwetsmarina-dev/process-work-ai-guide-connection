@@ -14,6 +14,7 @@ export default function SessionFeedbackForm({ session, user, language }) {
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const [summaryAccuracy, setSummaryAccuracy] = useState(null);
   const [rating, setRating] = useState(0);
   const [useful, setUseful] = useState("");
   const [confusing, setConfusing] = useState("");
@@ -40,6 +41,7 @@ export default function SessionFeedbackForm({ session, user, language }) {
       user_email: user.email,
       mode_id: session.mode_id || session.mode,
       language: lang,
+      summary_accuracy: summaryAccuracy || undefined,
       rating: rating || undefined,
       useful,
       confusing,
@@ -52,16 +54,11 @@ export default function SessionFeedbackForm({ session, user, language }) {
       mode: session.mode_id || session.mode || "unknown",
       language: lang,
       rating: rating || 0,
+      summary_accuracy: summaryAccuracy || "not_answered",
       useful: Boolean(useful),
       confusing: Boolean(confusing),
       would_use_again: Boolean(wouldUseAgain),
       has_comment: Boolean(comment && comment.trim()),
-    });
-    console.log("[SESSION_FEEDBACK_SAVED]", {
-      session_id: session.id,
-      user_email: user.email,
-      rating,
-      would_use_again: wouldUseAgain,
     });
     setSubmitted(true);
     setSaving(false);
@@ -88,6 +85,28 @@ export default function SessionFeedbackForm({ session, user, language }) {
       </div>
 
       <div className="space-y-5">
+        {/* Summary correspondence — safety/evaluation signal, not a claim that the AI is correct. */}
+        <div>
+          <label className="text-sm font-medium block mb-2">{t("feedback_summary_accuracy", lang)}</label>
+          <div className="flex flex-wrap gap-2">
+            {[
+              ["yes", "feedback_summary_yes"],
+              ["partial", "feedback_summary_partial"],
+              ["no", "feedback_summary_no"],
+            ].map(([value, labelKey]) => (
+              <Button
+                key={value}
+                type="button"
+                variant={summaryAccuracy === value ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSummaryAccuracy(value)}
+              >
+                {t(labelKey, lang)}
+              </Button>
+            ))}
+          </div>
+        </div>
+
         {/* Rating */}
         <div>
           <label className="text-sm font-medium block mb-2">{t("feedback_rating", lang)}</label>
