@@ -106,7 +106,7 @@ ${conversation}`,
       next_step_suggestion: result.next_step_suggestion || '',
     });
 
-    console.log('[regenerateSessionSummary] done', { sessionId, messageCount: messages.length });
+    console.log('[regenerateSessionSummary] done', { messageCount: messages.length });
     return Response.json({ session_id: sessionId, messageCount: messages.length, summary: result.summary, themes: result.themes, signals: result.signals });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
