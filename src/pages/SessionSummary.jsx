@@ -105,12 +105,7 @@ export default function SessionSummary() {
         hasAdminRole(currentUser);
 
       if (!found) {
-        const params = new URLSearchParams(window.location.search);
-        console.log("[SESSION_NOT_FOUND_FROM_FEEDBACK]", {
-          sessionId,
-          feedbackUserEmail: params.get("fe"),
-          feedbackCreatedAt: params.get("fc"),
-        });
+        if (import.meta.env.DEV) console.log("[SESSION_NOT_FOUND_FROM_FEEDBACK]");
         setAccessDenied(true);
         return null;
       }
@@ -124,12 +119,8 @@ export default function SessionSummary() {
         return null;
       }
 
-      if (isAdmin && found.user_id !== currentUser.id) {
-        console.log("[ADMIN_SUMMARY_ACCESS_GRANTED]", {
-          adminEmail: currentUser.email,
-          sessionId,
-          sessionOwner: found.user_id,
-        });
+      if (isAdmin && found.user_id !== currentUser.id && import.meta.env.DEV) {
+        console.log("[ADMIN_SUMMARY_ACCESS_GRANTED]");
       }
 
       return found;
