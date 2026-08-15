@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Trash2, Loader2, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { Download, Trash2, Loader2, ShieldCheck, CheckCircle2, Brain } from "lucide-react";
 import { listMessages } from "@/lib/messageApi";
 
 const L = {
@@ -13,6 +13,13 @@ const L = {
     export: "Скачать мои данные",
     export_hint:
       "Полный экспорт в файл JSON: профиль, сессии, сообщения, инсайты, память, практики, физиологические данные, связи с терапевтом и отзывы.",
+    memory_title: "Память между сессиями",
+    memory_hint: "Если память включена, Talvira может использовать ключевые темы прошлых сессий для более связного сопровождения. Её можно отключить или удалить отдельно.",
+    memory_on: "Память включена",
+    memory_off: "Память выключена",
+    memory_delete: "Удалить сохранённую память",
+    memory_deleted: "Сохранённая память удалена.",
+    memory_error: "Не удалось изменить настройки памяти.",
     danger_title: "Удалить все мои данные",
     danger_hint:
       "Безвозвратно удаляет сессии, сообщения, инсайты, память, практики и другие пользовательские данные Talvira. Техническая учётная запись и платёжные записи могут храниться, когда этого требует закон.",
@@ -31,6 +38,13 @@ const L = {
     export: "Descargar mis datos",
     export_hint:
       "Exportación completa en JSON: perfil, sesiones, mensajes, insights, memoria, prácticas, datos fisiológicos, vínculos con terapeutas y valoraciones.",
+    memory_title: "Memoria entre sesiones",
+    memory_hint: "Si la memoria está activada, Talvira puede usar temas clave de sesiones anteriores para ofrecer un acompañamiento más coherente. Puedes desactivarla o eliminarla por separado.",
+    memory_on: "Memoria activada",
+    memory_off: "Memoria desactivada",
+    memory_delete: "Eliminar la memoria guardada",
+    memory_deleted: "La memoria guardada se ha eliminado.",
+    memory_error: "No se pudo cambiar la configuración de memoria.",
     danger_title: "Eliminar todos mis datos",
     danger_hint:
       "Elimina de forma permanente tus sesiones, mensajes, insights, memoria, prácticas y demás datos de usuario de Talvira. La cuenta técnica y los registros de facturación podrán conservarse cuando lo exija la ley.",
@@ -53,6 +67,10 @@ export default function PrivacyControls({ user, appUser, lang = "ru" }) {
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [done, setDone] = useState(false);
+  const [memoryEnabled, setMemoryEnabled] = useState(appUser?.memory_enabled !== false);
+  const [memorySaving, setMemorySaving] = useState(false);
+  const [memoryDeleting, setMemoryDeleting] = useState(false);
+  const [memoryDeleted, setMemoryDeleted] = useState(false);
 
   const handleExport = async () => {
     if (!email) return;
@@ -138,6 +156,34 @@ export default function PrivacyControls({ user, appUser, lang = "ru" }) {
     }
   };
 
+  const handleMemoryToggle = async () => {
+    if (!appUser?.id || memorySaving) return;
+    const next = !memoryEnabled;
+    setMemorySaving(true);
+    try {
+      await base44.entities.AppUser.update(appUser.id, { memory_enabled: next });
+      setMemoryEnabled(next);
+    } catch {
+      alert(tx.memory_error);
+    } finally {
+      setMemorySaving(false);
+    }
+  };
+
+  const handleDeleteMemory = async () => {
+    if (!user?.id || memoryDeleting) return;
+    setMemoryDeleting(true);
+    try {
+      const rows = await base44.entities.UserMemory.filter({ user_id: user.id }, "-updated_at", 1000);
+      for (const row of rows) await base44.entities.UserMemory.delete(row.id);
+      setMemoryDeleted(true);
+    } catch {
+      alert(tx.memory_error);
+    } finally {
+      setMemoryDeleting(false);
+    }
+  };
+
   const canDelete = confirmText.trim().toUpperCase() === tx.confirm_word;
 
   const handleDelete = async () => {
@@ -178,6 +224,26 @@ export default function PrivacyControls({ user, appUser, lang = "ru" }) {
           {tx.export}
         </Button>
         <p className="text-xs text-muted-foreground mt-2">{tx.export_hint}</p>
+      </div>
+
+      {/* Cross-session memory controls */}
+      <div className="py-5 border-t border-border">
+        <div className="flex items-center gap-2 mb-1">
+          <Brain className="w-4 h-4 text-primary" />
+          <p className="text-sm font-medium">{tx.memory_title}</p>
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">{tx.memory_hint}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={handleMemoryToggle} disabled={!appUser?.id || memorySaving}>
+            {memorySaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {memoryEnabled ? tx.memory_on : tx.memory_off}
+          </Button>
+          <Button variant="ghost" onClick={handleDeleteMemory} disabled={!user?.id || memoryDeleting} className="text-destructive">
+            {memoryDeleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+            {tx.memory_delete}
+          </Button>
+        </div>
+        {memoryDeleted && <p className="text-xs text-primary mt-2">{tx.memory_deleted}</p>}
       </div>
 
       {/* Danger zone */}
