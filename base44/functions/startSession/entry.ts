@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
       const usedInMode = sessions.filter((s) => (s.mode_id || s.mode) === modeId).length;
 
       if (usedInMode >= FREE_SESSIONS_PER_MODE) {
-        console.log('[startSession] blocked by quota', { email, modeId, usedInMode });
+        console.log('[startSession] blocked by quota', { modeId, usedInMode });
         return Response.json({
           blocked: true,
           reason: 'quota',
