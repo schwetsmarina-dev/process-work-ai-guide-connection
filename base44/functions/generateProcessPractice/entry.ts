@@ -355,16 +355,11 @@ ${memoryBlock}
       created_at: now,
     });
 
-    console.log(
-      '[generateProcessPractice] created',
-      record.id,
-      'confidence:',
+    console.log('[generateProcessPractice] created', {
       confidenceScore,
-      'test:',
-      forceTest,
-      'edgeStreak:',
+      isTest: forceTest,
       edgeRecurrenceStreak,
-    );
+    });
     return Response.json({ ready: true, practice: record });
   } catch (error) {
     console.error('[generateProcessPractice] fatal:', error?.message, String(error));
