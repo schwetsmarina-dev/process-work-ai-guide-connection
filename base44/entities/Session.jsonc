@@ -12,41 +12,91 @@
     },
     "mode": {
       "type": "string",
-      "enum": ["body", "dream", "conflict", "journaling"],
+      "enum": [
+        "body",
+        "dream",
+        "conflict",
+        "journaling"
+      ],
       "description": "Session mode type"
     },
-    "current_step": { "type": "number", "default": 0 },
-    "started_at": { "type": "string", "format": "date-time" },
-    "ended_at": { "type": "string", "format": "date-time" },
+    "current_step": {
+      "type": "number",
+      "default": 0
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "status": {
       "type": "string",
-      "enum": ["active", "completed", "abandoned"],
+      "enum": [
+        "active",
+        "completed",
+        "abandoned"
+      ],
       "default": "active"
     },
-    "summary": { "type": "string", "description": "AI-generated session summary" },
+    "summary": {
+      "type": "string",
+      "description": "AI-generated session summary"
+    },
     "confidence_note": {
       "type": "string",
       "description": "Disclaimer note that the summary is automatic and should be checked by the user"
     },
-    "themes": { "type": "array", "items": { "type": "string" } },
-    "signals": { "type": "array", "items": { "type": "string" } },
+    "system_prompt_version": {
+      "type": "string",
+      "description": "Talvira orchestration/system-prompt release used for this session"
+    },
+    "ai_gateway_version": {
+      "type": "string",
+      "description": "Configured AI gateway/model routing revision used for this session"
+    },
+    "themes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "signals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "edge_signals": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Moments where resistance, an inner critic, shame, looping, or another process edge appeared"
     },
     "primary_process": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "What felt familiar or identity-consistent in this session"
     },
     "secondary_process": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "What felt new, unfamiliar, or emergent in this session"
     },
-    "next_step_suggestion": { "type": "string" },
-    "risk_flag": { "type": "boolean", "default": false },
+    "next_step_suggestion": {
+      "type": "string"
+    },
+    "risk_flag": {
+      "type": "boolean",
+      "default": false
+    },
     "continued_from_session_id": {
       "type": "string",
       "description": "If the user chose to deepen a previous completed session's theme, the id of that prior Session"
@@ -56,27 +106,49 @@
       "description": "Short summary of the previous session's theme, injected into the opening greeting when the user chose to continue/deepen it instead of starting fresh"
     }
   },
-  "required": ["mode"],
+  "required": [
+    "mode"
+  ],
   "rls": {
     "create": {
-      "user_condition": { "role": "admin" }
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "read": {
       "$or": [
-        { "data.user_id": "{{user.id}}" },
-        { "user_condition": { "role": "admin" } }
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "update": {
       "$or": [
-        { "data.user_id": "{{user.id}}" },
-        { "user_condition": { "role": "admin" } }
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "delete": {
       "$or": [
-        { "data.user_id": "{{user.id}}" },
-        { "user_condition": { "role": "admin" } }
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     }
   }
