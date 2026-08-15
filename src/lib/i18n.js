@@ -111,7 +111,7 @@ const translations = {
     onb_step4_text:
       "Твои ответы сохраняются только для улучшения твоего персонального опыта. Мы не передаём данные третьим лицам. Ты можешь удалить все данные в любой момент в настройках.",
     onb_step4_check1: "Я понимаю, что это не психотерапия и не замена профессиональной помощи",
-    onb_step4_check2: "Я согласен(а) на хранение моих ответов для персонализации опыта",
+    onb_step4_check2: "Я явно соглашаюсь на обработку и хранение моих ответов, которые могут содержать данные о моём физическом и психическом состоянии, для работы и персонализации Talvira",
     onb_step4_check3: "Я понимаю, что беседу ведёт система искусственного интеллекта, а не человек",
     ai_badge: "Отвечает ИИ",
     ai_disclosure_title: "Вы общаетесь с искусственным интеллектом",
@@ -585,7 +585,7 @@ const translations = {
     onb_step4_text:
       "Tus respuestas se guardan solo para mejorar tu experiencia personal. No compartimos datos con terceros. Puedes eliminar todos tus datos en cualquier momento en los ajustes.",
     onb_step4_check1: "Entiendo que esto no es psicoterapia ni un sustituto de la ayuda profesional",
-    onb_step4_check2: "Acepto el almacenamiento de mis respuestas para personalizar la experiencia",
+    onb_step4_check2: "Doy mi consentimiento explícito para que Talvira trate y almacene mis respuestas, que pueden incluir datos sobre mi estado físico y psicológico, con el fin de prestar y personalizar el servicio",
     onb_step4_check3: "Entiendo que la conversación la conduce un sistema de inteligencia artificial, no una persona",
     ai_badge: "Responde una IA",
     ai_disclosure_title: "Estás interactuando con una inteligencia artificial",
