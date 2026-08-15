@@ -39,6 +39,16 @@
       "type": "boolean",
       "default": false
     },
+    "special_category_consent_given": {
+      "type": "boolean",
+      "default": false,
+      "description": "Explicit consent under GDPR Art. 9(2)(a) to process session content that may include physical or mental health data"
+    },
+    "special_category_consent_given_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of explicit special-category consent"
+    },
     "research_consent_given": {
       "type": "boolean",
       "default": false,
