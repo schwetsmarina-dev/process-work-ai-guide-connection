@@ -71,9 +71,9 @@ export default function UpgradePrompt({ lang, variant = "feature", onDismiss = n
       )}
 
       <p className="text-xs text-muted-foreground mt-3">
-        <Link to="/terminos" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+        <a href="https://talvira.es/terminos-y-condiciones/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
           {t("legal_terms", lang)}
-        </Link>
+        </a>
       </p>
     </div>
   );
