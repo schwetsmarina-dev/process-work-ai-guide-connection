@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RETURN_TO_SELF_DAYS, RETURN_TO_SELF_ENGINE_RULES, getReturnToSelfDay, validateReturnToSelfProgram } from './returnToSelfProgram';
+import { RETURN_TO_SELF_DAYS as SERVER_DAYS, RETURN_TO_SELF_ENGINE_RULES as SERVER_RULES } from '../../base44/functions/generateEdgeProgramDay/methodology.ts';
 
 describe('Return to Self 28-day methodology', () => {
   it('contains exactly days 1–28 once', () => {
@@ -36,5 +37,10 @@ describe('Return to Self 28-day methodology', () => {
     );
     expect(RETURN_TO_SELF_ENGINE_RULES.resourceProtocol.starterExercises.length).toBeGreaterThanOrEqual(8);
     expect(RETURN_TO_SELF_ENGINE_RULES.safety.join(' ')).toContain('unconditional right to step back');
+  });
+
+  it('keeps backend generator methodology synchronized with the approved client contract', () => {
+    expect(SERVER_DAYS).toEqual(RETURN_TO_SELF_DAYS);
+    expect(SERVER_RULES).toEqual(RETURN_TO_SELF_ENGINE_RULES);
   });
 });
