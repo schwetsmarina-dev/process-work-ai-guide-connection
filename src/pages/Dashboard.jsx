@@ -5,6 +5,8 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, AlertTriangle, MessageCircle, HeartPulse, Scale, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import RecentSessionCard from "@/components/dashboard/RecentSessionCard";
 import ModeCardDB from "@/components/dashboard/ModeCardDB";
 import AdminPanel from "@/components/dashboard/AdminPanel";
@@ -74,6 +76,8 @@ export default function Dashboard() {
   const [lastCompletedForMode, setLastCompletedForMode] = useState(null);
   const lang = normalizeLang(appUser?.language || "ru");
   const [quotaBlockedMode, setQuotaBlockedMode] = useState(null);
+  const [freeText, setFreeText] = useState("");
+  const [routingSuggestion, setRoutingSuggestion] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -238,6 +242,40 @@ export default function Dashboard() {
     await createSession(mode, { carryOverContext: route.context });
   };
 
+  const classifyFreeText = (text) => {
+    const value = String(text || "").trim().toLowerCase();
+    if (!value) return null;
+    const groups = [
+      { kind: "body", score: 0, words: ["тело", "телес", "боль", "напряж", "сердце", "живот", "дых", "тревог", "паник", "ansiedad", "cuerpo", "dolor", "tensión", "respirar", "respiración", "pecho"] },
+      { kind: "dream", score: 0, words: ["сон", "снилось", "приснил", "кошмар", "sueño", "soñé", "pesadilla"] },
+      { kind: "conflict", score: 0, words: ["решени", "выбор", "сомнева", "между", "конфликт", "ссор", "отношен", "не знаю как поступить", "decisión", "elegir", "duda", "conflicto", "discusión", "relación", "no sé qué hacer"] },
+      { kind: "journ", score: 0, words: ["произош", "случил", "задел", "обид", "груст", "стыд", "зл", "хочу понять", "поговорить", "pasó", "ocurrió", "me afectó", "triste", "vergüenza", "rabia", "quiero entender", "hablar"] },
+    ];
+    for (const group of groups) {
+      for (const word of group.words) if (value.includes(word)) group.score += 1;
+    }
+    groups.sort((a, b) => b.score - a.score);
+    const best = groups[0];
+    return best.score > 0 ? best.kind : "journ";
+  };
+
+  const suggestRouteFromText = () => {
+    const modeKind = classifyFreeText(freeText);
+    const mode = modeKind ? findMode(modeKind) : null;
+    if (!mode) return;
+    setRoutingSuggestion({ mode, text: freeText.trim() });
+  };
+
+  const startSuggestedRoute = async (mode = routingSuggestion?.mode) => {
+    if (!mode || !routingSuggestion?.text) return;
+    const context = lang === "es"
+      ? `El usuario empezó describiendo libremente su situación: «${routingSuggestion.text}». Usa este texto como material inicial. La ruta fue sugerida por Talvira, pero no la presentes como diagnóstico ni como una clasificación definitiva.`
+      : `Пользователь начал со свободного описания ситуации: «${routingSuggestion.text}». Используй этот текст как исходный материал. Маршрут предложен Talvira, но не представляй его как диагноз или окончательную классификацию.`;
+    setRoutingSuggestion(null);
+    setFreeText("");
+    await createSession(mode, { carryOverContext: context });
+  };
+
   const handleModeSelect = async (mode) => {
     const modeId = mode.mode_id;
     const existing = sessions.find((s) => s.status === "active" && (s.mode_id || s.mode) === modeId);
@@ -378,6 +416,22 @@ export default function Dashboard() {
       </div>
 
       {modes.length > 0 && (
+        <div className="mb-8 rounded-2xl border bg-card p-4 md:p-5">
+          <Textarea
+            value={freeText}
+            onChange={(e) => setFreeText(e.target.value)}
+            placeholder={lang === "es" ? "Por ejemplo: «He discutido con mi pareja y no entiendo por qué me afectó tanto…»" : "Например: «Я поругалась с партнёром и не понимаю, почему меня это так задело…»"}
+            className="min-h-[96px] resize-y rounded-xl"
+          />
+          <div className="mt-3 flex justify-end">
+            <Button onClick={suggestRouteFromText} disabled={!freeText.trim()}>
+              {lang === "es" ? "Sugerir por dónde empezar" : "Предложить, с чего начать"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {modes.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
           {[
             ["anxiety", HeartPulse, lang === "es" ? "Siento ansiedad" : "Мне тревожно"],
@@ -404,6 +458,36 @@ export default function Dashboard() {
           <UpgradePrompt lang={lang} variant="quota" onDismiss={() => setQuotaBlockedMode(null)} />
         </div>
       )}
+
+      <Dialog open={!!routingSuggestion} onOpenChange={(open) => { if (!open) setRoutingSuggestion(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{lang === "es" ? "Talvira sugiere empezar aquí" : "Talvira предлагает начать здесь"}</DialogTitle>
+            <DialogDescription>
+              {routingSuggestion ? (
+                lang === "es"
+                  ? `Por lo que has escrito, parece útil empezar con «${MODE_LABELS[routingSuggestion.mode.mode_id]?.es || routingSuggestion.mode.mode_name_ru || routingSuggestion.mode.mode_id}». Puedes aceptar esta ruta o elegir otra.`
+                  : `По твоему описанию полезно начать с «${MODE_LABELS[routingSuggestion.mode.mode_id]?.ru || routingSuggestion.mode.mode_name_ru || routingSuggestion.mode.mode_id}». Можно принять этот маршрут или выбрать другой.`
+              ) : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {modes.map((mode) => (
+              <Button
+                key={mode.id}
+                variant={routingSuggestion?.mode?.id === mode.id ? "default" : "outline"}
+                className="h-auto min-h-12 whitespace-normal"
+                onClick={() => setRoutingSuggestion((prev) => prev ? { ...prev, mode } : prev)}
+              >
+                {MODE_LABELS[mode.mode_id]?.[lang] || mode.mode_name_ru || mode.mode_id}
+              </Button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => startSuggestedRoute()}>{lang === "es" ? "Empezar" : "Начать"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ExistingSessionDialog
         open={!!existingActive}
