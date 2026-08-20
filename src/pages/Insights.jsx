@@ -2,11 +2,14 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { t, getStoredLanguage } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, TrendingUp, Brain, Layers3 } from "lucide-react";
+import { Loader2, TrendingUp, Brain, Layers3, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { generateThemePatterns } from "@/lib/themePatternsAI";
+import useEntitlement from "@/hooks/useEntitlement";
+import { FEATURES } from "@/lib/entitlement";
 
 const MODE_COLORS = {
   body: "hsl(160, 30%, 42%)",
@@ -25,6 +28,11 @@ const MODE_NAME_KEYS = {
 export default function Insights() {
   const lang = getStoredLanguage();
   const [currentUser, setCurrentUser] = useState(null);
+  const [generatingPattern, setGeneratingPattern] = useState("");
+  const [generatedPractice, setGeneratedPractice] = useState(null);
+  const [practiceError, setPracticeError] = useState("");
+  const { can } = useEntitlement();
+  const canUsePractice = can(FEATURES.PRACTICE);
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser);
@@ -54,6 +62,31 @@ export default function Insights() {
     enabled: completedSessions.length >= 3,
     staleTime: Infinity,
   });
+
+  const generatePracticeForPattern = async (pattern) => {
+    if (!pattern?.session_ids?.length || canUsePractice !== true) return;
+    const key = `${pattern.label}:${pattern.session_ids.join(",")}`;
+    setGeneratingPattern(key);
+    setPracticeError("");
+    setGeneratedPractice(null);
+    try {
+      const res = await base44.functions.invoke("generateProcessPractice", {
+        source_session_ids: pattern.session_ids,
+        theme_label: pattern.label,
+        theme_observation: pattern.observation,
+      });
+      if (res?.data?.ready === false) {
+        setPracticeError(lang === "es" ? "Aún no hay suficiente material para crear una práctica segura con este tema." : "Пока недостаточно материала, чтобы безопасно собрать практику по этой теме.");
+        return;
+      }
+      if (res?.data?.practice) setGeneratedPractice(res.data.practice);
+    } catch (e) {
+      console.error("[Insights] selected-theme practice generation failed:", e?.message);
+      setPracticeError(lang === "es" ? "No se pudo crear la práctica. Inténtalo de nuevo más tarde." : "Не удалось создать практику. Попробуй ещё раз позже.");
+    } finally {
+      setGeneratingPattern("");
+    }
+  };
 
   // Mode distribution
   const modeDistribution = Object.entries(
@@ -151,8 +184,44 @@ export default function Insights() {
                         ))}
                       </div>
                     )}
+                    {canUsePractice === true && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-4"
+                        onClick={() => generatePracticeForPattern(pattern)}
+                        disabled={generatingPattern === `${pattern.label}:${pattern.session_ids.join(",")}`}
+                      >
+                        {generatingPattern === `${pattern.label}:${pattern.session_ids.join(",")}` ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-4 h-4 mr-2" />
+                        )}
+                        {lang === "es" ? "Crear práctica con este tema" : "Создать практику по этой теме"}
+                      </Button>
+                    )}
                   </div>
                 ))}
+              </div>
+            )}
+            {practiceError && <p className="mt-4 text-sm text-red-700">{practiceError}</p>}
+            {generatedPractice && (
+              <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                <p className="text-xs uppercase tracking-wide text-primary font-medium mb-1">
+                  {lang === "es" ? "Práctica creada" : "Практика создана"}
+                </p>
+                <p className="font-medium text-sm">{generatedPractice.theme_label}</p>
+                {generatedPractice.offer_text && (
+                  <p className="text-sm text-muted-foreground mt-1">{generatedPractice.offer_text}</p>
+                )}
+                {generatedPractice.full_text && (
+                  <details className="mt-3 text-sm">
+                    <summary className="cursor-pointer text-muted-foreground">
+                      {lang === "es" ? "Leer la práctica" : "Прочитать практику"}
+                    </summary>
+                    <div className="mt-3 whitespace-pre-wrap leading-relaxed">{generatedPractice.full_text}</div>
+                  </details>
+                )}
               </div>
             )}
           </Card>
