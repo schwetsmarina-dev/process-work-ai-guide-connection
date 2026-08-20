@@ -45,7 +45,11 @@ function compactDay(row: any) {
 }
 
 function resourceCatalog(program: any, previousDays: any[]) {
-  const fromProgram = arr(program.resource_library).map((x) => typeof x === 'string' ? x : x?.label || x?.text || x?.name).map((x) => clean(x, 300)).filter(Boolean);
+  const fromProgram = arr(program.resource_library)
+    .filter((x) => typeof x === 'string' || (x?.avoid !== true && !['avoid', 'not_helpful'].includes(String(x?.last_effect || ''))))
+    .map((x) => typeof x === 'string' ? x : x?.label || x?.text || x?.name)
+    .map((x) => clean(x, 300))
+    .filter(Boolean);
   const fromDays = previousDays.flatMap((x) => [x.resource, x.support_figure, x.preferred_support]).map((x) => clean(x, 300)).filter(Boolean);
   return [...new Set([...fromProgram, ...fromDays])].slice(0, 30);
 }
