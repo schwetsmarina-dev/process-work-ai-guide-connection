@@ -2,10 +2,11 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { t, getStoredLanguage } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, TrendingUp, Brain } from "lucide-react";
+import { Loader2, TrendingUp, Brain, Layers3 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { generateThemePatterns } from "@/lib/themePatternsAI";
 
 const MODE_COLORS = {
   body: "hsl(160, 30%, 42%)",
@@ -46,6 +47,13 @@ export default function Insights() {
 
   const isLoading = sessionsLoading || memoriesLoading;
   const completedSessions = sessions.filter((s) => s.status === "completed");
+
+  const { data: themePatterns = [], isLoading: patternsLoading } = useQuery({
+    queryKey: ["theme-patterns", lang, completedSessions.map((s) => s.id).join(",")],
+    queryFn: () => generateThemePatterns({ sessions: completedSessions, lang }),
+    enabled: completedSessions.length >= 3,
+    staleTime: Infinity,
+  });
 
   // Mode distribution
   const modeDistribution = Object.entries(
@@ -99,6 +107,56 @@ export default function Insights() {
         </div>
       ) : (
         <div className="space-y-6">
+          {/* Cross-session themes */}
+          <Card className="p-6">
+            <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
+              <Layers3 className="w-4 h-4 text-primary" />
+              {lang === "es" ? "Mis temas" : "Мои темы"}
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              {lang === "es"
+                ? "Patrones que se repiten en varias sesiones. Son observaciones provisionales, no diagnósticos ni conclusiones sobre ti."
+                : "Темы, которые повторяются в нескольких сессиях. Это предварительные наблюдения, а не диагнозы или выводы о тебе."}
+            </p>
+            {completedSessions.length < 3 ? (
+              <p className="text-sm text-muted-foreground">
+                {lang === "es" ? "Completa al menos 3 sesiones para empezar a ver patrones transversales." : "Заверши минимум 3 сессии, чтобы появились поперечные паттерны."}
+              </p>
+            ) : patternsLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {lang === "es" ? "Buscando temas que se repiten…" : "Ищу повторяющиеся темы…"}
+              </div>
+            ) : themePatterns.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {lang === "es" ? "Aún no hay suficiente evidencia para señalar un tema repetido." : "Пока недостаточно данных, чтобы уверенно выделить повторяющуюся тему."}
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {themePatterns.map((pattern, index) => (
+                  <div key={`${pattern.label}-${index}`} className="rounded-xl border bg-muted/20 p-4">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <p className="font-medium text-sm">{pattern.label}</p>
+                      <Badge variant="secondary" className="shrink-0 text-xs">
+                        {pattern.session_ids.length} {lang === "es" ? "sesiones" : "сессии"}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{pattern.observation}</p>
+                    {pattern.modes?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-3">
+                        {pattern.modes.map((mode) => (
+                          <Badge key={mode} variant="outline" className="text-xs">
+                            {MODE_NAME_KEYS[mode] ? t(MODE_NAME_KEYS[mode], lang) : mode}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4">
             <Card className="p-5">
