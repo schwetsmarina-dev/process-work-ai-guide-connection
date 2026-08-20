@@ -3,7 +3,7 @@ import { isAdmin as hasAdminRole } from "@/lib/roles";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle, MessageCircle, HeartPulse, Scale, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import RecentSessionCard from "@/components/dashboard/RecentSessionCard";
 import ModeCardDB from "@/components/dashboard/ModeCardDB";
@@ -223,6 +223,21 @@ export default function Dashboard() {
     await createSession(mode);
   };
 
+  const findMode = (kind) => modes.find((m) => String(m.mode_id || "").toLowerCase().includes(kind));
+
+  const handleQuickStart = async (kind) => {
+    const routes = {
+      anxiety: { mode: "body", context: lang === "es" ? "Quiero empezar por lo que siento ahora. Hay ansiedad o tensión y necesito primero orientarme en la experiencia presente, sin interpretar ni diagnosticar." : "Я хочу начать с того, что чувствую сейчас. Есть тревога или напряжение; помоги сначала сориентироваться в текущем переживании, без интерпретаций и диагнозов." },
+      situation: { mode: "journ", context: lang === "es" ? "Quiero contar una situación que acaba de ocurrir y entender qué me afectó más. Sigue la señal más viva y, si aparece un conflicto claro, explora las polaridades." : "Я хочу рассказать о ситуации, которая произошла, и понять, что задело меня сильнее всего. Следуй за самым живым сигналом; если проявится конфликт, исследуй полярности." },
+      decision: { mode: "conflict", context: lang === "es" ? "Necesito tomar una decisión. Ayúdame a explorar las dos posiciones sin decidir por mí: sus señales, necesidades, polaridades y lo que aparece en el borde." : "Мне нужно принять решение. Помоги исследовать две позиции, не решая за меня: их сигналы, потребности, полярности и то, что появляется у края." },
+      talk: { mode: "journ", context: lang === "es" ? "Quiero empezar hablando libremente de lo que me pasa. No necesito elegir una técnica; sigue la señal más significativa que aparezca y propón el siguiente paso con suavidad." : "Я хочу начать со свободного рассказа о том, что со мной происходит. Мне не нужно выбирать технику; следуй за наиболее значимым сигналом и мягко предложи следующий шаг." },
+    };
+    const route = routes[kind];
+    const mode = findMode(route.mode);
+    if (!mode) return;
+    await createSession(mode, { carryOverContext: route.context });
+  };
+
   const handleModeSelect = async (mode) => {
     const modeId = mode.mode_id;
     const existing = sessions.find((s) => s.status === "active" && (s.mode_id || s.mode) === modeId);
@@ -357,9 +372,29 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
-      <div className="mb-10">
+      <div className="mb-8">
         <h1 className="font-serif text-3xl md:text-4xl font-semibold mb-2">{t("welcome", lang)}</h1>
-        <p className="text-muted-foreground">{t("choose_direction", lang)}</p>
+        <p className="text-muted-foreground">{lang === "es" ? "¿Qué está pasando contigo ahora? Cuéntalo con tus palabras o elige por dónde empezar." : "Что с тобой происходит сейчас? Расскажи своими словами или выбери, с чего начать."}</p>
+      </div>
+
+      {modes.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
+          {[
+            ["anxiety", HeartPulse, lang === "es" ? "Siento ansiedad" : "Мне тревожно"],
+            ["situation", Sparkles, lang === "es" ? "Quiero entender una situación" : "Хочу разобрать ситуацию"],
+            ["decision", Scale, lang === "es" ? "No puedo tomar una decisión" : "Не могу принять решение"],
+            ["talk", MessageCircle, lang === "es" ? "Quiero simplemente hablar" : "Хочу просто поговорить"],
+          ].map(([kind, Icon, label]) => (
+            <Button key={kind} variant="outline" className="h-auto min-h-14 justify-start gap-3 rounded-2xl px-4 py-3 text-left whitespace-normal" onClick={() => handleQuickStart(kind)}>
+              <Icon className="w-5 h-5 shrink-0 text-primary" />
+              <span>{label}</span>
+            </Button>
+          ))}
+        </div>
+      )}
+
+      <div className="mb-4">
+        <p className="text-sm font-medium">{lang === "es" ? "O elige directamente un modo de exploración" : "Или выбери направление исследования напрямую"}</p>
       </div>
 
       {isAdmin && <AdminPanel />}
