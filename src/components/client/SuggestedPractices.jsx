@@ -10,6 +10,7 @@ import { MODE_LABELS } from "@/lib/modeSteps";
 import { startSession } from "@/lib/sessionApi";
 import { normalizeLang } from "@/lib/i18n";
 import PersonalProcessPracticeCard from "@/components/client/PersonalProcessPracticeCard";
+import EdgeProgramOfferCard from "@/components/client/EdgeProgramOfferCard";
 import useEntitlement from "@/hooks/useEntitlement";
 import { FEATURES } from "@/lib/entitlement";
 
@@ -82,11 +83,14 @@ export default function SuggestedPractices({ clientEmail }) {
   return (
     <div className="space-y-4">
       {authUser?.id && canUsePersonalPractice === true && (
-        <PersonalProcessPracticeCard
-          userId={authUser.id}
-          lang={lang}
-          completedSessions={completedSessions}
-        />
+        <>
+          <PersonalProcessPracticeCard
+            userId={authUser.id}
+            lang={lang}
+            completedSessions={completedSessions}
+          />
+          <EdgeProgramOfferCard lang={lang} enabled={completedSessions.length >= 5} />
+        </>
       )}
 
       {!isLoading && assignments.length > 0 && (
