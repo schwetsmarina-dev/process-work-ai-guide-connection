@@ -211,10 +211,16 @@ Deno.serve(async (req) => {
         '-generated_at',
         10,
       );
-      const existing = existingPractices.find((practice) =>
-        Array.isArray(practice.source_session_ids)
-        && practice.source_session_ids.includes(newestSessionId)
-      );
+      const existing = existingPractices.find((practice) => {
+        if (!Array.isArray(practice.source_session_ids)) return false;
+        if (hasSelectedTheme) {
+          const existingIds = [...practice.source_session_ids].map(String).sort();
+          const requestedIds = [...selectedSourceIds].map(String).sort();
+          return existingIds.length === requestedIds.length
+            && existingIds.every((id, index) => id === requestedIds[index]);
+        }
+        return practice.source_session_ids.includes(newestSessionId);
+      });
       if (existing) {
         return Response.json({ ready: true, practice: existing, reused: true });
       }
