@@ -1,0 +1,82 @@
+{
+  "name": "EdgeProgramMilestone",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "program_id": {
+      "type": "string"
+    },
+    "week_number": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "recurring_signals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "next_week_adjustment": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "program_id",
+    "week_number"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

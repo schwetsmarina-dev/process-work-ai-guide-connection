@@ -1,0 +1,103 @@
+{
+  "name": "EdgeProgramScreening",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "program_id": {
+      "type": "string"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "current_crisis": {
+      "type": "boolean",
+      "default": false
+    },
+    "recent_dissociation": {
+      "type": "boolean",
+      "default": false
+    },
+    "practice_worsens_state": {
+      "type": "boolean",
+      "default": false
+    },
+    "has_human_support": {
+      "type": "boolean",
+      "default": false
+    },
+    "understands_can_stop": {
+      "type": "boolean",
+      "default": false
+    },
+    "result": {
+      "type": "string",
+      "enum": [
+        "proceed",
+        "caution",
+        "stop"
+      ],
+      "default": "caution"
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 2000
+    }
+  },
+  "required": [
+    "user_id",
+    "program_id"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

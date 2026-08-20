@@ -1,0 +1,129 @@
+{
+  "name": "EdgeProgram",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "source_practice_id": {
+      "type": "string"
+    },
+    "source_session_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "theme_label": {
+      "type": "string"
+    },
+    "program_key": {
+      "type": "string",
+      "default": "safe_return_to_self"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "screening",
+        "active",
+        "paused",
+        "completed",
+        "stopped"
+      ],
+      "default": "screening"
+    },
+    "current_day": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 28,
+      "default": 0
+    },
+    "current_week": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4,
+      "default": 0
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "paused_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "stop_reason": {
+      "type": "string"
+    },
+    "safety_state": {
+      "type": "string",
+      "enum": [
+        "clear",
+        "caution",
+        "stop"
+      ],
+      "default": "clear"
+    },
+    "screening_answers": {
+      "type": "object"
+    },
+    "last_reflection": {
+      "type": "string"
+    },
+    "personalization_context": {
+      "type": "string",
+      "maxLength": 5000
+    }
+  },
+  "required": [
+    "user_id",
+    "program_key"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
