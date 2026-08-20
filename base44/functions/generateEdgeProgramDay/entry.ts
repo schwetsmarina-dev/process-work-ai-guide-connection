@@ -236,10 +236,13 @@ Return structure:
       const payload: any = {
         user_id: caller.id, program_id: program.id, day_number: requestedDay, week_number: weekFor(requestedDay),
         title: content.title, practice_text: fullPractice, journal_questions: content.journal_questions,
-        completed: false, safety_action: mode === 'soft_version' ? 'soft_version' : mode === 'repeat_previous' ? 'repeat_previous' : 'none',
-        signal: clean(extraction.signal, 500), stopping_signal: clean(extraction.stopping_signal, 500), stopping_message: clean(extraction.stopping_message, 500),
-        familiar_way: clean(extraction.familiar_way, 500), emerging_signal: clean(extraction.emerging_signal, 500), emerging_quality: clean(extraction.emerging_quality, 500),
-        resource: clean(extraction.resource, 500), support_figure: clean(extraction.support_figure, 500), preferred_support: clean(extraction.preferred_support, 500), next_day_adjustment: clean(extraction.next_day_adjustment, 700),
+        completed: false,
+        generation_mode: mode,
+        completion_phase: 'generated',
+        safety_action: mode === 'soft_version' ? 'soft_version' : mode === 'repeat_previous' ? 'repeat_previous' : 'none',
+        // Methodological extraction is returned to the caller as a CANDIDATE only.
+        // It is intentionally NOT persisted into confirmed process fields here.
+        // Those fields are written only by completeEdgeProgramDay after explicit user review.
       };
       if (record?.id) record = await base44.asServiceRole.entities.EdgeProgramDay.update(record.id, payload);
       else record = await base44.asServiceRole.entities.EdgeProgramDay.create(payload);
