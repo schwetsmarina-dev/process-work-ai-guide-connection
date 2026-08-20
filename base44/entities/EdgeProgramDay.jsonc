@@ -66,6 +66,7 @@
         "repeat_previous",
         "soft_version",
         "resource_day",
+        "rest_day",
         "pause",
         "stop_and_seek_support"
       ],
@@ -115,6 +116,75 @@
       "items": {
         "type": "string"
       }
+    },
+    "generation_mode": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "soft_version",
+        "resource_day",
+        "rest_day",
+        "repeat_previous"
+      ]
+    },
+    "ai_observations": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "observation_review": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "resource_updates": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "resource_review": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "progression_decision": {
+      "type": "string",
+      "enum": [
+        "advance",
+        "repeat",
+        "resource",
+        "pause",
+        "stop"
+      ]
+    },
+    "progression_reason": {
+      "type": "string"
+    },
+    "next_day_number": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 28
+    },
+    "completion_phase": {
+      "type": "string",
+      "enum": [
+        "generated",
+        "awaiting_review",
+        "finalized"
+      ],
+      "default": "generated"
+    },
+    "completion_version": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "reflection_summary": {
+      "type": "string"
     }
   },
   "required": [
