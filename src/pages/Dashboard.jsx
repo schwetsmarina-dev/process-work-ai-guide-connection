@@ -15,6 +15,7 @@ import ContinueThemeDialog from "@/components/dashboard/ContinueThemeDialog";
 import ConsistencyCalendar from "@/components/dashboard/ConsistencyCalendar";
 import { normalizeLang, t } from "@/lib/i18n";
 import { startSession } from "@/lib/sessionApi";
+import { MODE_LABELS } from "@/lib/modeSteps";
 import { listMessages } from "@/lib/messageApi";
 import UpgradePrompt from "@/components/billing/UpgradePrompt";
 import SuggestedPractices from "@/components/client/SuggestedPractices";
