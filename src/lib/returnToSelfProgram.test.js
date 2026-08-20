@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RETURN_TO_SELF_DAYS, getReturnToSelfDay, validateReturnToSelfProgram } from './returnToSelfProgram';
+import { RETURN_TO_SELF_DAYS, RETURN_TO_SELF_ENGINE_RULES, getReturnToSelfDay, validateReturnToSelfProgram } from './returnToSelfProgram';
 
 describe('Return to Self 28-day methodology', () => {
   it('contains exactly days 1–28 once', () => {
@@ -27,5 +27,14 @@ describe('Return to Self 28-day methodology', () => {
     expect(supported).toContain(2);
     expect(supported).toContain(11);
     expect(supported).toContain(24);
+  });
+
+  it('keeps rollback and resource support available at all times', () => {
+    expect(RETURN_TO_SELF_ENGINE_RULES.resourceProtocol.alwaysAvailable).toBe(true);
+    expect(RETURN_TO_SELF_ENGINE_RULES.resourceProtocol.modes).toEqual(
+      expect.arrayContaining(['rest_day', 'resource_day', 'soft_version', 'repeat_previous', 'pause_program'])
+    );
+    expect(RETURN_TO_SELF_ENGINE_RULES.resourceProtocol.starterExercises.length).toBeGreaterThanOrEqual(8);
+    expect(RETURN_TO_SELF_ENGINE_RULES.safety.join(' ')).toContain('unconditional right to step back');
   });
 });
