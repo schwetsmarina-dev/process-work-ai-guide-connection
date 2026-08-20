@@ -64,10 +64,57 @@
       "enum": [
         "none",
         "repeat_previous",
+        "soft_version",
+        "resource_day",
         "pause",
         "stop_and_seek_support"
       ],
       "default": "none"
+    },
+    "theme": {
+      "type": "string"
+    },
+    "experience_type": {
+      "type": "string"
+    },
+    "signal": {
+      "type": "string"
+    },
+    "stopping_signal": {
+      "type": "string"
+    },
+    "stopping_message": {
+      "type": "string"
+    },
+    "familiar_way": {
+      "type": "string"
+    },
+    "emerging_signal": {
+      "type": "string"
+    },
+    "emerging_quality": {
+      "type": "string"
+    },
+    "resource": {
+      "type": "string"
+    },
+    "support_figure": {
+      "type": "string"
+    },
+    "preferred_support": {
+      "type": "string"
+    },
+    "user_correction": {
+      "type": "string"
+    },
+    "next_day_adjustment": {
+      "type": "string"
+    },
+    "selected_story_elements": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   },
   "required": [
