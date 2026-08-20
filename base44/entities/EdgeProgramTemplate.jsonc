@@ -67,6 +67,33 @@
     "requires_support_note": {
       "type": "boolean",
       "default": false
+    },
+    "engine_key": {
+      "type": "string"
+    },
+    "personalization_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "support_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "adaptation_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "celebration_prompt_ru": {
+      "type": "string"
+    },
+    "celebration_prompt_es": {
+      "type": "string"
     }
   },
   "required": [
