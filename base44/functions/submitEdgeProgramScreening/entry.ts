@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
       ? latestPractice.source_session_ids.map(String).filter(Boolean)
       : [];
 
-    const program = await base44.asServiceRole.entities.EdgeProgram.create({
+    const programPayload: Record<string, unknown> = {
       user_id: caller.id,
       source_practice_id: latestPractice.id,
       source_session_ids: sourceSessionIds,
@@ -95,13 +95,15 @@ Deno.serve(async (req) => {
       status: result === 'proceed' ? 'active' : result === 'caution' ? 'paused' : 'stopped',
       current_day: result === 'proceed' ? 1 : 0,
       current_week: result === 'proceed' ? 1 : 0,
-      started_at: result === 'proceed' ? now : null,
-      paused_at: result === 'caution' ? now : null,
       stop_reason: result === 'stop' ? reason : '',
       safety_state: result === 'proceed' ? 'clear' : result === 'caution' ? 'caution' : 'stop',
       screening_answers: answers,
       personalization_context: String(latestPractice.offer_text || '').slice(0, 5000),
-    });
+    };
+    if (result === 'proceed') programPayload.started_at = now;
+    if (result === 'caution') programPayload.paused_at = now;
+
+    const program = await base44.asServiceRole.entities.EdgeProgram.create(programPayload);
 
     const screening = await base44.asServiceRole.entities.EdgeProgramScreening.create({
       user_id: caller.id,
