@@ -173,17 +173,31 @@ Deno.serve(async (req) => {
       console.warn('[generateProcessPractice] buildLifeProcessMap failed:', e?.message);
     }
 
-    const sessions = await base44.asServiceRole.entities.Session.filter(
+    const allCompletedSessions = await base44.asServiceRole.entities.Session.filter(
       { user_id: userId, status: 'completed' },
       '-created_date',
-      10,
+      30,
     );
 
-    if (!forceTest && sessions.length < MIN_COMPLETED_SESSIONS) {
+    const requestedSourceIds = Array.isArray(body.source_session_ids)
+      ? [...new Set(body.source_session_ids.map((id) => normalizeText(id)).filter(Boolean))]
+      : [];
+    const validOwnedIds = new Set(allCompletedSessions.map((session) => String(session.id)));
+    const selectedSourceIds = requestedSourceIds.filter((id) => validOwnedIds.has(id));
+    const hasSelectedTheme = selectedSourceIds.length >= 2;
+    const sessions = hasSelectedTheme
+      ? allCompletedSessions.filter((session) => selectedSourceIds.includes(String(session.id)))
+      : allCompletedSessions.slice(0, 10);
+
+    if (requestedSourceIds.length > 0 && selectedSourceIds.length !== requestedSourceIds.length) {
+      return Response.json({ error: 'invalid_source_sessions' }, { status: 400 });
+    }
+
+    if (!forceTest && allCompletedSessions.length < MIN_COMPLETED_SESSIONS) {
       return Response.json({
         ready: false,
         confidence_score: 0,
-        completed_sessions: sessions.length,
+        completed_sessions: allCompletedSessions.length,
         required_sessions: MIN_COMPLETED_SESSIONS,
       });
     }
@@ -205,8 +219,8 @@ Deno.serve(async (req) => {
         return Response.json({ ready: true, practice: existing, reused: true });
       }
     }
-    const confidenceScore = scoreFromMap(nodes, edges, sessions.length);
-    if (!forceTest && confidenceScore < READY_THRESHOLD) {
+    const confidenceScore = scoreFromMap(nodes, edges, allCompletedSessions.length);
+    if (!forceTest && !hasSelectedTheme && confidenceScore < READY_THRESHOLD) {
       return Response.json({ ready: false, confidence_score: confidenceScore });
     }
 
@@ -214,6 +228,8 @@ Deno.serve(async (req) => {
     const suggestLiveFacilitator = edgeRecurrenceStreak >= EDGE_STREAK_THRESHOLD;
     const lowDataWarning = forceTest && (sessions.length === 0 || nodes.length === 0);
     const { label: clusterLabel, neighbors } = pickDominantCluster(nodes, edges);
+    const selectedThemeLabel = hasSelectedTheme ? normalizeText(body.theme_label).slice(0, 160) : '';
+    const selectedThemeObservation = hasSelectedTheme ? normalizeText(body.theme_observation).slice(0, 900) : '';
 
     const memories = await base44.asServiceRole.entities.UserMemory.filter(
       { user_id: userId, is_active: true },
@@ -259,8 +275,8 @@ Deno.serve(async (req) => {
 Глоссарий:
 ${glossaryBlock}
 
-Повторяющаяся тема: ${clusterLabel || '(недостаточно данных — тестовый режим; не выдумывай персональные факты)'}
-Связанные сигналы/темы: ${neighbors.join(', ') || '—'}
+Повторяющаяся тема: ${selectedThemeLabel || clusterLabel || '(недостаточно данных — тестовый режим; не выдумывай персональные факты)'}
+${selectedThemeObservation ? `Предварительное наблюдение по этой теме: ${selectedThemeObservation}\n` : ''}Связанные сигналы/темы: ${neighbors.join(', ') || '—'}
 
 История завершённых сессий:
 ${sessionsBlock}
@@ -276,6 +292,7 @@ ${memoryBlock}
 5. Для сильного края не давай директивы «пройти через него любой ценой». Оставляй человеку возможность уменьшить интенсивность, остановиться или вернуться к опоре.
 6. exploration выбирай по доминирующему каналу: body→движение/ощущение, dream→образ/голос, conflict→роль/диалог, journaling/mixed→свободная ассоциация.
 7. transition должен связать минимум два конкретных источника из разных фрагментов материала выше. Не выдумывай связь, если её нет.
+7a. Если переданы конкретные source_session_ids и выбранная тема, работай ТОЛЬКО по этим сессиям. Название и observation — лишь навигация; если они не подтверждаются содержанием самих сессий, игнорируй неподтверждённую формулировку и опирайся на факты из сессий.
 8. grounding — только контакт с телом и текущим окружением, без обещания успокоения.
 9. Ровно семь шагов и строго в указанном порядке.
 10. ${languageRule}
@@ -339,7 +356,7 @@ ${memoryBlock}
       language,
       is_test: forceTest,
       confidence_score: confidenceScore,
-      theme_label: normalizeText(result.theme_label) || clusterLabel || 'process practice',
+      theme_label: normalizeText(result.theme_label) || selectedThemeLabel || clusterLabel || 'process practice',
       dominant_channel: result.dominant_channel || 'mixed',
       source_session_ids: sessions.map((session) => session.id),
       offer_text: normalizeText(result.offer_text),
