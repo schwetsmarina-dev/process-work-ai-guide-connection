@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
     } catch {}
 
     if (phase === 'analyze') {
-      if (day.completion_phase === 'awaiting_review' && arr(day.ai_observations).length + arr(day.resource_updates).length > 0) {
+      if (day.completion_phase === 'awaiting_review') {
         return Response.json({
           ok: true,
           phase: 'awaiting_review',
@@ -309,7 +309,9 @@ The evidence must be a short paraphrase, not a fabricated quote. Return JSON onl
       last_progression_decision: progression.decision,
     };
 
-    if (!isRepeatPractice) programPatch.last_completed_day = Math.max(Number(program.last_completed_day || 0), recordDay);
+    if (!isRepeatPractice && progression.decision === 'advance') {
+      programPatch.last_completed_day = Math.max(Number(program.last_completed_day || 0), recordDay);
+    }
 
     if (progression.decision === 'advance') {
       if (recordDay >= 28) {
@@ -339,9 +341,6 @@ The evidence must be a short paraphrase, not a fabricated quote. Return JSON onl
       programPatch.status = 'active';
       programPatch.current_day = programDay;
       programPatch.current_week = weekFor(programDay);
-      if (progression.decision === 'resource') {
-        programPatch.resource_days_taken = Number(program.resource_days_taken || 0) + 1;
-      }
     }
 
     // Base44 entities do not expose a multi-entity DB transaction in this SDK.
