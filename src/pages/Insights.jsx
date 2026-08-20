@@ -33,6 +33,7 @@ export default function Insights() {
   const [practiceError, setPracticeError] = useState("");
   const { can } = useEntitlement();
   const canUsePractice = can(FEATURES.PRACTICE);
+  const canUseThemePatterns = can(FEATURES.ANALYTICS);
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser);
@@ -59,7 +60,7 @@ export default function Insights() {
   const { data: themePatterns = [], isLoading: patternsLoading } = useQuery({
     queryKey: ["theme-patterns", lang, completedSessions.map((s) => s.id).join(",")],
     queryFn: () => generateThemePatterns({ sessions: completedSessions, lang }),
-    enabled: completedSessions.length >= 3,
+    enabled: completedSessions.length >= 3 && canUseThemePatterns === true,
     staleTime: Infinity,
   });
 
@@ -140,8 +141,8 @@ export default function Insights() {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Cross-session themes */}
-          <Card className="p-6">
+          {/* Cross-session themes — cumulative analytics, full access only */}
+          {canUseThemePatterns === true && <Card className="p-6">
             <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
               <Layers3 className="w-4 h-4 text-primary" />
               {lang === "es" ? "Mis temas" : "Мои темы"}
@@ -224,7 +225,7 @@ export default function Insights() {
                 )}
               </div>
             )}
-          </Card>
+          </Card>}
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4">
