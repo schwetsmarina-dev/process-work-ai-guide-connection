@@ -77,6 +77,33 @@
     "personalization_context": {
       "type": "string",
       "maxLength": 5000
+    },
+    "resource_protocol": {
+      "type": "object"
+    },
+    "resource_library": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "rest_days_taken": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "resource_days_taken": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "paused_day": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 28
+    },
+    "resume_context": {
+      "type": "string"
     }
   },
   "required": [
