@@ -5,7 +5,7 @@ import { RETURN_TO_SELF_DAYS, RETURN_TO_SELF_ENGINE_RULES } from './methodology.
 type GenerationMode = 'standard' | 'soft_version' | 'resource_day' | 'rest_day' | 'repeat_previous';
 
 const ALLOWED_MODES = new Set<GenerationMode>(['standard', 'soft_version', 'resource_day', 'rest_day', 'repeat_previous']);
-const JARGON_PATTERN = /\b(edge|edge figure|primary process|secondary process|channel|amplification)\b|\b(край|краевая фигура|первичный процесс|вторичный процесс|канал|амплификац)/i;
+const JARGON_PATTERN = /\b(edge|edge figure|primary process|secondary process|channel|amplification)\b|\b(край|краевая фигура|первичный процесс|вторичный процесс|канал|амплификац)|\b(borde|figura del borde|proceso primario|proceso secundario|canal|amplificaci[oó]n)\b/i;
 
 function clean(value: unknown, max = 1600) {
   return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
