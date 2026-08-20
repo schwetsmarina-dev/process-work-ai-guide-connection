@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { RETURN_TO_SELF_DAYS, RETURN_TO_SELF_ENGINE_RULES } from '../../../src/lib/returnToSelfProgram.js';
+import { RETURN_TO_SELF_DAYS, RETURN_TO_SELF_ENGINE_RULES } from './methodology.ts';
 
 type GenerationMode = 'standard' | 'soft_version' | 'resource_day' | 'rest_day' | 'repeat_previous';
 
