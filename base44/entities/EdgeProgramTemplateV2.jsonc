@@ -1,0 +1,135 @@
+{
+  "type": "object",
+  "properties": {
+    "program_key": {
+      "type": "string"
+    },
+    "day_number": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 28
+    },
+    "week_number": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4
+    },
+    "engine_key": {
+      "type": "string"
+    },
+    "title_ru": {
+      "type": "string"
+    },
+    "title_es": {
+      "type": "string"
+    },
+    "goal_ru": {
+      "type": "string"
+    },
+    "goal_es": {
+      "type": "string"
+    },
+    "practice_outline_ru": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "practice_outline_es": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "journal_questions_ru": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "journal_questions_es": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "personalization_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "support_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "adaptation_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "moderate",
+        "high"
+      ],
+      "default": "low"
+    },
+    "requires_grounding": {
+      "type": "boolean",
+      "default": true
+    },
+    "requires_support_note": {
+      "type": "boolean",
+      "default": false
+    },
+    "celebration_prompt_ru": {
+      "type": "string"
+    },
+    "celebration_prompt_es": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "program_key",
+    "day_number",
+    "week_number"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "user"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  },
+  "name": "EdgeProgramTemplateV2"
+}

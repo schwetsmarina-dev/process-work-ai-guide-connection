@@ -1,0 +1,50 @@
+{
+  "type": "object",
+  "properties": {
+    "program_key": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "retired"
+      ],
+      "default": "draft"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "program_key",
+    "version"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  },
+  "name": "ReturnToSelfMethodVersion"
+}

@@ -1,0 +1,53 @@
+{
+  "type": "object",
+  "properties": {
+    "program_key": {
+      "type": "string"
+    },
+    "method_version": {
+      "type": "string"
+    },
+    "title_ru": {
+      "type": "string"
+    },
+    "subtitle_ru": {
+      "type": "string"
+    },
+    "engine_rules": {
+      "type": "object"
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "required": [
+    "program_key",
+    "method_version"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  },
+  "name": "ReturnToSelfMethodology"
+}
