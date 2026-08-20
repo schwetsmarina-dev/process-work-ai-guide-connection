@@ -104,6 +104,34 @@
     },
     "resume_context": {
       "type": "string"
+    },
+    "confirmed_observations": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "rejected_observations": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "last_progression_decision": {
+      "type": "string",
+      "enum": [
+        "advance",
+        "repeat",
+        "resource",
+        "pause",
+        "stop"
+      ]
+    },
+    "last_completed_day": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 28,
+      "default": 0
     }
   },
   "required": [
