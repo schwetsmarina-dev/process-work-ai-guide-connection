@@ -1,5 +1,4 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { practiceLibraryForPrompt } from './processPracticeLibrary.ts';
 
 // Personalized Process Work practice generator.
 // This is intentionally not a generic relaxation meditation. It builds a
@@ -277,27 +276,51 @@ Deno.serve(async (req) => {
         ? 'Write everything in English.'
         : 'Пиши всё на русском языке.';
 
+    // Retrieve by the same canonical Term.latin_key vocabulary used by Talvira's glossary.
+    // This keeps technique selection tied to observed process concepts rather than loose hashtag matching.
+    const detectedTermKeys = new Set();
     const sourceModes = sessions.map((session) => normalizeText(session.mode_id || session.mode).toLowerCase());
-    const channelFromMode = (mode) => {
-      if (/body|symptom|телес|симптом/.test(mode)) return 'body';
-      if (/dream|сон/.test(mode)) return 'dream';
-      if (/conflict|relation|отнош|конфликт/.test(mode)) return 'conflict';
-      if (/journal|journaling|дневник/.test(mode)) return 'journaling';
-      return 'mixed';
-    };
-    const mappedChannels = sourceModes.map(channelFromMode).filter(Boolean);
-    const channelCounts = mappedChannels.reduce((acc, channel) => {
-      acc[channel] = (acc[channel] || 0) + 1;
-      return acc;
-    }, {});
-    const preferredLibraryChannel = Object.entries(channelCounts)
-      .sort((a, b) => Number(b[1]) - Number(a[1]))[0]?.[0] || 'mixed';
-    const exerciseCandidates = practiceLibraryForPrompt(preferredLibraryChannel).slice(0, 8);
+    const allSessionText = sessions.map(sessionEdgeText).join(' | ').toLowerCase();
+    if (sessions.some((s) => (s.primary_process || []).length)) detectedTermKeys.add('primary_process');
+    if (sessions.some((s) => (s.secondary_process || []).length)) detectedTermKeys.add('secondary_process');
+    if (sessions.some((s) => (s.edge_signals || []).length) || EDGE_PATTERN.test(allSessionText)) detectedTermKeys.add('edge');
+    if (sourceModes.some((mode) => /body|symptom|телес|симптом/.test(mode))) {
+      detectedTermKeys.add('body_signal'); detectedTermKeys.add('proprioceptive_channel');
+    }
+    if (sourceModes.some((mode) => /dream|сон/.test(mode))) {
+      detectedTermKeys.add('dreaming'); detectedTermKeys.add('visual_channel');
+    }
+    if (sourceModes.some((mode) => /conflict|relation|отнош|конфликт/.test(mode))) {
+      detectedTermKeys.add('polarity'); detectedTermKeys.add('metacommunicator');
+    }
+    if (sourceModes.some((mode) => /journal|journaling|дневник/.test(mode))) detectedTermKeys.add('awareness');
+    if (/симптом|symptom|боль|pain|напряж|tension/.test(allSessionText)) detectedTermKeys.add('symptom');
+    if (/голос|voice|звук|sound|тон|tone|музык|music/.test(allSessionText)) detectedTermKeys.add('auditory_channel');
+    if (/образ|image|цвет|color|рисун|draw|виден|vision/.test(allSessionText)) detectedTermKeys.add('visual_channel');
+    if (/флирт|flirt|заигрыв|случайн|unexpected|синхрон/.test(allSessionText)) {
+      detectedTermKeys.add('flirts'); detectedTermKeys.add('second_attention');
+    }
+    detectedTermKeys.add('integration');
+
+    const canonicalTermKeys = [...detectedTermKeys];
+    const allExercises = await base44.asServiceRole.entities.ProcessExercise.filter({ active: true }, 'exercise_id', 100).catch(() => []);
+    const exerciseCandidates = allExercises
+      .filter((item) => item.requires_live_facilitator !== true && item.intensity !== 'high' && (item.use_in || []).includes('personal_practice'))
+      .map((item) => ({
+        item,
+        score: (item.term_keys || []).reduce((score, key) => score + (detectedTermKeys.has(String(key)) ? 1 : 0), 0),
+      }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8)
+      .map((x) => x.item);
+    const eligibleExerciseIds = new Set(exerciseCandidates.map((item) => String(item.exercise_id)));
     const exerciseLibraryBlock = exerciseCandidates.map((item) => [
-      `${item.id} — ${item.title_ru}`,
-      `Автор/источник: ${item.author}${item.source ? `; ${item.source}` : ''}`,
+      `${item.exercise_id} — ${item.title_ru}`,
+      `Связанные term keys: ${(item.term_keys || []).join(', ')}`,
+      `Автор/источник: ${item.author || '—'}${item.source ? `; ${item.source}` : ''}`,
       `Назначение: ${item.purpose}`,
-      `Ход: ${item.steps.join(' → ')}`,
+      `Ход: ${(item.steps || []).join(' → ')}`,
     ].join('\n')).join('\n\n') || '—';
 
     const prompt = `Ты — процессуально-ориентированный фасилитатор (Process Work / Арнольд Минделл). Построй персональную ПРОЦЕССУАЛЬНУЮ ПРАКТИКУ по материалу конкретного пользователя. Это не релаксационная медитация: цель — продолжить уже проявившийся процесс, не интерпретируя человека за него.
@@ -314,6 +337,8 @@ ${sessionsBlock}
 Активная память:
 ${memoryBlock}
 
+КАНОНИЧЕСКИЕ ТЕРМИНЫ, ОБНАРУЖЕННЫЕ В МАТЕРИАЛЕ (внутренне): ${canonicalTermKeys.join(', ') || '—'}
+
 БИБЛИОТЕКА ПРОВЕРЕННЫХ ПРОЦЕССУАЛЬНЫХ УПРАЖНЕНИЙ:
 ${exerciseLibraryBlock}
 
@@ -324,6 +349,7 @@ ${exerciseLibraryBlock}
 - Не выдавай авторство/источник упражнения за материал пользователя.
 - В эту выборку намеренно не попадают high-intensity упражнения, требующие живого фасилитатора.
 - Если ни одно упражнение не подходит, не используй библиотеку и следуй процессу пользователя.
+- Верни IDs реально использованных упражнений в used_exercise_ids (0–2); если не использовал — [].
 
 СТРОГИЕ ПРАВИЛА:
 1. Не называй это медитацией или расслабляющей визуализацией; это процессуальная практика.
@@ -349,14 +375,14 @@ ${exerciseLibraryBlock}
 
 Каждый шаг — 1–3 коротких предложения, пригодных для естественного озвучивания. Не добавляй технических пометок, markdown или инструкции диктору в text.
 
-Также верни theme_label (3–6 слов), dominant_channel (body/dream/conflict/journaling/mixed), offer_text (короткое приглашение без обещаний результата).
+Также верни theme_label (3–6 слов), dominant_channel (body/dream/conflict/journaling/mixed), offer_text (короткое приглашение без обещаний результата), used_exercise_ids (0–2 ID реально использованных упражнений).
 Верни только JSON.`;
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
       response_json_schema: {
         type: 'object',
-        required: ['theme_label', 'dominant_channel', 'offer_text', 'steps'],
+        required: ['theme_label', 'dominant_channel', 'offer_text', 'used_exercise_ids', 'steps'],
         properties: {
           theme_label: { type: 'string' },
           dominant_channel: {
@@ -364,6 +390,7 @@ ${exerciseLibraryBlock}
             enum: ['body', 'dream', 'conflict', 'journaling', 'mixed'],
           },
           offer_text: { type: 'string' },
+          used_exercise_ids: { type: 'array', maxItems: 2, items: { type: 'string' } },
           steps: {
             type: 'array',
             minItems: 7,
@@ -391,6 +418,9 @@ ${exerciseLibraryBlock}
       );
     }
 
+    const usedExerciseIds = Array.isArray(result.used_exercise_ids)
+      ? result.used_exercise_ids.map((id) => normalizeText(id)).filter((id) => eligibleExerciseIds.has(id)).slice(0, 2)
+      : [];
     const now = new Date().toISOString();
     const record = await base44.asServiceRole.entities.ProcessPractice.create({
       user_id: userId,
@@ -400,6 +430,7 @@ ${exerciseLibraryBlock}
       theme_label: normalizeText(result.theme_label) || selectedThemeLabel || clusterLabel || 'process practice',
       dominant_channel: result.dominant_channel || 'mixed',
       source_session_ids: sessions.map((session) => session.id),
+      exercise_ids: usedExerciseIds,
       offer_text: normalizeText(result.offer_text),
       steps: validated.steps,
       full_text: validated.fullText,
