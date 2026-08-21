@@ -5,7 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, ArrowLeft, Sparkles, HeartHandshake, Pause, RotateCcw, BedDouble, ShieldCheck } from "lucide-react";
+import { Loader2, ArrowLeft, Sparkles, HeartHandshake, Pause, RotateCcw, BedDouble, ShieldCheck, Volume2 } from "lucide-react";
 import { normalizeLang } from "@/lib/i18n";
 
 const COPY = {
@@ -59,6 +59,11 @@ const COPY = {
     supportReturn: "Вернуться к текущему дню",
     error: "Что-то не сработало. Попробуй ещё раз.",
     basedOn: "Методическая основа",
+    createAudio: "Озвучить практику",
+    audioGenerating: "Готовлю аудио…",
+    audioFailed: "Не удалось создать аудио. Текст практики остаётся доступен.",
+    restCount: "Дней отдыха",
+    resourceCount: "Ресурсных дней",
   },
   es: {
     title: "Volver a mí",
@@ -110,6 +115,11 @@ const COPY = {
     supportReturn: "Volver al día actual",
     error: "Algo no funcionó. Inténtalo de nuevo.",
     basedOn: "Base metodológica",
+    createAudio: "Escuchar la práctica",
+    audioGenerating: "Preparando el audio…",
+    audioFailed: "No se pudo crear el audio. El texto de la práctica sigue disponible.",
+    restCount: "Días de descanso",
+    resourceCount: "Días de recursos",
   },
 };
 
@@ -140,6 +150,8 @@ export default function EdgeProgram() {
   const [resourceReview, setResourceReview] = useState({});
   const [working, setWorking] = useState("");
   const [error, setError] = useState("");
+  const [audioUrl, setAudioUrl] = useState("");
+  const [audioError, setAudioError] = useState("");
 
   const { data: authUser = null } = useQuery({ queryKey: ["edge-program-user"], queryFn: () => base44.auth.me() });
   const { data: appUsers = [] } = useQuery({
@@ -194,6 +206,8 @@ export default function EdgeProgram() {
       used_exercise_ids: Array.isArray(row.exercise_ids) ? row.exercise_ids : [],
       day_record: row,
     });
+    setAudioUrl(row.audio_status === "ready" ? (row.audio_url || "") : "");
+    setAudioError(row.audio_status === "failed" ? (row.audio_error || "audio_failed") : "");
     if (row.completion_phase === "awaiting_review") {
       const observations = Array.isArray(row.ai_observations) ? row.ai_observations : [];
       const resources = Array.isArray(row.resource_updates) ? row.resource_updates : [];
@@ -235,7 +249,7 @@ export default function EdgeProgram() {
 
   const resetDayState = () => {
     setGenerated(null); setAnalysis(null); setReflection(""); setOverwhelmed(false); setDissociated(false);
-    setObservationReview({}); setResourceReview({}); setError("");
+    setObservationReview({}); setResourceReview({}); setError(""); setAudioUrl(""); setAudioError("");
   };
 
   const generate = async (mode) => {
@@ -248,10 +262,51 @@ export default function EdgeProgram() {
         distress_before: distressBefore,
       });
       setGenerated(res?.data || null);
+      setAudioUrl(res?.data?.day_record?.audio_status === "ready" ? (res.data.day_record.audio_url || "") : "");
+      setAudioError("");
       setReflection(""); setOverwhelmed(false); setDissociated(false); setObservationReview({}); setResourceReview({});
     } catch (e) {
       console.error("[EdgeProgram] generate failed", e?.message);
       setError(c.error);
+    } finally { setWorking(""); }
+  };
+
+  const practiceTextForAudio = () => {
+    const content = generated?.content;
+    if (!content) return "";
+    return [content.intro, ...(content.steps || []).map((s) => `${s.title ? `${s.title}. ` : ""}${s.text || ""}`), content.closing].filter(Boolean).join("\n\n");
+  };
+
+  const generateAudio = async () => {
+    if (!program?.id || !generated?.content) return;
+    setWorking("audio"); setAudioError("");
+    try {
+      const payload = generated?.day_record?.id
+        ? { day_id: generated.day_record.id }
+        : { program_id: program.id, practice_text: practiceTextForAudio(), support_event_id: generated?.support_event_id || "" };
+      const res = await base44.functions.invoke("generateEdgeProgramDayAudio", payload);
+      if (res?.data?.ok && res.data.audio_url) {
+        setAudioUrl(res.data.audio_url);
+        if (generated?.day_record?.id) await queryClient.invalidateQueries({ queryKey: ["edge-program-pending-days", program.id] });
+      } else setAudioError(res?.data?.reason || "audio_failed");
+    } catch (e) {
+      console.error("[EdgeProgram] audio failed", e?.message); setAudioError(e?.message || "audio_failed");
+    } finally { setWorking(""); }
+  };
+
+  const finishSupportDay = async () => {
+    if (!program?.id || !generated?.support_event_id || !supportOnly) { resetDayState(); return; }
+    setWorking("support-day"); setError("");
+    try {
+      await base44.functions.invoke("recordEdgeProgramSupportDay", {
+        program_id: program.id,
+        event_id: generated.support_event_id,
+        kind: generationMode,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["edge-programs", authUser?.id] });
+      resetDayState();
+    } catch (e) {
+      console.error("[EdgeProgram] support day record failed", e?.message); setError(c.error);
     } finally { setWorking(""); }
   };
 
@@ -320,6 +375,7 @@ export default function EdgeProgram() {
         <p className="text-xs uppercase tracking-wide text-primary mb-1">{c.day} {program.current_day || 1} · {c.week} {program.current_week || 1}</p>
         <h1 className="font-serif text-3xl font-semibold">{c.title}</h1>
         <p className="text-muted-foreground mt-1">{c.subtitle}</p>
+        <p className="text-xs text-muted-foreground mt-2">{c.resourceCount}: {Number(program.resource_days_taken || 0)} · {c.restCount}: {Number(program.rest_days_taken || 0)}</p>
       </div>
 
       {program.status === "paused" && <Card className="p-4 border-amber-200 bg-amber-50"><p className="text-sm">{c.paused}</p>{cautionPaused && <p className="text-sm text-amber-800 mt-2">{c.caution}</p>}{!cautionPaused && <Button size="sm" className="mt-3" onClick={() => updateProgramState("resume")} disabled={working}>{c.resumeNow}</Button>}</Card>}
@@ -349,8 +405,12 @@ export default function EdgeProgram() {
           <div className="space-y-4">{(content.steps || []).map((s, i) => <div key={i}><p className="font-medium text-sm mb-1">{s.title}</p><p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">{s.text}</p></div>)}</div>
           {(content.journal_questions || []).length > 0 && <div className="border-t pt-4"><p className="font-medium text-sm mb-2">{c.journal}</p><ul className="space-y-1.5 text-sm text-muted-foreground list-disc pl-5">{content.journal_questions.map((q, i) => <li key={i}>{q}</li>)}</ul></div>}
           <p className="text-sm leading-relaxed border-t pt-4">{content.closing}</p>
+          <div className="space-y-2">
+            {audioUrl ? <audio controls preload="none" className="w-full" src={audioUrl} /> : <Button variant="outline" size="sm" onClick={generateAudio} disabled={working}><Volume2 className="w-4 h-4 mr-2" />{working === "audio" ? c.audioGenerating : c.createAudio}</Button>}
+            {audioError && <p className="text-xs text-red-700">{c.audioFailed}</p>}
+          </div>
           {program.status === "active" && <Button variant="ghost" size="sm" onClick={() => updateProgramState("pause")} disabled={working}><Pause className="w-4 h-4 mr-2" />{c.pauseNow}</Button>}
-          {supportOnly && <Button variant="outline" onClick={resetDayState}>{generationMode === "rest_day" ? c.restDone : c.supportReturn}</Button>}
+          {supportOnly && <Button variant="outline" onClick={finishSupportDay} disabled={working}>{generationMode === "rest_day" ? c.restDone : c.supportReturn}</Button>}
         </Card>
       )}
 
