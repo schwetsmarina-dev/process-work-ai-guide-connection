@@ -58,6 +58,29 @@
       "type": "boolean",
       "default": false
     },
+    "delivery_level": {
+      "type": "string",
+      "enum": [
+        "ai_self_guided",
+        "conditional",
+        "live_specialist"
+      ],
+      "description": "Who may safely facilitate this exercise"
+    },
+    "delivery_conditions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Conditions required when delivery_level=conditional"
+    },
+    "exclude_if": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Signals or contexts where AI must not offer this exercise"
+    },
     "contraindications": {
       "type": "array",
       "items": {
