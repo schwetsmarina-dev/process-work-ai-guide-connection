@@ -101,8 +101,12 @@ Deno.serve(async (req) => {
       screening_answers: answers,
       personalization_context: String(latestPractice.offer_text || '').slice(0, 5000),
     };
-    if (result === 'proceed') programPayload.started_at = now;
+    if (result === 'proceed') {
+      programPayload.started_at = now;
+      programPayload.paused_at = null;
+    }
     if (result === 'caution') programPayload.paused_at = now;
+    if (result === 'stop') programPayload.paused_at = null;
 
     const program = resumableCautionProgram
       ? await base44.asServiceRole.entities.EdgeProgram.update(resumableCautionProgram.id, programPayload)
