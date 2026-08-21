@@ -194,7 +194,7 @@ Deno.serve(async (req) => {
     const wantedTermKeys = DAY_TERM_KEYS[requestedDay] || [];
     const allExercises = await base44.asServiceRole.entities.ProcessExercise.filter({ active: true }, 'exercise_id', 100).catch(() => []);
     const eligibleExercises = allExercises
-      .filter((exercise: any) => exercise.requires_live_facilitator !== true && exercise.intensity !== 'high')
+      .filter((exercise: any) => exercise.delivery_level !== 'live_specialist' && exercise.requires_live_facilitator !== true && exercise.intensity !== 'high')
       .filter((exercise: any) => arr(exercise.use_in).includes(mode === 'resource_day' ? 'resource_library' : 'edge_program'))
       .map((exercise: any) => ({ exercise, score: exerciseScore(exercise, wantedTermKeys) }))
       .filter((x: any) => x.score > 0)
@@ -207,6 +207,9 @@ Deno.serve(async (req) => {
           `Term keys: ${arr(exercise.term_keys).join(', ')}`,
           `Автор/источник: ${clean(exercise.author, 220)}${exercise.source ? `; ${clean(exercise.source, 240)}` : ''}`,
           `Назначение: ${clean(exercise.purpose, 700)}`,
+          `Уровень самостоятельности: ${clean(exercise.delivery_level || 'conditional', 80)}`,
+          `Условия: ${arr(exercise.delivery_conditions).map((x) => clean(x, 400)).join(' | ') || '—'}`,
+          `Не предлагать при: ${arr(exercise.exclude_if).join(', ') || '—'}`,
           `Ход: ${arr(exercise.steps).map((x) => clean(x, 500)).join(' → ')}`,
         ].join('\n')).join('\n\n')
       : '—';
@@ -258,7 +261,8 @@ EXERCISE RULES:
 - Adapt wording, pace and intensity. Never mechanically paste an exercise.
 - If none fit, use no library exercise.
 - Never expose internal Term keys or Process Work jargon to the user.
-- Never auto-use a high-intensity or live-facilitator-only exercise.
+- Never auto-use a high-intensity or live-specialist exercise.
+- ai_self_guided exercises may be used when methodologically relevant. conditional exercises may be used only when the current program context clearly satisfies their stated conditions and no exclusion signal is present. If uncertain, omit the exercise.
 - Return the IDs actually used in used_exercise_ids; return [] if none were used.
 
 STRICT CONTENT RULES:
