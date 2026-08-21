@@ -61,6 +61,8 @@ Deno.serve(async (req) => {
         latin_key: key,
         term_id: term.term_id || '',
         term: term.term || '',
+        term_scope: term.term_scope || 'methodology_only',
+        exercise_expected: Boolean(term.exercise_expected),
         total_exercises: total,
         usable_by_ai: usable,
         ai_self_guided: selfGuidedCount.get(key) || 0,
@@ -72,11 +74,25 @@ Deno.serve(async (req) => {
       };
     }).sort((a: any, b: any) => a.usable_by_ai - b.usable_by_ai || a.total_exercises - b.total_exercises || a.latin_key.localeCompare(b.latin_key));
 
+    const clientTerms = coverage.filter((x: any) => x.term_scope === 'client_process');
+    const methodologyTerms = coverage.filter((x: any) => x.term_scope === 'methodology_only');
+    const expectedExerciseTerms = clientTerms.filter((x: any) => x.exercise_expected);
+
     const summary = {
       terms_total: terms.length,
       terms_with_latin_key: keyedTerms.length,
       terms_missing_latin_key: missingLatinKey.length,
+      client_process_terms: clientTerms.length,
+      methodology_only_terms: methodologyTerms.length,
+      exercise_expected_terms: expectedExerciseTerms.length,
       active_exercises: exercises.length,
+      client_process_usable_coverage: {
+        zero: expectedExerciseTerms.filter((x: any) => x.usable_by_ai === 0).length,
+        one: expectedExerciseTerms.filter((x: any) => x.usable_by_ai === 1).length,
+        two: expectedExerciseTerms.filter((x: any) => x.usable_by_ai === 2).length,
+        three_to_four: expectedExerciseTerms.filter((x: any) => x.usable_by_ai >= 3 && x.usable_by_ai <= 4).length,
+        five_plus: expectedExerciseTerms.filter((x: any) => x.usable_by_ai >= 5).length,
+      },
       usable_coverage: {
         zero: coverage.filter((x: any) => x.usable_by_ai === 0).length,
         one: coverage.filter((x: any) => x.usable_by_ai === 1).length,
@@ -96,6 +112,9 @@ Deno.serve(async (req) => {
     return Response.json({
       summary,
       coverage,
+      client_process_terms: clientTerms,
+      methodology_only_terms: methodologyTerms,
+      exercise_gaps: expectedExerciseTerms.filter((x: any) => x.usable_by_ai === 0),
       terms_missing_latin_key: missingLatinKey.map((term: any) => ({ term_id: term.term_id || '', term: term.term || '' })),
     });
   } catch (error) {
