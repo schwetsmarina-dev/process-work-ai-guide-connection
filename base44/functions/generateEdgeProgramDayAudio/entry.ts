@@ -74,33 +74,41 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const dayId = clean(body.day_id);
-    if (!dayId) return Response.json({ error: 'day_id_required' }, { status: 400 });
+    const programId = clean(body.program_id);
+    let day: any = null;
+    let ephemeral = false;
 
-    const day = await base44.asServiceRole.entities.EdgeProgramDay.get(dayId).catch(() => null);
-    if (!day || String(day.user_id) !== String(caller.id)) return Response.json({ error: 'Day not found' }, { status: 404 });
-
-    if (day.audio_status === 'ready' && day.audio_url && body.force_regenerate !== true) {
-      return Response.json({ ok: true, audio_url: day.audio_url, reused: true });
+    if (dayId) {
+      day = await base44.asServiceRole.entities.EdgeProgramDay.get(dayId).catch(() => null);
+      if (!day || String(day.user_id) !== String(caller.id)) return Response.json({ error: 'Day not found' }, { status: 404 });
+      if (day.audio_status === 'ready' && day.audio_url && body.force_regenerate !== true) {
+        return Response.json({ ok: true, audio_url: day.audio_url, reused: true });
+      }
+    } else {
+      if (!programId) return Response.json({ error: 'day_id_or_program_id_required' }, { status: 400 });
+      const program = await base44.asServiceRole.entities.EdgeProgram.get(programId).catch(() => null);
+      if (!program || String(program.user_id) !== String(caller.id)) return Response.json({ error: 'Program not found' }, { status: 404 });
+      ephemeral = true;
     }
 
     const apiKey = Deno.env.get('ELEVENLABS_API_KEY');
     const voiceId = Deno.env.get('ELEVENLABS_VOICE_ID');
     if (!apiKey || !voiceId) {
-      await markFailed(base44, dayId, 'missing_secret');
+      if (dayId) await markFailed(base44, dayId, 'missing_secret');
       return Response.json({ ok: false, reason: 'missing_secret' });
     }
 
-    const text = String(day.practice_text || '').trim();
+    const text = String(ephemeral ? body.practice_text : day.practice_text || '').trim();
     if (!text) {
-      await markFailed(base44, dayId, 'empty_text');
+      if (dayId) await markFailed(base44, dayId, 'empty_text');
       return Response.json({ ok: false, reason: 'empty_text' });
     }
     if (text.length > MAX_TOTAL_CHARS) {
-      await markFailed(base44, dayId, `text_too_long:${text.length}`);
+      if (dayId) await markFailed(base44, dayId, `text_too_long:${text.length}`);
       return Response.json({ ok: false, reason: 'text_too_long', chars: text.length, limit: MAX_TOTAL_CHARS });
     }
 
-    await base44.asServiceRole.entities.EdgeProgramDay.update(dayId, { audio_status: 'generating', audio_error: '' });
+    if (dayId) await base44.asServiceRole.entities.EdgeProgramDay.update(dayId, { audio_status: 'generating', audio_error: '' });
 
     try {
       const chunks = splitText(text);
@@ -110,17 +118,19 @@ Deno.serve(async (req) => {
       const merged = new Uint8Array(total);
       let offset = 0;
       for (const b of buffers) { merged.set(b, offset); offset += b.byteLength; }
-      const file = new File([merged], `edge-program-day-${dayId}.mp3`, { type: 'audio/mpeg' });
+      const file = new File([merged], `edge-program-${dayId || clean(body.support_event_id) || crypto.randomUUID()}.mp3`, { type: 'audio/mpeg' });
       const upload = await base44.asServiceRole.integrations.Core.UploadFile({ file });
       const audioUrl = upload?.file_url;
       if (!audioUrl) throw new Error('upload_no_url');
-      await base44.asServiceRole.entities.EdgeProgramDay.update(dayId, {
-        audio_status: 'ready', audio_url: audioUrl, voice_id: voiceId, audio_error: '',
-      });
-      return Response.json({ ok: true, audio_url: audioUrl, reused: false, chunks: chunks.length });
+      if (dayId) {
+        await base44.asServiceRole.entities.EdgeProgramDay.update(dayId, {
+          audio_status: 'ready', audio_url: audioUrl, voice_id: voiceId, audio_error: '',
+        });
+      }
+      return Response.json({ ok: true, audio_url: audioUrl, reused: false, ephemeral, chunks: chunks.length });
     } catch (e) {
       const message = e?.name === 'AbortError' ? 'tts_timeout' : (e?.message || 'audio_failed');
-      await markFailed(base44, dayId, message);
+      if (dayId) await markFailed(base44, dayId, message);
       return Response.json({ ok: false, reason: 'audio_failed', error: message });
     }
   } catch (error) {
