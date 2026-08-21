@@ -28,6 +28,7 @@ import InsightLibrary from './pages/InsightLibrary';
 import InsightAgent from './pages/InsightAgent';
 import LifeProcessMap from './pages/LifeProcessMap';
 import Timeline from './pages/Timeline';
+import EdgeProgram from './pages/EdgeProgram';
 import TherapistDashboard from './pages/TherapistDashboard';
 import RequireAuth from './components/layout/RequireAuth';
 import { Navigate } from 'react-router-dom';
@@ -137,6 +138,7 @@ const AuthenticatedApp = () => {
             <Route path="/insights-library" element={<InsightLibrary />} />
             <Route path="/life-process-map" element={<LifeProcessMap />} />
             <Route path="/timeline" element={<Timeline />} />
+            <Route path="/edge-program" element={<EdgeProgram />} />
             <Route path="/therapist" element={<ProtectedTherapistRoute><TherapistDashboard /></ProtectedTherapistRoute>} />
             <Route path="/insight-agent" element={<InsightAgent />} />
             <Route path="/admin/import" element={<ProtectedAdminRoute><AdminImport /></ProtectedAdminRoute>} />
