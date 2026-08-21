@@ -60,9 +60,10 @@ Deno.serve(async (req) => {
       20,
     ).catch(() => []);
     const existing = existingPrograms.find((p: any) => ['screening', 'active', 'paused'].includes(p.status));
-    if (existing) {
-      return Response.json({ result: existing.status === 'active' ? 'proceed' : 'caution', program: existing, reused: true });
+    if (existing?.status === 'active') {
+      return Response.json({ result: 'proceed', program: existing, reused: true });
     }
+    const resumableCautionProgram = existing?.status === 'paused' && existing?.safety_state === 'caution' ? existing : null;
 
     let result: 'proceed' | 'caution' | 'stop' = 'proceed';
     let reason = 'screening_clear';
@@ -103,7 +104,9 @@ Deno.serve(async (req) => {
     if (result === 'proceed') programPayload.started_at = now;
     if (result === 'caution') programPayload.paused_at = now;
 
-    const program = await base44.asServiceRole.entities.EdgeProgram.create(programPayload);
+    const program = resumableCautionProgram
+      ? await base44.asServiceRole.entities.EdgeProgram.update(resumableCautionProgram.id, programPayload)
+      : await base44.asServiceRole.entities.EdgeProgram.create(programPayload);
 
     const screening = await base44.asServiceRole.entities.EdgeProgramScreening.create({
       user_id: caller.id,
