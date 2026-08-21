@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
@@ -155,6 +155,55 @@ export default function EdgeProgram() {
     return byStatus("active") || byStatus("paused") || byStatus("completed") || byStatus("stopped") || programs[0] || null;
   }, [programs]);
 
+  const { data: pendingDays = [] } = useQuery({
+    queryKey: ["edge-program-pending-days", program?.id],
+    queryFn: () => base44.entities.EdgeProgramDay.filter({ user_id: authUser.id, program_id: program.id, completed: false }, "-updated_date", 10),
+    enabled: !!authUser?.id && !!program?.id,
+    staleTime: 10_000,
+  });
+
+  useEffect(() => {
+    if (generated || !pendingDays.length) return;
+    const row = pendingDays[0];
+    const fallbackContent = {
+      title: row.title || `${c.day} ${row.day_number}`,
+      intro: "",
+      steps: row.practice_text ? [{ title: "", text: row.practice_text }] : [],
+      journal_questions: Array.isArray(row.journal_questions) ? row.journal_questions : [],
+      closing: "",
+      support_options: [],
+      confirmation_prompt: "",
+    };
+    setGenerationMode(row.generation_mode || "standard");
+    setDistressBefore(Number.isFinite(Number(row.distress_before)) ? Number(row.distress_before) : 3);
+    setDistressAfter(Number.isFinite(Number(row.distress_after)) ? Number(row.distress_after) : 3);
+    setReflection(row.reflection || "");
+    setOverwhelmed(row.felt_overwhelmed === true);
+    setDissociated(row.felt_dissociated === true);
+    setGenerated({
+      mode: row.generation_mode || "standard",
+      day_number: row.day_number,
+      week_number: row.week_number,
+      content: row.generated_content || fallbackContent,
+      used_exercise_ids: Array.isArray(row.exercise_ids) ? row.exercise_ids : [],
+      day_record: row,
+    });
+    if (row.completion_phase === "awaiting_review") {
+      const observations = Array.isArray(row.ai_observations) ? row.ai_observations : [];
+      const resources = Array.isArray(row.resource_updates) ? row.resource_updates : [];
+      setAnalysis({
+        phase: "awaiting_review",
+        reflection_summary: row.reflection_summary || "",
+        observations,
+        resource_candidates: resources,
+      });
+      const obs = {}; observations.forEach((x) => { obs[x.id] = { decision: "", corrected_value: x.value }; });
+      const res = {}; resources.forEach((x) => { res[x.id] = { decision: "", corrected_label: x.label, effect: x.proposed_effect || "helpful" }; });
+      setObservationReview(obs);
+      setResourceReview(res);
+    }
+  }, [pendingDays, generated, c.day]);
+
   const resetDayState = () => {
     setGenerated(null); setAnalysis(null); setReflection(""); setOverwhelmed(false); setDissociated(false);
     setObservationReview({}); setResourceReview({}); setError("");
@@ -214,7 +263,10 @@ export default function EdgeProgram() {
         resource_review: Object.entries(resourceReview).map(([id, x]) => ({ id, ...x })),
         progression_choice: progressionChoice,
       });
-      await queryClient.invalidateQueries({ queryKey: ["edge-programs", authUser?.id] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["edge-programs", authUser?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["edge-program-pending-days", program.id] }),
+      ]);
       resetDayState();
       const decision = res?.data?.progression_decision;
       if (decision === "resource") setTimeout(() => generate("resource_day"), 50);
