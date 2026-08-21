@@ -149,6 +149,9 @@ Deno.serve(async (req) => {
     if (!program || String(program.user_id) !== String(caller.id)) return Response.json({ error: 'Program not found' }, { status: 404 });
     if (['completed', 'stopped'].includes(program.status)) return Response.json({ error: 'program_not_active' }, { status: 409 });
     if (program.safety_state === 'stop') return Response.json({ error: 'program_safety_stop' }, { status: 409 });
+    if (program.status === 'paused' && program.safety_state === 'caution' && !['resource_day', 'rest_day'].includes(mode)) {
+      return Response.json({ error: 'rescreen_required_before_deep_practice' }, { status: 409 });
+    }
 
     const risks = await base44.asServiceRole.entities.RiskEvent.filter({ user_id: caller.id }, '-detected_at', 20).catch(() => []);
     if (recentRiskBlocks(risks)) return Response.json({ error: 'unresolved_high_risk', action: 'stop_and_seek_support' }, { status: 409 });
@@ -192,7 +195,7 @@ Deno.serve(async (req) => {
     // Package 2: retrieve exercises through canonical Term.latin_key links instead of asking the LLM
     // to invent a technique. High-intensity/live-facilitator exercises are never auto-selected here.
     const wantedTermKeys = DAY_TERM_KEYS[requestedDay] || [];
-    const allExercises = await base44.asServiceRole.entities.ProcessExercise.filter({ active: true }, 'exercise_id', 100).catch(() => []);
+    const allExercises = await base44.asServiceRole.entities.ProcessExercise.filter({ active: true }, 'exercise_id', 500).catch(() => []);
     const eligibleExercises = allExercises
       .filter((exercise: any) => exercise.delivery_level !== 'live_specialist' && exercise.requires_live_facilitator !== true && exercise.intensity !== 'high')
       .filter((exercise: any) => arr(exercise.use_in).includes(mode === 'resource_day' ? 'resource_library' : 'edge_program'))
@@ -325,6 +328,7 @@ Return structure:
         user_id: caller.id, program_id: program.id, day_number: requestedDay, week_number: weekFor(requestedDay),
         title: content.title, practice_text: fullPractice, journal_questions: content.journal_questions,
         completed: false,
+        distress_before: body.distress_before === null || body.distress_before === undefined || body.distress_before === '' ? null : Math.max(0, Math.min(10, Math.round(Number(body.distress_before) || 0))),
         generation_mode: mode,
         exercise_ids: usedExerciseIds,
         completion_phase: 'generated',
