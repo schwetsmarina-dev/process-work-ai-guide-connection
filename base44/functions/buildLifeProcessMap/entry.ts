@@ -40,6 +40,7 @@ Deno.serve(async (req) => {
     const me = await base44.auth.me().catch(() => null);
 
     const clientEmail = body.clientEmail ? String(body.clientEmail).trim().toLowerCase() : null;
+    const completedOnly = body.completed_only === true;
     let userId = body.user_id || null;
 
     if (clientEmail) {
@@ -84,7 +85,7 @@ Deno.serve(async (req) => {
     // stamped with the SERVICE ROLE's identity, never the real owner. Filtering
     // by created_by_id here silently returned nothing for real users.
     const sessions = await base44.asServiceRole.entities.Session.filter(
-      { user_id: userId },
+      completedOnly ? { user_id: userId, status: 'completed' } : { user_id: userId },
       '-created_date',
       500
     );
