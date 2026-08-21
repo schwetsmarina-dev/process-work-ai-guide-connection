@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
 
     if (mode === 'rest_day') {
       const content = deterministicRest(lang);
-      return Response.json({ ok: true, mode, day_number: currentDay, advances_program: false, content });
+      return Response.json({ ok: true, mode, day_number: currentDay, advances_program: false, support_event_id: crypto.randomUUID(), content });
     }
 
     const resources = resourceCatalog(program, previousDays);
@@ -343,6 +343,7 @@ Return structure:
 
     return Response.json({
       ok: true, mode, day_number: requestedDay, week_number: weekFor(requestedDay), advances_program: false,
+      support_event_id: mode === 'resource_day' ? crypto.randomUUID() : null,
       methodology_key: spec.key, content, used_exercise_ids: usedExerciseIds, extraction_candidates: extraction, day_record: record,
       note: 'Generation does not advance the program. Progress advances only after an explicit completion action in a separate endpoint.'
     });
