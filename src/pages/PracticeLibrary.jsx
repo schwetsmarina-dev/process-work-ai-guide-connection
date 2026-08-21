@@ -20,6 +20,8 @@ const COPY = {
     open: "Открыть",
     close: "Свернуть",
     conditional: "Используй только если тема сейчас переносима; при перегрузке остановись и выбери более мягкую практику.",
+    conditions: "Подходит, если",
+    avoidIf: "Не выбирать, если",
     empty: "По этому запросу практик не найдено.",
     locked: "Библиотека практик доступна в полной версии Talvira.",
   },
@@ -34,6 +36,8 @@ const COPY = {
     open: "Abrir",
     close: "Cerrar",
     conditional: "Úsala solo si el tema es tolerable ahora; si te sobrecarga, detente y elige una práctica más suave.",
+    conditions: "Adecuada si",
+    avoidIf: "No elegir si",
     empty: "No hay prácticas para esta búsqueda.",
     locked: "La biblioteca de prácticas está disponible en la versión completa de Talvira.",
   },
@@ -48,6 +52,8 @@ const COPY = {
     open: "Open",
     close: "Close",
     conditional: "Use only if the topic feels manageable now; if you become overloaded, stop and choose a gentler practice.",
+    conditions: "Use when",
+    avoidIf: "Do not choose when",
     empty: "No practices match this search.",
     locked: "The practice library is available with full Talvira access.",
   },
@@ -79,7 +85,7 @@ export default function PracticeLibrary() {
     const q = query.trim().toLocaleLowerCase();
     return rows
       .filter((x) => String(x.author || "").trim())
-      .filter((x) => x.requires_live_facilitator !== true && x.delivery_level !== "live_specialist" && x.intensity !== "high")
+      .filter((x) => x.requires_live_facilitator !== true && ["ai_self_guided", "conditional"].includes(x.delivery_level) && x.intensity !== "high")
       .filter((x) => {
         if (!q) return true;
         const haystack = [x.title_ru, x.author, x.source, x.purpose, ...(x.search_tags || []), ...(x.term_keys || [])].join(" ").toLocaleLowerCase();
@@ -124,7 +130,7 @@ export default function PracticeLibrary() {
                 {expanded && (
                   <div className="mt-5 space-y-4 border-t pt-4">
                     {exercise.purpose && <div><p className="text-sm font-medium mb-1">{c.purpose}</p><p className="text-sm text-muted-foreground leading-relaxed">{exercise.purpose}</p></div>}
-                    {exercise.delivery_level === "conditional" && <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900 flex gap-2"><ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" /><span>{c.conditional}</span></div>}
+                    {exercise.delivery_level === "conditional" && <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900 space-y-2"><div className="flex gap-2"><ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" /><span>{c.conditional}</span></div>{(exercise.delivery_conditions || []).length > 0 && <p><strong>{c.conditions}:</strong> {exercise.delivery_conditions.join(" · ")}</p>}{[...(exercise.exclude_if || []), ...(exercise.contraindications || [])].length > 0 && <p><strong>{c.avoidIf}:</strong> {[...(exercise.exclude_if || []), ...(exercise.contraindications || [])].join(" · ")}</p>}</div>}
                     <div><p className="text-sm font-medium mb-2">{c.steps}</p><ol className="space-y-2 list-decimal pl-5 text-sm leading-relaxed">{(exercise.steps || []).map((step, i) => <li key={i}>{step}</li>)}</ol></div>
                   </div>
                 )}
