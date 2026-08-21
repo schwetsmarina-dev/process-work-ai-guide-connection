@@ -24,6 +24,9 @@
     "practice_text": {
       "type": "string"
     },
+    "generated_content": {
+      "type": "object"
+    },
     "journal_questions": {
       "type": "array",
       "items": {
