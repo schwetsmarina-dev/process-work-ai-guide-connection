@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     let nodes = [];
     let edges = [];
     try {
-      const mapRes = await base44.functions.invoke('buildLifeProcessMap', { user_id: userId });
+      const mapRes = await base44.functions.invoke('buildLifeProcessMap', { user_id: userId, completed_only: true });
       nodes = Array.isArray(mapRes?.data?.nodes) ? mapRes.data.nodes : [];
       edges = Array.isArray(mapRes?.data?.edges) ? mapRes.data.edges : [];
     } catch (e) {
