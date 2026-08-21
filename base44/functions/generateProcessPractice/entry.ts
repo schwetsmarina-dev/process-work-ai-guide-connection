@@ -305,7 +305,7 @@ Deno.serve(async (req) => {
     const canonicalTermKeys = [...detectedTermKeys];
     const allExercises = await base44.asServiceRole.entities.ProcessExercise.filter({ active: true }, 'exercise_id', 100).catch(() => []);
     const exerciseCandidates = allExercises
-      .filter((item) => item.requires_live_facilitator !== true && item.intensity !== 'high' && (item.use_in || []).includes('personal_practice'))
+      .filter((item) => item.delivery_level !== 'live_specialist' && item.requires_live_facilitator !== true && item.intensity !== 'high' && (item.use_in || []).includes('personal_practice'))
       .map((item) => ({
         item,
         score: (item.term_keys || []).reduce((score, key) => score + (detectedTermKeys.has(String(key)) ? 1 : 0), 0),
@@ -320,6 +320,9 @@ Deno.serve(async (req) => {
       `Связанные term keys: ${(item.term_keys || []).join(', ')}`,
       `Автор/источник: ${item.author || '—'}${item.source ? `; ${item.source}` : ''}`,
       `Назначение: ${item.purpose}`,
+      `Уровень самостоятельности: ${item.delivery_level || 'conditional'}`,
+      `Условия: ${(item.delivery_conditions || []).join(' | ') || '—'}`,
+      `Не предлагать при: ${(item.exclude_if || []).join(', ') || '—'}`,
       `Ход: ${(item.steps || []).join(' → ')}`,
     ].join('\n')).join('\n\n') || '—';
 
@@ -349,6 +352,8 @@ ${exerciseLibraryBlock}
 - Не выдавай авторство/источник упражнения за материал пользователя.
 - В эту выборку намеренно не попадают high-intensity упражнения, требующие живого фасилитатора.
 - Если ни одно упражнение не подходит, не используй библиотеку и следуй процессу пользователя.
+- Учитывай Уровень самостоятельности каждого упражнения. ai_self_guided можно предлагать самостоятельно. conditional используй только если контекст пользователя явно соответствует указанным условиям и нет ни одного сигнала из «Не предлагать при». live_specialist никогда не используй в персональной AI-практике.
+- При сомнении между conditional и отказом от техники — не используй технику и выбери более мягкий способ продолжить процесс.
 - Верни IDs реально использованных упражнений в used_exercise_ids (0–2); если не использовал — [].
 
 СТРОГИЕ ПРАВИЛА:
