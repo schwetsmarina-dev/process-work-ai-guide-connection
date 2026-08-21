@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { practiceLibraryForPrompt } from '../_shared/processPracticeLibrary.ts';
 
 // Personalized Process Work practice generator.
 // This is intentionally not a generic relaxation meditation. It builds a
