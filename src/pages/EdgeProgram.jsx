@@ -150,7 +150,10 @@ export default function EdgeProgram() {
     enabled: !!authUser?.id,
     staleTime: 20_000,
   });
-  const program = useMemo(() => programs.find((p) => ["active", "paused", "completed", "stopped"].includes(p.status)) || programs[0] || null, [programs]);
+  const program = useMemo(() => {
+    const byStatus = (status) => programs.find((p) => p.status === status);
+    return byStatus("active") || byStatus("paused") || byStatus("completed") || byStatus("stopped") || programs[0] || null;
+  }, [programs]);
 
   const resetDayState = () => {
     setGenerated(null); setAnalysis(null); setReflection(""); setOverwhelmed(false); setDissociated(false);
