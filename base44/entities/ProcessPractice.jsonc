@@ -8,7 +8,11 @@
     },
     "language": {
       "type": "string",
-      "enum": ["ru", "es", "en"],
+      "enum": [
+        "ru",
+        "es",
+        "en"
+      ],
       "description": "Language of the generated practice"
     },
     "is_test": {
@@ -28,13 +32,28 @@
     },
     "dominant_channel": {
       "type": "string",
-      "enum": ["body", "dream", "conflict", "journaling", "mixed"],
+      "enum": [
+        "body",
+        "dream",
+        "conflict",
+        "journaling",
+        "mixed"
+      ],
       "description": "Perceptual channel the exploration question is built around"
     },
     "source_session_ids": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Sessions that informed this practice"
+    },
+    "exercise_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "ProcessExercise IDs actually used to construct this practice"
     },
     "offer_text": {
       "type": "string",
@@ -47,12 +66,27 @@
         "properties": {
           "key": {
             "type": "string",
-            "enum": ["grounding", "contact", "amplification", "exploration", "transition", "secondary_process", "integration"]
+            "enum": [
+              "grounding",
+              "contact",
+              "amplification",
+              "exploration",
+              "transition",
+              "secondary_process",
+              "integration"
+            ]
           },
-          "label": { "type": "string" },
-          "text": { "type": "string" }
+          "label": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
         },
-        "required": ["key", "text"]
+        "required": [
+          "key",
+          "text"
+        ]
       },
       "description": "The 7-step Personal Process Practice script, structured"
     },
@@ -81,12 +115,20 @@
     },
     "status": {
       "type": "string",
-      "enum": ["ready", "failed"],
+      "enum": [
+        "ready",
+        "failed"
+      ],
       "default": "ready"
     },
     "audio_status": {
       "type": "string",
-      "enum": ["none", "generating", "ready", "failed"],
+      "enum": [
+        "none",
+        "generating",
+        "ready",
+        "failed"
+      ],
       "default": "none"
     },
     "audio_url": {
@@ -115,24 +157,43 @@
       "description": "Optional free-text description"
     }
   },
-  "required": ["user_id", "full_text"],
+  "required": [
+    "user_id",
+    "full_text"
+  ],
   "rls": {
     "create": {
-      "user_condition": { "role": "admin" }
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "read": {
       "$or": [
-        { "data.user_id": "{{user.id}}" },
-        { "user_condition": { "role": "admin" } }
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "update": {
-      "user_condition": { "role": "admin" }
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
       "$or": [
-        { "data.user_id": "{{user.id}}" },
-        { "user_condition": { "role": "admin" } }
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     }
   }
