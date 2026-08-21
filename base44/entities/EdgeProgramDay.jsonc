@@ -136,6 +136,25 @@
         "type": "string"
       }
     },
+    "audio_status": {
+      "type": "string",
+      "enum": [
+        "none",
+        "generating",
+        "ready",
+        "failed"
+      ],
+      "default": "none"
+    },
+    "audio_url": {
+      "type": "string"
+    },
+    "audio_error": {
+      "type": "string"
+    },
+    "voice_id": {
+      "type": "string"
+    },
     "ai_observations": {
       "type": "array",
       "items": {
