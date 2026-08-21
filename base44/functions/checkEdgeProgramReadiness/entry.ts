@@ -45,10 +45,12 @@ Deno.serve(async (req) => {
     const blockingRisk = recentRisk.find((r: any) => ['high', 'critical'].includes(r.severity) && r.status !== 'resolved');
 
     if (activeProgram) {
+      const canRescreenCaution = activeProgram.status === 'paused' && activeProgram.safety_state === 'caution';
       return Response.json({
-        eligible_to_screen: false,
-        reason: 'program_already_exists',
+        eligible_to_screen: canRescreenCaution,
+        reason: canRescreenCaution ? 'rescreen_caution' : 'program_already_exists',
         program: activeProgram,
+        can_rescreen: canRescreenCaution,
       });
     }
 
