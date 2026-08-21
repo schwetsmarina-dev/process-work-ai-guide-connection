@@ -73,11 +73,12 @@ export const RETURN_TO_SELF_DAYS = [
     "Seed support: ask who or what could stand nearby so the user would feel stronger. It may be real, imaginary, animal, fictional or unexpected. Do not require an answer."
   ],["Как я узнаю момент «стоп»?","Есть ли у него голос, образ или характер?","Что он говорит или делает?","Кто мог бы быть рядом со мной?"],{support:true}),
 
-  d(4,1,"what_matters_to_no","Что важно тому, кто говорит «нет»?","Understand the prohibiting figure/function without assuming it is protective.",[
+  d(4,1,"what_matters_to_no","Что важно тому, кто говорит «нет»?","Explore the prohibiting figure as a meaningful part of the whole process and discover the useful quality, force, need or message carried in its energy.",[
     "Ask what it tries not to allow and what does not happen because it exists.",
     "Ask what it believes could happen if it disappeared.",
+    "Look at the figure from another side: assume its energy has value for the whole process and ask what useful quality, force, need or message is contained in it. Do not let the exploration collapse into fear, self-attack or negative dramatization.",
     "Clarify ‘what is important to preserve’ with examples only as options: safety, control, belonging, dignity, familiar identity/order, relationships, avoidance of shame, or something else.",
-    "Invite an ally who is not frightened by the prohibiting figure (real or imagined; fairy, Hulk, animal, etc.). Explore what changes when the ally stands beside the user."
+    "Invite an ally who is not frightened by the prohibiting figure (real or imagined; fairy, Hulk, animal, etc.). Explore what changes when the ally stands beside the user and how the figure's useful energy can become more available to the user."
   ],["Что важно тому, кто говорит «нет»?","Что он не допускает?","Что изменилось, когда рядом появилась поддерживающая фигура?"],{support:true}),
 
   d(5,1,"earlier_similar","Когда такое уже было","Explore an earlier similar pattern without manufacturing a trauma narrative or causal explanation.",[
