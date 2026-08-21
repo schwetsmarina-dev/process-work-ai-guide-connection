@@ -322,6 +322,7 @@ Return structure:
         title: content.title, practice_text: fullPractice, journal_questions: content.journal_questions,
         completed: false,
         generation_mode: mode,
+        exercise_ids: usedExerciseIds,
         completion_phase: 'generated',
         safety_action: mode === 'soft_version' ? 'soft_version' : mode === 'repeat_previous' ? 'repeat_previous' : 'none',
         // Methodological extraction is returned to the caller as a CANDIDATE only.
@@ -334,7 +335,7 @@ Return structure:
 
     return Response.json({
       ok: true, mode, day_number: requestedDay, week_number: weekFor(requestedDay), advances_program: false,
-      methodology_key: spec.key, content, extraction_candidates: extraction, day_record: record,
+      methodology_key: spec.key, content, used_exercise_ids: usedExerciseIds, extraction_candidates: extraction, day_record: record,
       note: 'Generation does not advance the program. Progress advances only after an explicit completion action in a separate endpoint.'
     });
   } catch (error) {
