@@ -19,6 +19,44 @@ function languageRule(lang: string) {
 function weekFor(day: number) { return Math.ceil(day / 7); }
 function daySpec(day: number) { return RETURN_TO_SELF_DAYS.find((x: any) => Number(x.day) === day) || null; }
 
+// Canonical Term.latin_key concepts that are methodologically relevant to each day.
+// These are retrieval hints only: a matching exercise is optional and must still fit the user's material.
+const DAY_TERM_KEYS: Record<number, string[]> = {
+  1: ['awareness','signal','body_signal'],
+  2: ['body_signal','proprioceptive_channel','metacommunicator','awareness'],
+  3: ['edge','inner_figure','secondary_process'],
+  4: ['edge','inner_figure','secondary_process'],
+  5: ['personal_myth','primary_process','secondary_process','metacommunicator'],
+  6: ['awareness','body_signal','eldership'],
+  7: ['metacommunicator','awareness','integration'],
+  8: ['body_signal','proprioceptive_channel','secondary_process'],
+  9: ['amplification','body_signal','integration'],
+  10: ['secondary_process','inner_figure','body_signal'],
+  11: ['edge','inner_figure','secondary_process'],
+  12: ['polarity','metacommunicator','secondary_process','integration'],
+  13: ['unoccupied_channel','channel','visual_channel','auditory_channel','world_channel'],
+  14: ['metacommunicator','awareness','integration'],
+  15: ['signal','secondary_process','awareness'],
+  16: ['amplification','secondary_process','body_signal'],
+  17: ['auditory_channel','secondary_process','inner_figure'],
+  18: ['body_signal','proprioceptive_channel','secondary_process','integration'],
+  19: ['primary_process','secondary_process','polarity','metacommunicator'],
+  20: ['integration','secondary_process'],
+  21: ['polarity','metacommunicator','integration'],
+  22: ['awareness','signal','metacommunicator'],
+  23: ['unoccupied_channel','channel','second_attention','secondary_process'],
+  24: ['personal_myth','mythic_level','secondary_process','integration'],
+  25: ['integration','metacommunicator','secondary_process'],
+  26: ['edge','integration','awareness','secondary_process'],
+  27: ['integration','eldership','awareness'],
+  28: ['integration','metacommunicator','awareness','personal_myth'],
+};
+
+function exerciseScore(exercise: any, wantedKeys: string[]) {
+  const keys = new Set(arr(exercise?.term_keys).map((x) => String(x)));
+  return wantedKeys.reduce((score, key) => score + (keys.has(key) ? 1 : 0), 0);
+}
+
 function compactDay(row: any) {
   return {
     day: row.day_number,
@@ -151,6 +189,29 @@ Deno.serve(async (req) => {
       edge_signals: arr(s.edge_signals).slice(0,8), primary_process: arr(s.primary_process).slice(0,8), secondary_process: arr(s.secondary_process).slice(0,8)
     }));
 
+    // Package 2: retrieve exercises through canonical Term.latin_key links instead of asking the LLM
+    // to invent a technique. High-intensity/live-facilitator exercises are never auto-selected here.
+    const wantedTermKeys = DAY_TERM_KEYS[requestedDay] || [];
+    const allExercises = await base44.asServiceRole.entities.ProcessExercise.filter({ active: true }, 'exercise_id', 100).catch(() => []);
+    const eligibleExercises = allExercises
+      .filter((exercise: any) => exercise.requires_live_facilitator !== true && exercise.intensity !== 'high')
+      .filter((exercise: any) => arr(exercise.use_in).includes(mode === 'resource_day' ? 'resource_library' : 'edge_program'))
+      .map((exercise: any) => ({ exercise, score: exerciseScore(exercise, wantedTermKeys) }))
+      .filter((x: any) => x.score > 0)
+      .sort((a: any, b: any) => b.score - a.score)
+      .slice(0, 6)
+      .map((x: any) => x.exercise);
+    const exerciseLibraryBlock = eligibleExercises.length
+      ? eligibleExercises.map((exercise: any) => [
+          `ID: ${clean(exercise.exercise_id, 100)} | ${clean(exercise.title_ru, 180)}`,
+          `Term keys: ${arr(exercise.term_keys).join(', ')}`,
+          `Автор/источник: ${clean(exercise.author, 220)}${exercise.source ? `; ${clean(exercise.source, 240)}` : ''}`,
+          `Назначение: ${clean(exercise.purpose, 700)}`,
+          `Ход: ${arr(exercise.steps).map((x) => clean(x, 500)).join(' → ')}`,
+        ].join('\n')).join('\n\n')
+      : '—';
+    const eligibleExerciseIds = new Set(eligibleExercises.map((x: any) => String(x.exercise_id)));
+
     const resourceModeRule = mode === 'resource_day'
       ? `RESOURCE-ONLY MODE. Do not reopen difficult material, prohibiting figures, early memories, conflict or exposure. Build a low-demand replenishing practice only from confirmed resources where possible. If confirmed resources are sparse, offer 3 gentle choices from the starter resource library and let the user choose. No required journaling.`
       : mode === 'soft_version'
@@ -187,6 +248,19 @@ Recent completed program days:\n${recentDaysBlock}
 Source sessions (background only; never expose Process Work jargon):\n${JSON.stringify(sessionBlock)}
 Already generated day titles/practices: ${usedPracticeTitles}
 
+CANONICAL TERM KEYS FOR TODAY (internal retrieval): ${wantedTermKeys.join(', ') || '—'}
+MATCHED EXERCISE LIBRARY:
+${exerciseLibraryBlock}
+
+EXERCISE RULES:
+- The library is optional method support, not a script that must be used.
+- Use at most 1–2 matched exercises, and only if they fit both today's approved methodology and the person's confirmed material.
+- Adapt wording, pace and intensity. Never mechanically paste an exercise.
+- If none fit, use no library exercise.
+- Never expose internal Term keys or Process Work jargon to the user.
+- Never auto-use a high-intensity or live-facilitator-only exercise.
+- Return the IDs actually used in used_exercise_ids; return [] if none were used.
+
 STRICT CONTENT RULES:
 1. Do not use Process Work technical terms in anything user-visible. Never say edge, edge figure, primary/secondary process, channel, amplification, or Russian/Spanish equivalents.
 2. Use the person's own confirmed words whenever possible. A user correction overrides all prior AI interpretation.
@@ -208,18 +282,20 @@ Return structure:
 - closing: reorientation/return and explicit permission to stop or take a resource/rest day
 - support_options: 0–5 concrete support options relevant to this user/day
 - confirmation_prompt: optional question asking user to confirm/correct an AI observation
+- used_exercise_ids: 0–2 IDs from MATCHED EXERCISE LIBRARY that were actually used; [] if none
 - extraction: structured candidate fields to save after the user completes the day: expected keys are signal, stopping_signal, stopping_message, familiar_way, emerging_signal, emerging_quality, resource, support_figure, preferred_support, next_day_adjustment. Put empty strings for unknown values; these are CANDIDATES only and must later be confirmed from user responses.`;
 
     const llm = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
       response_json_schema: {
-        type: 'object', required: ['title','intro','steps','journal_questions','closing','support_options','extraction'],
+        type: 'object', required: ['title','intro','steps','journal_questions','closing','support_options','used_exercise_ids','extraction'],
         properties: {
           title: { type: 'string' }, intro: { type: 'string' },
           steps: { type: 'array', minItems: 1, maxItems: 7, items: { type: 'object', required: ['text'], properties: { title: {type:'string'}, text:{type:'string'} } } },
           journal_questions: { type: 'array', maxItems: 5, items: { type: 'string' } },
           closing: { type: 'string' }, support_options: { type: 'array', maxItems: 5, items: { type: 'string' } },
           confirmation_prompt: { type: 'string' },
+          used_exercise_ids: { type: 'array', maxItems: 2, items: { type: 'string' } },
           extraction: { type: 'object', properties: {
             signal:{type:'string'}, stopping_signal:{type:'string'}, stopping_message:{type:'string'}, familiar_way:{type:'string'}, emerging_signal:{type:'string'}, emerging_quality:{type:'string'}, resource:{type:'string'}, support_figure:{type:'string'}, preferred_support:{type:'string'}, next_day_adjustment:{type:'string'}
           }}
@@ -231,6 +307,10 @@ Return structure:
     if (!validated.ok) return Response.json({ error: 'generated_day_failed_validation', reason: validated.reason }, { status: 502 });
 
     const extraction = llm.extraction || {};
+    const usedExerciseIds = arr(llm.used_exercise_ids)
+      .map((x) => clean(x, 100))
+      .filter((id) => eligibleExerciseIds.has(id))
+      .slice(0, 2);
     const content = validated.value;
     const fullPractice = [content.intro, ...content.steps.map((s) => `${s.title ? `${s.title}\n` : ''}${s.text}`), content.closing].join('\n\n').trim();
 

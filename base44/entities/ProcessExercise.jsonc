@@ -1,0 +1,106 @@
+{
+  "name": "ProcessExercise",
+  "type": "object",
+  "properties": {
+    "exercise_id": {
+      "type": "string",
+      "description": "Stable unique exercise key"
+    },
+    "title_ru": {
+      "type": "string"
+    },
+    "author": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "term_keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Canonical Term.latin_key values used for retrieval"
+    },
+    "search_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Non-canonical retrieval hints not represented by Term.latin_key"
+    },
+    "channels": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "use_in": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "personal_practice",
+          "edge_program",
+          "resource_library"
+        ]
+      }
+    },
+    "intensity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "moderate",
+        "high"
+      ]
+    },
+    "requires_live_facilitator": {
+      "type": "boolean",
+      "default": false
+    },
+    "contraindications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "purpose": {
+      "type": "string"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "exercise_id",
+    "title_ru",
+    "term_keys",
+    "purpose",
+    "steps"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
