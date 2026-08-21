@@ -97,6 +97,12 @@
       "minimum": 0,
       "default": 0
     },
+    "support_day_history": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
     "paused_day": {
       "type": "integer",
       "minimum": 0,
