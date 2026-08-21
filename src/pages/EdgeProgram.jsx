@@ -51,6 +51,8 @@ const COPY = {
     chooseRepeat: "Повторить",
     chooseResource: "Взять день ресурса",
     choosePause: "Пауза",
+    pauseNow: "Поставить программу на паузу",
+    resumeNow: "Продолжить программу",
     chooseStop: "Остановить программу",
     finalizing: "Сохраняю…",
     restDone: "На сегодня достаточно",
@@ -100,6 +102,8 @@ const COPY = {
     chooseRepeat: "Repetir",
     chooseResource: "Tomar un día de recursos",
     choosePause: "Pausa",
+    pauseNow: "Pausar programa",
+    resumeNow: "Continuar programa",
     chooseStop: "Detener el programa",
     finalizing: "Guardando…",
     restDone: "Por hoy es suficiente",
@@ -214,6 +218,21 @@ export default function EdgeProgram() {
     staleTime: 10 * 60_000,
   });
 
+  const updateProgramState = async (action) => {
+    if (!program?.id) return;
+    setWorking(`state-${action}`); setError("");
+    try {
+      await base44.functions.invoke("updateEdgeProgramState", { program_id: program.id, action });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["edge-programs", authUser?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["edge-program-readiness"] }),
+      ]);
+      if (action === "stop") resetDayState();
+    } catch (e) {
+      console.error("[EdgeProgram] state update failed", e?.message); setError(c.error);
+    } finally { setWorking(""); }
+  };
+
   const resetDayState = () => {
     setGenerated(null); setAnalysis(null); setReflection(""); setOverwhelmed(false); setDissociated(false);
     setObservationReview({}); setResourceReview({}); setError("");
@@ -303,7 +322,7 @@ export default function EdgeProgram() {
         <p className="text-muted-foreground mt-1">{c.subtitle}</p>
       </div>
 
-      {program.status === "paused" && <Card className="p-4 border-amber-200 bg-amber-50"><p className="text-sm">{c.paused}</p>{cautionPaused && <p className="text-sm text-amber-800 mt-2">{c.caution}</p>}</Card>}
+      {program.status === "paused" && <Card className="p-4 border-amber-200 bg-amber-50"><p className="text-sm">{c.paused}</p>{cautionPaused && <p className="text-sm text-amber-800 mt-2">{c.caution}</p>}{!cautionPaused && <Button size="sm" className="mt-3" onClick={() => updateProgramState("resume")} disabled={working}>{c.resumeNow}</Button>}</Card>}
       {program.status === "completed" && <Card className="p-4"><p>{c.completed}</p></Card>}
       {program.status === "stopped" && <Card className="p-4"><p>{c.stopped}</p></Card>}
 
@@ -311,11 +330,12 @@ export default function EdgeProgram() {
         <Card className="p-5 space-y-5">
           <RangeField value={distressBefore} onChange={setDistressBefore} label={c.checkin} />
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => generate("standard")} disabled={working || deepModesDisabled}><Sparkles className="w-4 h-4 mr-2" />{c.standard}</Button>
-            <Button variant="outline" onClick={() => generate("soft_version")} disabled={working || deepModesDisabled}>{c.soft}</Button>
+            <Button onClick={() => generate("standard")} disabled={working || deepModesDisabled || program.status === "paused"}><Sparkles className="w-4 h-4 mr-2" />{c.standard}</Button>
+            <Button variant="outline" onClick={() => generate("soft_version")} disabled={working || deepModesDisabled || program.status === "paused"}>{c.soft}</Button>
             <Button variant="outline" onClick={() => generate("resource_day")} disabled={working}><HeartHandshake className="w-4 h-4 mr-2" />{c.resource}</Button>
             <Button variant="outline" onClick={() => generate("rest_day")} disabled={working}><BedDouble className="w-4 h-4 mr-2" />{c.rest}</Button>
-            {Number(program.current_day || 1) > 1 && <Button variant="ghost" onClick={() => generate("repeat_previous")} disabled={working || deepModesDisabled}><RotateCcw className="w-4 h-4 mr-2" />{c.repeat}</Button>}
+            {Number(program.current_day || 1) > 1 && <Button variant="ghost" onClick={() => generate("repeat_previous")} disabled={working || deepModesDisabled || program.status === "paused"}><RotateCcw className="w-4 h-4 mr-2" />{c.repeat}</Button>}
+            {program.status === "active" && <Button variant="ghost" onClick={() => updateProgramState("pause")} disabled={working}><Pause className="w-4 h-4 mr-2" />{c.pauseNow}</Button>}
           </div>
           {working === "generate" && <p className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{c.generating}</p>}
         </Card>
@@ -329,6 +349,7 @@ export default function EdgeProgram() {
           <div className="space-y-4">{(content.steps || []).map((s, i) => <div key={i}><p className="font-medium text-sm mb-1">{s.title}</p><p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">{s.text}</p></div>)}</div>
           {(content.journal_questions || []).length > 0 && <div className="border-t pt-4"><p className="font-medium text-sm mb-2">{c.journal}</p><ul className="space-y-1.5 text-sm text-muted-foreground list-disc pl-5">{content.journal_questions.map((q, i) => <li key={i}>{q}</li>)}</ul></div>}
           <p className="text-sm leading-relaxed border-t pt-4">{content.closing}</p>
+          {program.status === "active" && <Button variant="ghost" size="sm" onClick={() => updateProgramState("pause")} disabled={working}><Pause className="w-4 h-4 mr-2" />{c.pauseNow}</Button>}
           {supportOnly && <Button variant="outline" onClick={resetDayState}>{generationMode === "rest_day" ? c.restDone : c.supportReturn}</Button>}
         </Card>
       )}
