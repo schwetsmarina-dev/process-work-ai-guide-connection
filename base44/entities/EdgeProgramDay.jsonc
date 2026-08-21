@@ -127,6 +127,12 @@
         "repeat_previous"
       ]
     },
+    "exercise_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "ai_observations": {
       "type": "array",
       "items": {
