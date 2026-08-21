@@ -326,7 +326,7 @@ Return structure:
     if (mode === 'standard' || mode === 'soft_version' || mode === 'repeat_previous') {
       const payload: any = {
         user_id: caller.id, program_id: program.id, day_number: requestedDay, week_number: weekFor(requestedDay),
-        title: content.title, practice_text: fullPractice, journal_questions: content.journal_questions,
+        title: content.title, practice_text: fullPractice, generated_content: content, journal_questions: content.journal_questions,
         completed: false,
         distress_before: body.distress_before === null || body.distress_before === undefined || body.distress_before === '' ? null : Math.max(0, Math.min(10, Math.round(Number(body.distress_before) || 0))),
         generation_mode: mode,
