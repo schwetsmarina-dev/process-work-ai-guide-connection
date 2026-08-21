@@ -277,6 +277,29 @@ Deno.serve(async (req) => {
         ? 'Write everything in English.'
         : 'Пиши всё на русском языке.';
 
+    const sourceModes = sessions.map((session) => normalizeText(session.mode_id || session.mode).toLowerCase());
+    const channelFromMode = (mode) => {
+      if (/body|symptom|телес|симптом/.test(mode)) return 'body';
+      if (/dream|сон/.test(mode)) return 'dream';
+      if (/conflict|relation|отнош|конфликт/.test(mode)) return 'conflict';
+      if (/journal|journaling|дневник/.test(mode)) return 'journaling';
+      return 'mixed';
+    };
+    const mappedChannels = sourceModes.map(channelFromMode).filter(Boolean);
+    const channelCounts = mappedChannels.reduce((acc, channel) => {
+      acc[channel] = (acc[channel] || 0) + 1;
+      return acc;
+    }, {});
+    const preferredLibraryChannel = Object.entries(channelCounts)
+      .sort((a, b) => Number(b[1]) - Number(a[1]))[0]?.[0] || 'mixed';
+    const exerciseCandidates = practiceLibraryForPrompt(preferredLibraryChannel).slice(0, 8);
+    const exerciseLibraryBlock = exerciseCandidates.map((item) => [
+      `${item.id} — ${item.title_ru}`,
+      `Автор/источник: ${item.author}${item.source ? `; ${item.source}` : ''}`,
+      `Назначение: ${item.purpose}`,
+      `Ход: ${item.steps.join(' → ')}`,
+    ].join('\n')).join('\n\n') || '—';
+
     const prompt = `Ты — процессуально-ориентированный фасилитатор (Process Work / Арнольд Минделл). Построй персональную ПРОЦЕССУАЛЬНУЮ ПРАКТИКУ по материалу конкретного пользователя. Это не релаксационная медитация: цель — продолжить уже проявившийся процесс, не интерпретируя человека за него.
 
 Глоссарий:
