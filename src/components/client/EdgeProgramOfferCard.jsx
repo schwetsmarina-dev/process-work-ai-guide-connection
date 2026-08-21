@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -24,6 +25,12 @@ const COPY = {
     proceed: "Скрининг завершён. Программа может начаться с мягкого первого дня.",
     caution: "Talvira предлагает пока не начинать цикл автоматически. Лучше сначала обеспечить живую поддержку и вернуться к программе позже.",
     stop: "Сейчас программу лучше не начинать. Можно продолжать обычные сессии Talvira и вернуться к этому формату позже.",
+    continueProgram: "Продолжить программу",
+    openProgram: "Открыть программу",
+    rescreen: "Повторить проверку готовности",
+    existingActive: "Твоя 28-дневная программа уже начата. Продолжай с того места, где остановилась.",
+    existingPaused: "Программа стоит на паузе. Место сохранено — можно вернуться к ней, когда захочешь.",
+    cautionExisting: "Перед продолжением глубокой части нужно повторить короткую проверку готовности. Ресурсный день и день отдыха остаются доступны.",
   },
   es: {
     eyebrow: "Programa de 28 días",
@@ -41,11 +48,18 @@ const COPY = {
     proceed: "Screening completado. El programa puede empezar con un primer día suave.",
     caution: "Talvira recomienda no iniciar el ciclo automáticamente todavía. Conviene asegurar apoyo humano y volver al programa más adelante.",
     stop: "Ahora es mejor no iniciar el programa. Puedes continuar con las sesiones habituales de Talvira y volver a este formato más adelante.",
+    continueProgram: "Continuar programa",
+    openProgram: "Abrir programa",
+    rescreen: "Repetir comprobación",
+    existingActive: "Tu programa de 28 días ya está en marcha. Puedes continuar desde donde lo dejaste.",
+    existingPaused: "El programa está en pausa. Tu lugar está guardado y puedes volver cuando quieras.",
+    cautionExisting: "Antes de continuar con la parte profunda, repite la breve comprobación de preparación. El día de recursos y el día de descanso siguen disponibles.",
   },
 };
 
 export default function EdgeProgramOfferCard({ lang = "ru", enabled = true }) {
   const c = COPY[lang] || COPY.ru;
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [answers, setAnswers] = useState({
@@ -69,7 +83,11 @@ export default function EdgeProgramOfferCard({ lang = "ru", enabled = true }) {
     retry: 1,
   });
 
-  if (!enabled || isLoading || !readiness?.eligible_to_screen) return null;
+  if (!enabled || isLoading) return null;
+
+  const existingProgram = readiness?.program || null;
+  const canScreen = readiness?.eligible_to_screen === true;
+  if (!canScreen && !existingProgram) return null;
 
   const setAnswer = (key, checked) => setAnswers((prev) => ({ ...prev, [key]: checked === true }));
 
@@ -86,6 +104,28 @@ export default function EdgeProgramOfferCard({ lang = "ru", enabled = true }) {
 
   const resultText = result?.result === "proceed" ? c.proceed : result?.result === "caution" ? c.caution : result?.result === "stop" ? c.stop : "";
 
+  if (existingProgram && !canScreen) {
+    const active = existingProgram.status === "active";
+    return (
+      <Card className="p-5 md:p-6 border-primary/20 bg-card">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 rounded-full bg-primary/10 p-2">
+            <CalendarRange className="w-4 h-4 text-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs uppercase tracking-wide text-primary font-medium mb-1">{c.eyebrow}</p>
+            <h3 className="font-serif text-xl font-semibold mb-2">{c.title}</h3>
+            <p className="text-sm text-muted-foreground mb-4">{active ? c.existingActive : c.existingPaused}</p>
+            <Button variant="outline" onClick={() => navigate("/edge-program")}>
+              <CalendarRange className="w-4 h-4 mr-2" />
+              {c.continueProgram}
+            </Button>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <>
       <Card className="p-5 md:p-6 border-primary/20 bg-card">
@@ -98,9 +138,10 @@ export default function EdgeProgramOfferCard({ lang = "ru", enabled = true }) {
             <h3 className="font-serif text-xl font-semibold mb-2">{c.title}</h3>
             <p className="text-sm text-muted-foreground mb-4">{c.body}</p>
             {readiness.theme_label && <p className="text-sm mb-4"><span className="font-medium">{readiness.theme_label}</span></p>}
+            {readiness?.reason === "rescreen_caution" && <p className="text-sm text-amber-800 mb-4">{c.cautionExisting}</p>}
             <Button variant="outline" onClick={() => { setResult(null); setOpen(true); }}>
               <ShieldCheck className="w-4 h-4 mr-2" />
-              {c.start}
+              {readiness?.reason === "rescreen_caution" ? c.rescreen : c.start}
             </Button>
           </div>
         </div>
@@ -143,6 +184,13 @@ export default function EdgeProgramOfferCard({ lang = "ru", enabled = true }) {
                 {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {c.submit}
               </Button>
+            ) : result?.result === "proceed" ? (
+              <Button onClick={() => { setOpen(false); navigate("/edge-program"); }}>{c.openProgram}</Button>
+            ) : result?.result === "caution" ? (
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={() => { setOpen(false); navigate("/edge-program"); }}>{c.openProgram}</Button>
+                <Button onClick={() => setOpen(false)}>{lang === "es" ? "Cerrar" : "Закрыть"}</Button>
+              </div>
             ) : (
               <Button onClick={() => setOpen(false)}>{lang === "es" ? "Cerrar" : "Закрыть"}</Button>
             )}
