@@ -32,6 +32,7 @@ const regularNavItems = [
   { path: "/journal", labelKey: "nav_journal", icon: NotebookPen },
   { path: "/history", labelKey: "nav_history", icon: History },
   { path: "/insights-library", labelKey: "nav_insights_library", icon: BookOpen },
+  { path: "/practice-library", labelKey: "nav_practice_library", icon: Sparkles },
   { path: "/life-process-map", labelKey: "nav_process_map", icon: Network },
   { path: "/timeline", labelKey: "nav_timeline", icon: GitCommitVertical },
   { path: "/insights", labelKey: "nav_analytics", icon: BarChart3 },
