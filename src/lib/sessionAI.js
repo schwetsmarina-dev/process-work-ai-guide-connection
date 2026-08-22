@@ -1433,24 +1433,112 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
   // is active (rank >= 5), ModeStep becomes advisory — SessionState wins.
   const modeStepDemoted = hasValidStep && sessionState.current_stage_rank >= 5;
   const stepContext = !hasValidStep
-    ? "\n\nВсе шаги пройдены. Мягко и тепло завершай сессию — без новых вопросов."
+    ? (isEsRuntime
+      ? "\n\nTodos los pasos metodológicos están completados. Cierra la sesión con calidez y sin abrir preguntas nuevas."
+      : "\n\nВсе шаги пройдены. Мягко и тепло завершай сессию — без новых вопросов.")
     : modeStepDemoted
-    ? `\n\n━━━ MODE_STEP (ТОЛЬКО СОВЕЩАТЕЛЬНО — SESSION STATE ВЫШЕ) ━━━\n` +
-      `Текущая стадия rank ${sessionState.current_stage_rank} (${sessionState.current_stage}). ` +
-      `Шаг ModeStep («${step.goal || step.question || ""}») может относиться к более ранней стадии. ` +
-      `НЕ возвращай сессию назад. Если шаг просит картирование/выбор образа/выбор фокуса — НЕ выполняй его, ` +
-      `а продолжай разворачивать текущий фокус` +
-      (sessionState.current_process_target ? ` («${String(sessionState.current_process_target).substring(0, 120)}»)` : "") + ".\n"
+    ? (isEsRuntime
+      ? `\n\n━━━ MODE_STEP (SOLO ORIENTATIVO — MANDA EL ESTADO DE SESIÓN) ━━━\n` +
+        `La etapa actual es rank ${sessionState.current_stage_rank} (${sessionState.current_stage}). ` +
+        `El ModeStep («${step.goal_es || step.question_es || ""}») puede pertenecer a una etapa anterior. ` +
+        `No retrocedas. Si el paso pide volver a cartografiar o elegir imagen/foco, ignóralo y continúa desplegando el foco actual` +
+        (sessionState.current_process_target ? ` («${String(sessionState.current_process_target).substring(0, 120)}»)` : "") + ".\n"
+      : `\n\n━━━ MODE_STEP (ТОЛЬКО СОВЕЩАТЕЛЬНО — SESSION STATE ВЫШЕ) ━━━\n` +
+        `Текущая стадия rank ${sessionState.current_stage_rank} (${sessionState.current_stage}). ` +
+        `Шаг ModeStep («${step.goal || step.question || ""}») может относиться к более ранней стадии. ` +
+        `НЕ возвращай сессию назад. Если шаг просит картирование/выбор образа/выбор фокуса — НЕ выполняй его, ` +
+        `а продолжай разворачивать текущий фокус` +
+        (sessionState.current_process_target ? ` («${String(sessionState.current_process_target).substring(0, 120)}»)` : "") + ".\n")
     : buildModeStepInstruction(step, language);
 
   const modeShiftHint = step?.possible_mode_shift
     ? (language === "es"
-      ? `\n\nPosible cambio de modo: ${step.possible_mode_shift_es || step.possible_mode_shift}. Si encaja claramente con el proceso, añade al final «[SHIFT_SUGGEST:${step.pending_mode || ""}]» para que la interfaz muestre la elección. No sugieras un cambio solo porque esté disponible.`
+      ? `\n\nHay una posible transición de modo${step.possible_mode_shift_es ? `: ${step.possible_mode_shift_es}` : ""}. Si encaja claramente con el proceso, añade al final «[SHIFT_SUGGEST:${step.pending_mode || ""}]» para que la interfaz muestre la elección. No sugieras un cambio solo porque esté disponible.`
       : `\n\nВозможный переход: ${step.possible_mode_shift}. Если это уместно — предложи пользователю: включи в конец ответа фразу «[SHIFT_SUGGEST:${step.pending_mode || ""}]» чтобы система показала кнопки выбора. Делай это только если смена режима явно уместна.`)
     : "";
 
-  const buildPrompt = (extraInstruction = "") =>
-    `${SYSTEM_PROMPT}${languageOverride}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${alreadyAnsweredInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${focusContinuity}${edgeLimitInstruction}${beginnerChoicesInstruction}${extraInstruction}
+  const spanishRuntimeBlock = isEsRuntime ? (() => {
+    const blocks = [];
+    const stage = mappingStage.stage;
+    const initialStageForMode = INITIAL_MATERIAL_STAGE[modeKey];
+    const initialQ = (INITIAL_MATERIAL_QUESTIONS[modeKey] || {}).es;
+
+    if (userAlreadyAnswered) {
+      blocks.push(`La persona ha indicado que ya respondió o que la pregunta se está repitiendo. No vuelvas a preguntar lo mismo. Recupera de la conversación lo que ya dijo, reconócelo brevemente y avanza a la etapa actual.`);
+    }
+
+    if (isMismatch) {
+      const correctQ = stage === "awaiting_primary" ? PRIMARY_QUESTIONS[modeKey]
+        : stage === "awaiting_secondary" ? SECONDARY_QUESTIONS[modeKey]
+        : stage === "awaiting_dream" ? "Cuéntame el sueño tal como lo recuerdas. ¿Qué momentos o sensaciones destacan más?"
+        : initialStageForMode && stage === initialStageForMode ? initialQ : "";
+      blocks.push(`La persona señala que Talvira se adelantó o entendió mal. Reconoce el error en una frase, vuelve exactamente a la etapa ${stage} y no continúes la dirección anterior.${correctQ ? ` La única pregunta permitida ahora es: «${correctQ}»` : ""}`);
+    } else if (isDreamAlreadyTold && modeKey === "dream") {
+      blocks.push(`El material del sueño ya fue contado. Está prohibido pedir que lo cuente otra vez. Reconoce brevemente elementos concretos ya mencionados y pasa a la pregunta de experiencia familiar: «${PRIMARY_QUESTIONS.dream}»`);
+    } else if (isMapStatusQuery && !mappingStageComplete) {
+      blocks.push(`La persona pregunta por el estado del mapa. Responde directamente qué parte ya está clara y cuál falta. Después haz solo la pregunta correspondiente a la etapa actual: «${stage === "awaiting_secondary" ? SECONDARY_QUESTIONS[modeKey] : PRIMARY_QUESTIONS[modeKey]}»`);
+    } else if (!mappingStageComplete && !isIntegrationStage) {
+      if (modeKey === "body") {
+        blocks.push(buildBodyStageInstruction(mappingStage, "es"));
+      } else if (initialStageForMode && stage === initialStageForMode && initialQ) {
+        blocks.push(`ETAPA DE MATERIAL INICIAL. Todavía no hay suficiente material para este modo. Haz únicamente: «${initialQ}». No preguntes todavía por lo familiar, lo nuevo, el cuerpo, imágenes o significado.`);
+      } else if (stage === "awaiting_dream") {
+        blocks.push(`ETAPA DEL SUEÑO. La persona todavía no ha contado el sueño. Haz únicamente: «Cuéntame el sueño tal como lo recuerdas. ¿Qué momentos o sensaciones destacan más?». No preguntes todavía por lo familiar, lo extraño, el cuerpo, símbolos o significado.`);
+      } else if (stage === "awaiting_primary") {
+        blocks.push(`ETAPA DE EXPERIENCIA FAMILIAR. Haz una sola pregunta y espera la respuesta: «${PRIMARY_QUESTIONS[modeKey]}». No pases todavía a lo nuevo/extraño ni a una exploración más profunda.`);
+      } else if (stage === "awaiting_secondary") {
+        blocks.push(`ETAPA DE EXPERIENCIA MENOS HABITUAL. La parte familiar ya está registrada. Haz una sola pregunta y espera: «${SECONDARY_QUESTIONS[modeKey]}». No empieces todavía a profundizar en un foco.`);
+      }
+    }
+
+    if (modeKey !== "body" && mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer) {
+      if (!assistantReflectedMap) {
+        blocks.push(`El mapa básico ya está completo. Primero refleja de forma neutral TODOS los elementos menos habituales usando las palabras concretas de la persona. No elijas ninguno. Después pregunta cuál se siente más vivo, cargado, curioso, extraño o atractivo ahora.`);
+      } else if (!userSelectedFocus) {
+        blocks.push(`Los elementos ya fueron reflejados, pero la persona todavía no ha elegido el foco. No elijas por ella ni empieces a explorarlo. Haz únicamente una pregunta breve de elección, por ejemplo: «¿Qué de todo esto te llama más la atención ahora?»`);
+      } else {
+        blocks.push(`El foco ya fue elegido por la persona. Explora únicamente ese foco y no vuelvas a cartografiar ni a elegir otro. ${focusTarget ? `Foco actual: «${String(focusTarget).substring(0, 180)}».` : ""}`);
+      }
+    }
+
+    if (sessionState.focus_locked || sessionState.exploration_active) {
+      blocks.push(`BLOQUEO DE FOCO ACTIVO. No vuelvas al material inicial, a preguntas de familiar/nuevo ni a selección de imagen o energía. Continúa desplegando el foco actual con una intervención distinta de la usada en el turno anterior.`);
+    }
+
+    if (isIntegrationStage) {
+      blocks.push(isConflictMode
+        ? `INTEGRACIÓN ACTIVA EN CONFLICTO. No vuelvas a roles, imágenes ni cartografía. Lleva el descubrimiento hacia claridad de decisión, límites y un posible pequeño paso real, sin decidir por la persona.`
+        : `INTEGRACIÓN ACTIVA. No abras imágenes o material nuevo. Ayuda a notar qué cambió y cómo la cualidad descubierta podría tener un lugar concreto en la vida, manteniendo cualquier conclusión como hipótesis de la persona.`);
+    }
+
+    if (completionDetection.isComplete) {
+      blocks.push(`CIERRE DETECTADO. Refleja brevemente el recorrido desde el inicio hasta ahora, reconoce el cambio o descubrimiento y haz como máximo una pregunta suave de cierre. No abras una nueva línea de exploración.`);
+    }
+
+    if (isLooping) {
+      blocks.push(`Se detecta repetición. No hagas otra variante de la misma pregunta; avanza al siguiente movimiento metodológico permitido por el estado actual.`);
+    }
+
+    return blocks.length ? `\n\n━━━ RUNTIME METODOLÓGICO ES ━━━\n- ${blocks.join("\n- ")}` : "";
+  })() : "";
+
+  const buildPrompt = (extraInstruction = "") => isEsRuntime
+    ? `${systemPrompt}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${spanishRuntimeBlock}${edgeLimitInstruction}${beginnerChoicesInstruction}${extraInstruction}
+
+MODO: ${currentMode}
+
+━━━ HISTORIAL DE LA CONVERSACIÓN ━━━
+${history}
+
+━━━ ÚLTIMO MENSAJE DE LA PERSONA ━━━
+${userMessage}
+
+━━━ TAREA DE ESTE TURNO ━━━
+1. Respeta el estado y los bloqueos anteriores.
+2. Usa palabras concretas de la persona en una reflexión breve.
+3. Haz exactamente UNA pregunta que corresponda al siguiente movimiento permitido.
+4. Responde en 2–3 frases, sin repetir, sin plantillas y sin mezclar idiomas.`
+    : `${systemPrompt}${languageOverride}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${alreadyAnsweredInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${focusContinuity}${edgeLimitInstruction}${beginnerChoicesInstruction}${extraInstruction}
 
 Режим: ${currentMode}
 
