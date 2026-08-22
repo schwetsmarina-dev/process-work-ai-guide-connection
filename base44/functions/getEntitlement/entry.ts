@@ -66,8 +66,11 @@ Deno.serve(async (req) => {
     // can show "1 of 1 used" consistently.
     const usageByMode = {};
     try {
+      // Session ownership is canonical on the custom user_id field. Sessions
+      // are created through a service-role function, so built-in creator fields
+      // are not a reliable basis for quota/usage reporting.
       const sessions = await base44.asServiceRole.entities.Session.filter({
-        created_by_id: user.id,
+        user_id: user.id,
       });
       for (const s of sessions || []) {
         const mode = s.mode_id || s.mode;
