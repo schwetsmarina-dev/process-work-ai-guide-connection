@@ -21,16 +21,17 @@ const RISK_TYPE_KEYS = {
 
 export default function RiskEventCard({ event, clientName = null }) {
   const lang = getStoredLanguage();
-  const sev = SEVERITY_STYLE[event.severity] || SEVERITY_STYLE.low;
+  const detailsShared = event.details_shared !== false;
+  const sev = detailsShared ? (SEVERITY_STYLE[event.severity] || SEVERITY_STYLE.low) : SEVERITY_STYLE.medium;
   return (
     <div className={`rounded-xl border ${sev.border} ${sev.bg} p-4`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <AlertTriangle className={`w-4 h-4 ${sev.text} shrink-0`} />
           <span className={`text-xs font-semibold ${sev.text} uppercase tracking-wide`}>
-            {t(sev.labelKey, lang)}
+            {detailsShared ? t(sev.labelKey, lang) : (lang === "es" ? "Evento de seguridad" : "Событие безопасности")}
           </span>
-          <span className="text-xs text-muted-foreground">
+          {detailsShared && event.risk_type && <span className="text-xs text-muted-foreground">
             · {RISK_TYPE_KEYS[event.risk_type] ? t(RISK_TYPE_KEYS[event.risk_type], lang) : event.risk_type}
           </span>
         </div>
@@ -45,11 +46,15 @@ export default function RiskEventCard({ event, clientName = null }) {
         <p className="text-xs font-medium text-foreground mt-2">{clientName}</p>
       )}
 
-      {event.trigger_text && (
-        <p className="text-sm text-muted-foreground mt-1.5 line-clamp-3 italic">
-          «{event.trigger_text}»
+      {detailsShared && event.trigger_text ? (
+        <p className="text-sm text-muted-foreground mt-1.5 line-clamp-3 italic">«{event.trigger_text}»</p>
+      ) : !detailsShared ? (
+        <p className="text-xs text-muted-foreground mt-1.5">
+          {lang === "es"
+            ? "El cliente no ha autorizado compartir los detalles de este evento."
+            : "Клиент не разрешил раскрывать подробности этого события."}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }
