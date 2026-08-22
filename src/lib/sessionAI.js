@@ -1400,13 +1400,21 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
     console.log("[TERMS_CONTEXT_LOADED]", { count: terms.length, term_names: terms.map((t) => t.term) });
   }
   const termsContext = terms.length
-    ? (modeKey === "body"
-        ? "\n\nШЕСТЬ КАНАЛОВ PROCESS WORK — определения загружены из таблицы Term. Используй их внутренне при разворачивании образа X; канал описывает способ восприятия/проявления образа и НЕ заменяет сам образ:\n"
-        : "\n\nРелевантные концепции Process Work (используй ТОЛЬКО внутренне, чтобы выбрать правильный тип вмешательства):\n") +
-      terms
-        .map((t) => `• ${t.term}: ${t.short_definition || ""}${t.practical_application ? " | Применение: " + t.practical_application : ""}`)
-        .join("\n") +
-      "\n\nНе объясняй теорию, если пользователь не просит. Не выдавай определения. Используй термины, чтобы выбрать правильный вопрос."
+    ? (language === "es"
+      ? (modeKey === "body"
+          ? "\n\nSEIS CANALES DE PROCESS WORK — definiciones cargadas desde Term. Úsalas solo internamente al desplegar la experiencia; un canal describe la vía de percepción/expresión y NO sustituye la experiencia concreta de la persona:\n"
+          : "\n\nConceptos relevantes de Process Work (uso INTERNO para elegir la intervención adecuada):\n") +
+        terms
+          .map((t) => `• ${t.term_es || t.term}: ${t.short_definition_es || t.short_definition || ""}${(t.practical_application_es || t.practical_application) ? " | Aplicación: " + (t.practical_application_es || t.practical_application) : ""}`)
+          .join("\n") +
+        "\n\nNo expliques teoría salvo que la persona la pida. No recites definiciones. Usa estos conceptos solo para elegir una intervención coherente."
+      : (modeKey === "body"
+          ? "\n\nШЕСТЬ КАНАЛОВ PROCESS WORK — определения загружены из таблицы Term. Используй их внутренне при разворачивании образа X; канал описывает способ восприятия/проявления образа и НЕ заменяет сам образ:\n"
+          : "\n\nРелевантные концепции Process Work (используй ТОЛЬКО внутренне, чтобы выбрать правильный тип вмешательства):\n") +
+        terms
+          .map((t) => `• ${t.term}: ${t.short_definition || ""}${t.practical_application ? " | Применение: " + t.practical_application : ""}`)
+          .join("\n") +
+        "\n\nНе объясняй теорию, если пользователь не просит. Не выдавай определения. Используй термины, чтобы выбрать правильный вопрос.")
     : "";
 
   // ModeStep may not move the session backwards. Once exploration/integration/closure
@@ -1424,7 +1432,9 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
     : buildModeStepInstruction(step, language);
 
   const modeShiftHint = step?.possible_mode_shift
-    ? `\n\nВозможный переход: ${step.possible_mode_shift}. Если это уместно — предложи пользователю: включи в конец ответа фразу «[SHIFT_SUGGEST:${step.pending_mode || ""}]» чтобы система показала кнопки выбора. Делай это только если смена режима явно уместна.`
+    ? (language === "es"
+      ? `\n\nPosible cambio de modo: ${step.possible_mode_shift_es || step.possible_mode_shift}. Si encaja claramente con el proceso, añade al final «[SHIFT_SUGGEST:${step.pending_mode || ""}]» para que la interfaz muestre la elección. No sugieras un cambio solo porque esté disponible.`
+      : `\n\nВозможный переход: ${step.possible_mode_shift}. Если это уместно — предложи пользователю: включи в конец ответа фразу «[SHIFT_SUGGEST:${step.pending_mode || ""}]» чтобы система показала кнопки выбора. Делай это только если смена режима явно уместна.`)
     : "";
 
   const buildPrompt = (extraInstruction = "") =>
