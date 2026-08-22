@@ -1602,9 +1602,21 @@ ${userMessage}
       content: m.content.length > 400 ? m.content.slice(0, 400) + "…" : m.content,
     }));
     const trimmedHistory = trimmed
-      .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
+      .map((m) => `${m.role === "user" ? (isEsRuntime ? "Persona" : "Пользователь") : (isEsRuntime ? "Talvira" : "Ассистент")}: ${m.content}`)
       .join("\n");
-    const trimmedPrompt = `${SYSTEM_PROMPT}${languageOverride}${carryOverBlock}${memoriesBlock}${stepContext}${layerStatus}${alreadyAnsweredInstruction}${integrationLock}${forcedInstruction}${loopWarning}
+    const trimmedPrompt = isEsRuntime
+      ? `${systemPrompt}${carryOverBlock}${memoriesBlock}${stepContext}${termsContext}${spanishRuntimeBlock}
+
+MODO: ${currentMode}
+
+━━━ HISTORIAL RECIENTE ━━━
+${trimmedHistory}
+
+━━━ ÚLTIMO MENSAJE DE LA PERSONA ━━━
+${userMessage}
+
+Respeta la etapa actual. Escribe una reflexión breve usando palabras concretas de la persona y exactamente UNA pregunta que haga avanzar el proceso. 2–3 frases, solo en español.`
+      : `${systemPrompt}${languageOverride}${carryOverBlock}${memoriesBlock}${stepContext}${layerStatus}${alreadyAnsweredInstruction}${integrationLock}${forcedInstruction}${loopWarning}
 
 Режим: ${currentMode}
 
@@ -1673,7 +1685,9 @@ ${userMessage}
 
   console.warn("[AI_RUNTIME] Pass 1 failed validation:", firstValidation.reason);
 
-  const retryInstruction = `\n\n🚨 ВАЖНО: предыдущий ответ был ОТКЛОНЁН. Причина: ${firstValidation.reason}. ${firstValidation.correctedInstruction}`;
+  const retryInstruction = isEsRuntime
+    ? `\n\n🚨 IMPORTANTE: la respuesta anterior fue rechazada por el validador (${firstValidation.reason || "respuesta no válida"}). Corrige el problema respetando estrictamente el estado metodológico ES anterior. No repitas preguntas ya respondidas, no retrocedas de etapa, no mezcles idiomas y haz exactamente una pregunta.`
+    : `\n\n🚨 ВАЖНО: предыдущий ответ был ОТКЛОНЁН. Причина: ${firstValidation.reason}. ${firstValidation.correctedInstruction}`;
   let secondResponse;
   try {
     secondResponse = (await base44.functions.invoke("invokeAI", { prompt: buildPrompt(retryInstruction) })).data?.response;
