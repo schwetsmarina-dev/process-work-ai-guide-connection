@@ -31,9 +31,11 @@ export default function RiskEventCard({ event, clientName = null }) {
           <span className={`text-xs font-semibold ${sev.text} uppercase tracking-wide`}>
             {detailsShared ? t(sev.labelKey, lang) : (lang === "es" ? "Evento de seguridad" : "Событие безопасности")}
           </span>
-          {detailsShared && event.risk_type && <span className="text-xs text-muted-foreground">
-            · {RISK_TYPE_KEYS[event.risk_type] ? t(RISK_TYPE_KEYS[event.risk_type], lang) : event.risk_type}
-          </span>
+          {detailsShared && event.risk_type && (
+            <span className="text-xs text-muted-foreground">
+              · {RISK_TYPE_KEYS[event.risk_type] ? t(RISK_TYPE_KEYS[event.risk_type], lang) : event.risk_type}
+            </span>
+          )}
         </div>
         {event.detected_at && (
           <span className="text-xs text-muted-foreground shrink-0">
