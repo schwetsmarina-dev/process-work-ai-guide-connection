@@ -16,11 +16,19 @@
     },
     "goal": {
       "type": "string",
-      "description": "Step goal"
+      "description": "Step goal in Russian/source language"
+    },
+    "goal_es": {
+      "type": "string",
+      "description": "Spanish localization of the methodological step goal"
     },
     "question": {
       "type": "string",
-      "description": "Step question (long text)"
+      "description": "Step question in Russian/source language"
+    },
+    "question_es": {
+      "type": "string",
+      "description": "Spanish localization of the methodological step question"
     },
     "response_type": {
       "type": "string",
@@ -48,11 +56,19 @@
     },
     "facilitator_hint": {
       "type": "string",
-      "description": "Hint for the AI facilitator"
+      "description": "Methodological facilitator hint in Russian/source language"
+    },
+    "facilitator_hint_es": {
+      "type": "string",
+      "description": "Spanish localization of the methodological facilitator hint"
     },
     "possible_mode_shift": {
       "type": "string",
-      "description": "Conditions for mode shift"
+      "description": "Conditions for mode shift in source language/internal key"
+    },
+    "possible_mode_shift_es": {
+      "type": "string",
+      "description": "Spanish localization of human-readable mode-shift condition when applicable"
     },
     "pending_mode": {
       "type": "string",
@@ -62,6 +78,11 @@
       "type": "string",
       "maxLength": 1000,
       "description": "Optional free-text description"
+    },
+    "description_es": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Spanish localization of optional description"
     }
   },
   "required": [
