@@ -104,6 +104,19 @@
     "carry_over_context": {
       "type": "string",
       "description": "Short summary of the previous session's theme, injected into the opening greeting when the user chose to continue/deepen it instead of starting fresh"
+    },
+    "memory_excluded": {
+      "type": "boolean",
+      "default": false,
+      "description": "User-controlled: if true, this session must not contribute to cross-session memory or AI retrieval"
+    },
+    "memory_excluded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "memory_exclusion_reason": {
+      "type": "string",
+      "maxLength": 1000
     }
   },
   "required": [
