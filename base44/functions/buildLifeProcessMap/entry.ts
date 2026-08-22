@@ -56,12 +56,13 @@ Deno.serve(async (req) => {
             client_email: clientEmail,
           });
           const link = links[0];
-          if (!link || link.consent_to_share !== true || link.share_scope !== 'both') {
-            return Response.json({ error: 'No consent to share', consent: false }, { status: 403 });
+          const legacyBroad = link?.share_scope === 'both';
+          if (!link || link.consent_to_share !== true || !(link.share_process_map === true || (link.share_process_map == null && legacyBroad))) {
+            return Response.json({ error: 'No consent to share process map', consent: false }, { status: 403 });
           }
         }
       }
-      const owners = await base44.asServiceRole.entities.AppUser.filter({ email: clientEmail });
+      const owners = await base44.asServiceRole.entities.User.filter({ email: clientEmail }).catch(() => []);
       userId = owners[0]?.id || null;
       if (!userId) {
         return Response.json({ error: 'Client not found' }, { status: 404 });
@@ -95,11 +96,14 @@ Deno.serve(async (req) => {
       500
     );
     const terms = await base44.asServiceRole.entities.Term.list('term', 1000);
-    const riskEvents = await base44.asServiceRole.entities.RiskEvent.filter(
-      { user_id: userId },
-      '-detected_at',
-      200
-    );
+    let allowRiskNodes = true;
+    if (clientEmail && me?.role !== 'admin' && me?.email?.toLowerCase() !== clientEmail) {
+      const links = await base44.asServiceRole.entities.ClientLink.filter({ therapist_email: me.email, client_email: clientEmail });
+      allowRiskNodes = links[0]?.share_risk_flags === true;
+    }
+    const riskEvents = allowRiskNodes
+      ? await base44.asServiceRole.entities.RiskEvent.filter({ user_id: userId }, '-detected_at', 200)
+      : [];
 
     // ── Node registry: key -> { id, label, type, count } ──────────────────────
     const nodes = new Map();
