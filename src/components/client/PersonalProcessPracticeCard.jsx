@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Loader2, Sparkles, Volume2, ChevronDown } from "lucide-react";
+import { AlertCircle, Loader2, Sparkles, Volume2, ChevronDown, MessageSquareText } from "lucide-react";
 import ExperienceFeedbackForm from "@/components/feedback/ExperienceFeedbackForm";
 
 const COPY = {
@@ -193,8 +193,9 @@ export default function PersonalProcessPracticeCard({ userId, user = null, lang 
             <button
               type="button"
               onClick={() => document.getElementById(`practice-feedback-${visiblePractice.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-              className="mt-5 w-full rounded-xl border border-primary/20 bg-background/70 px-4 py-3 text-sm font-medium text-primary flex items-center justify-center gap-2"
+              className="mt-5 w-full rounded-xl bg-primary px-4 py-3.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition flex items-center justify-center gap-2"
             >
+              <MessageSquareText className="w-4 h-4" />
               {lang === "es" ? "¿Has terminado? Déjanos tu feedback" : "Закончила практику? Оставь отзыв"}
               <ChevronDown className="w-4 h-4" />
             </button>
