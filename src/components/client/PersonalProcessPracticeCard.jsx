@@ -20,7 +20,6 @@ const COPY = {
     retryAudio: "Повторить аудио",
     refresh: "Создать новую практику по последним сессиям",
     error: "Не удалось подготовить практику. Попробуйте позже.",
-    basedOn: "Методическая основа",
     facilitator: "Дополнительная поддержка",
   },
   es: {
@@ -37,7 +36,6 @@ const COPY = {
     retryAudio: "Reintentar audio",
     refresh: "Crear una práctica nueva con las últimas sesiones",
     error: "No se pudo preparar la práctica. Inténtalo más tarde.",
-    basedOn: "Base metodológica",
     facilitator: "Apoyo adicional",
   },
   en: {
@@ -54,7 +52,6 @@ const COPY = {
     retryAudio: "Retry audio",
     refresh: "Create a new practice from recent sessions",
     error: "The practice could not be prepared. Please try again later.",
-    basedOn: "Method basis",
     facilitator: "Additional support",
   },
 };
@@ -82,13 +79,6 @@ export default function PersonalProcessPracticeCard({ userId, lang = "es", compl
   });
 
   const latestPractice = practices.find((p) => p.language === lang) || null;
-  const practiceExerciseIds = Array.isArray(latestPractice?.exercise_ids) ? latestPractice.exercise_ids.filter(Boolean) : [];
-  const { data: sourceExercises = [] } = useQuery({
-    queryKey: ["process-practice-exercises", latestPractice?.id, practiceExerciseIds.join("|")],
-    queryFn: () => base44.entities.ProcessExercise.filter({ exercise_id: { $in: practiceExerciseIds } }, "exercise_id", 10),
-    enabled: practiceExerciseIds.length > 0,
-    staleTime: 10 * 60_000,
-  });
   const latestCompletedSessionId = completedSessions[0]?.id || null;
   const latestPracticeCoversNewestSession = useMemo(() => {
     if (!latestPractice || !latestCompletedSessionId) return false;
@@ -165,11 +155,6 @@ export default function PersonalProcessPracticeCard({ userId, lang = "es", compl
             <h3 className="font-serif text-xl font-semibold mb-1">{visiblePractice.theme_label || c.ready}</h3>
             {visiblePractice.offer_text && (
               <p className="text-sm text-muted-foreground mb-4">{visiblePractice.offer_text}</p>
-            )}
-            {sourceExercises.length > 0 && (
-              <p className="text-xs text-muted-foreground mb-4">
-                {c.basedOn}: {sourceExercises.map((x) => x.author || (lang === "es" ? x.title_es : x.title_ru)).filter(Boolean).join(" · ")}
-              </p>
             )}
             {visiblePractice.suggest_live_facilitator && visiblePractice.live_facilitator_note && (
               <div className="rounded-xl border border-primary/15 bg-background/60 p-3 mb-4">
