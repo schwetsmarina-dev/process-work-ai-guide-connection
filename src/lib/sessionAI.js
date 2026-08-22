@@ -508,19 +508,24 @@ function buildProcessMap(messages, modeId) {
   if (stage.secondary_answer) map.secondary_process = stage.secondary_answer.substring(0, 80);
 
   if (allText.includes("граница") || allText.includes("границ") || allText.includes("колебани") ||
-      allText.includes("с одной стороны") || allText.includes("но с другой")) {
-    map.edge = "колебание между первичным и вторичным";
+      allText.includes("с одной стороны") || allText.includes("но с другой") ||
+      allText.includes("límite") || allText.includes("me frena") || allText.includes("me detiene") ||
+      allText.includes("por una parte") || allText.includes("por otro lado")) {
+    map.edge = "tensión entre lo familiar y algo nuevo";
   }
 
   const figureSignals = ["мать", "мама", "папа", "отец", "муж", "жена", "партнёр", "начальник",
-    "друг", "подруга", "ребёнок", "дети", "коллег", "учитель", "босс", "родители"];
+    "друг", "подруга", "ребёнок", "дети", "коллег", "учитель", "босс", "родители",
+    "madre", "mamá", "padre", "papá", "marido", "mujer", "pareja", "jefe", "jefa",
+    "amigo", "amiga", "hijo", "hija", "niños", "compañero", "compañera", "profesor", "profesora", "padres"]; 
   const foundFigures = figureSignals.filter((f) => userText.includes(f));
   if (foundFigures.length > 0) map.field_figures = foundFigures.join(", ");
 
   const channelSignals = [
-    ["образ", "визуальный"], ["вижу", "визуальный"],
-    ["движени", "моторный"], ["голос", "аудиальный"],
-    ["во сне", "сновидческий"], ["снилось", "сновидческий"],
+    ["образ", "visual"], ["вижу", "visual"], ["imagen", "visual"], ["veo", "visual"],
+    ["движени", "movement"], ["movimiento", "movement"],
+    ["голос", "auditory"], ["voz", "auditory"], ["sonido", "auditory"],
+    ["во сне", "dreaming"], ["снилось", "dreaming"], ["en el sueño", "dreaming"], ["he soñado", "dreaming"],
   ];
   const foundChannels = new Set();
   for (const [kw, channel] of channelSignals) {
@@ -529,22 +534,25 @@ function buildProcessMap(messages, modeId) {
   if (foundChannels.size > 0) map.channels = [...foundChannels].join(", ");
 
   const emergingSignals = [
-    ["проявиться", "импульс проявиться"], ["свобод", "свобода"],
-    ["целостност", "целостность"], ["зрелост", "зрелость"],
-    ["готовност", "готовность к новому"],
+    ["проявиться", "impulso emergente"], ["свобод", "libertad"],
+    ["целостност", "integridad"], ["зрелост", "madurez"], ["готовност", "apertura a algo nuevo"],
+    ["aparecer", "impulso emergente"], ["libertad", "libertad"], ["entera", "integridad"],
+    ["entero", "integridad"], ["madurez", "madurez"], ["preparada", "apertura a algo nuevo"], ["preparado", "apertura a algo nuevo"],
   ];
   for (const [kw, label] of emergingSignals) {
     if (allText.includes(kw)) { map.emerging_quality = label; break; }
   }
 
   if (map.primary_process && map.secondary_process) {
-    map.polarity = "присутствует напряжение между знакомым и новым";
+    map.polarity = "tensión entre lo familiar y lo nuevo";
   }
 
   const atmoSignals = [
-    ["тяжёл", "тяжёлая"], ["грустн", "грустная"], ["тревожн", "тревожная"],
-    ["светл", "светлая"], ["спокойн", "спокойная"], ["напряжённ", "напряжённая"],
-    ["радостн", "радостная"], ["тёпл", "тёплая"], ["запутанн", "запутанная"],
+    ["тяжёл", "pesada"], ["грустн", "triste"], ["тревожн", "ansiosa"],
+    ["светл", "luminosa"], ["спокойн", "tranquila"], ["напряжённ", "tensa"],
+    ["радостн", "alegre"], ["тёпл", "cálida"], ["запутанн", "confusa"],
+    ["pesad", "pesada"], ["triste", "triste"], ["ansios", "ansiosa"], ["luminos", "luminosa"],
+    ["tranquil", "tranquila"], ["tens", "tensa"], ["alegr", "alegre"], ["cálid", "cálida"], ["confus", "confusa"],
   ];
   for (const [kw, label] of atmoSignals) {
     if (userText.includes(kw)) { map.atmosphere = label; break; }
