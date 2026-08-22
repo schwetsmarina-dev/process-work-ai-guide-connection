@@ -135,7 +135,17 @@ export default function PracticeLibrary() {
   const practices = useMemo(() => {
     const q = query.trim().toLocaleLowerCase();
     const localizedRows = lang === "es"
-      ? visibleRows.filter((x) => String(x.title_es || "").trim() && String(x.purpose_es || "").trim() && Array.isArray(x.steps_es) && x.steps_es.length === (x.steps || []).length)
+      ? visibleRows.filter((x) => {
+          const completeArray = (source, translated) => !Array.isArray(source) || source.length === 0 || (Array.isArray(translated) && translated.length === source.length);
+          return String(x.title_es || "").trim()
+            && String(x.purpose_es || "").trim()
+            && Array.isArray(x.steps_es)
+            && x.steps_es.length === (x.steps || []).length
+            && completeArray(x.search_tags, x.search_tags_es)
+            && completeArray(x.delivery_conditions, x.delivery_conditions_es)
+            && completeArray(x.exclude_if, x.exclude_if_es)
+            && completeArray(x.contraindications, x.contraindications_es);
+        })
       : visibleRows;
     return localizedRows.filter((x) => {
       if (!q) return true;
