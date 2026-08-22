@@ -18,7 +18,7 @@ function hasNamedAuthor(value) {
 const COPY = {
   ru: {
     title: "Библиотека практик",
-    subtitle: "Готовые процессуальные упражнения с указанным автором или учебным источником. Здесь нет техник, которые требуют живого специалиста или относятся к высокой интенсивности.",
+    subtitle: "Готовые процессуальные упражнения с указанным автором. Здесь нет техник, которые требуют живого специалиста или относятся к высокой интенсивности.",
     search: "Найти по теме, автору или названию…",
     author: "Автор",
     purpose: "Для чего",
@@ -33,7 +33,7 @@ const COPY = {
   },
   es: {
     title: "Biblioteca de prácticas",
-    subtitle: "Ejercicios procesuales preparados con autor o fuente formativa identificados. No se muestran técnicas de alta intensidad ni las que requieren un profesional en vivo.",
+    subtitle: "Ejercicios procesuales preparados con autor identificado. No se muestran técnicas de alta intensidad ni las que requieren un profesional en vivo.",
     search: "Buscar por tema, autor o título…",
     author: "Autor",
     purpose: "Para qué sirve",
@@ -48,7 +48,7 @@ const COPY = {
   },
   en: {
     title: "Practice library",
-    subtitle: "Ready-to-use process exercises with an identified author or training source. High-intensity and live-facilitator techniques are not shown here.",
+    subtitle: "Ready-to-use process exercises with an identified author. High-intensity and live-facilitator techniques are not shown here.",
     search: "Search by topic, author, or title…",
     author: "Author",
     purpose: "Purpose",
