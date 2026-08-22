@@ -38,7 +38,7 @@ async function markFailed(base44: any, dayId: string, message: string) {
   }).catch(() => null);
 }
 
-async function synthesize(apiKey: string, voiceId: string, text: string) {
+async function synthesize(apiKey: string, voiceId: string, text: string, languageCode: 'ru' | 'es') {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TTS_TIMEOUT_MS);
   try {
@@ -47,8 +47,9 @@ async function synthesize(apiKey: string, voiceId: string, text: string) {
       headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
       body: JSON.stringify({
         text,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: { stability: 0.16, similarity_boost: 0.87, style: 0.70, speed: 0.90, use_speaker_boost: true },
+        model_id: 'eleven_v3',
+        language_code: languageCode,
+        voice_settings: { stability: 0.35, similarity_boost: 0.87, style: 0.55, use_speaker_boost: true },
       }),
     });
     if (!res.ok) throw new Error(`ElevenLabs ${res.status}: ${(await res.text().catch(() => '')).slice(0, 300)}`);
@@ -91,6 +92,12 @@ Deno.serve(async (req) => {
       ephemeral = true;
     }
 
+    let languageCode: 'ru' | 'es' = 'es';
+    try {
+      const appUsers = caller.email ? await base44.asServiceRole.entities.AppUser.filter({ email: caller.email }) : [];
+      if (appUsers[0]?.language === 'ru') languageCode = 'ru';
+    } catch {}
+
     const apiKey = Deno.env.get('ELEVENLABS_API_KEY');
     const voiceId = Deno.env.get('ELEVENLABS_VOICE_ID');
     if (!apiKey || !voiceId) {
@@ -113,7 +120,7 @@ Deno.serve(async (req) => {
     try {
       const chunks = splitText(text);
       const buffers: Uint8Array[] = [];
-      for (const chunk of chunks) buffers.push(await synthesize(apiKey, voiceId, chunk));
+      for (const chunk of chunks) buffers.push(await synthesize(apiKey, voiceId, chunk, languageCode));
       const total = buffers.reduce((n, b) => n + b.byteLength, 0);
       const merged = new Uint8Array(total);
       let offset = 0;
