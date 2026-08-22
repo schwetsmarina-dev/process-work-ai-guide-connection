@@ -24,7 +24,10 @@ async function ensureAppUser(user) {
     await base44.entities.AppUser.create({
       email: resolvedUser.email,
       name: resolvedUser.full_name || resolvedUser.email,
-      language: "ru",
+      // Preserve the language selected on the public landing/auth screens.
+      // Hard-coding RU here made a first-time Spanish user complete the
+      // localized registration and then suddenly see Russian onboarding.
+      language: normalizeLang(getStoredLanguage()),
       plan: "free",
       onboarding_completed: false,
       consent_given: false,
