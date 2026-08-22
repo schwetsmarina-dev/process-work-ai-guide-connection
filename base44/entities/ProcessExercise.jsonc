@@ -9,6 +9,9 @@
     "title_ru": {
       "type": "string"
     },
+    "title_es": {
+      "type": "string"
+    },
     "author": {
       "type": "string"
     },
@@ -90,7 +93,16 @@
     "purpose": {
       "type": "string"
     },
+    "purpose_es": {
+      "type": "string"
+    },
     "steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "steps_es": {
       "type": "array",
       "items": {
         "type": "string"
