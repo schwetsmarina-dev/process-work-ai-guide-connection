@@ -1460,7 +1460,9 @@ ${userMessage}
     console.log("[AI_RUNTIME] InvokeLLM pass 1 success, response length:", firstResponse?.length);
   } catch (e) {
     console.error("[AI_RUNTIME] InvokeLLM FAILED (pass 1):", e?.message, String(e));
-    const minimalPrompt = `Ты Process Work guide. Задавай один мягкий вопрос.\n\nПоследнее сообщение пользователя: ${userMessage}`;
+    const minimalPrompt = language === "es"
+      ? `Eres facilitador de Process Work. Responde SOLO en español natural. Haz una sola pregunta suave, sin interpretar ni diagnosticar.\n\nÚltimo mensaje de la persona: ${userMessage}`
+      : `Ты Process Work фасилитатор. Отвечай ТОЛЬКО по-русски. Задай один мягкий вопрос, без интерпретаций и диагнозов.\n\nПоследнее сообщение пользователя: ${userMessage}`;
     try {
       const safeResponse = (await base44.functions.invoke("invokeAI", { prompt: minimalPrompt })).data?.response;
       return safeResponse || getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold, language);
@@ -1502,13 +1504,29 @@ ${userMessage}
 }
 
 // ─── Session summary ─────────────────────────────────────────────────────────
-const FALLBACK_SUMMARY = {
-  summary: "Сессия завершена. Резюме недоступно.",
-  themes: [],
-  signals: [],
-  next_step_suggestion: "",
-  confidence_note: "Это автоматическое резюме. Проверь, насколько оно тебе откликается.",
-  memories: [],
+const FALLBACK_SUMMARY_BY_LANG = {
+  ru: {
+    summary: "Сессия завершена. Резюме недоступно.",
+    themes: [],
+    signals: [],
+    edge_signals: [],
+    primary_process: [],
+    secondary_process: [],
+    next_step_suggestion: "",
+    confidence_note: "Это автоматическое резюме. Проверь, насколько оно тебе откликается.",
+    memories: [],
+  },
+  es: {
+    summary: "Sesión finalizada. El resumen no está disponible.",
+    themes: [],
+    signals: [],
+    edge_signals: [],
+    primary_process: [],
+    secondary_process: [],
+    next_step_suggestion: "",
+    confidence_note: "Este resumen es automático. Comprueba si refleja tu experiencia.",
+    memories: [],
+  },
 };
 
 export async function generateSessionSummary(session, messages, language = "es") {
@@ -1590,9 +1608,9 @@ ${conversation}`,
 
   try {
     const res = await Promise.race([llmPromise, timeoutPromise]);
-    return res?.data?.response || FALLBACK_SUMMARY;
+    return res?.data?.response || FALLBACK_SUMMARY_BY_LANG[lang];
   } catch (e) {
     console.error("Summary generation failed:", e.message);
-    return FALLBACK_SUMMARY;
+    return FALLBACK_SUMMARY_BY_LANG[lang];
   }
 }
