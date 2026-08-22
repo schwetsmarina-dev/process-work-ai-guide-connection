@@ -40,7 +40,9 @@ const CRISIS_MESSAGES = {
 📞 Экстренная психологическая помощь МЧС: 8-499-216-50-50
 📱 Линия психологической помощи: 051 (с мобильного)
 
-Вы не одиноки. Помощь доступна.`,
+Вы не одиноки. Помощь доступна.
+
+Если ваш аккаунт связан с терапевтом, Talvira сообщит ему о самом факте события безопасности. Содержание этой сессии и подробности ситуации не будут переданы без вашего отдельного согласия.`,
   es: `⚠️ He notado que has mencionado algo importante.
 
 Esta herramienta es para el autoconocimiento y no sustituye la ayuda profesional.
@@ -51,7 +53,9 @@ Si lo estás pasando mal ahora mismo, por favor contacta:
 📞 Emergencias: 112
 📱 Teléfono de la Esperanza: 717 003 717
 
-No estás solo/a. Hay ayuda disponible.`,
+No estás solo/a. Hay ayuda disponible.
+
+Si tu cuenta está vinculada a un terapeuta, Talvira le informará únicamente de que se ha producido un evento de seguridad. El contenido de esta sesión y los detalles de la situación no se compartirán sin tu consentimiento específico.`,
   en: `⚠️ I noticed you mentioned something important.
 
 This tool is for self-exploration and is not a substitute for professional help.
@@ -62,7 +66,9 @@ If you're going through a hard time right now, please reach out:
 📞 Your local crisis or suicide helpline
 📱 If you're in immediate danger, contact emergency services now.
 
-You are not alone. Help is available.`,
+You are not alone. Help is available.
+
+If your account is linked to a therapist, Talvira will notify them only that a safety event has occurred. The content of this session and the details of the situation will not be shared without your specific consent.`,
 };
 
 // Backward-compatible default (Russian).
