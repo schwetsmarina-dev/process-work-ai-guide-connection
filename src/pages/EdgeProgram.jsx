@@ -5,7 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, ArrowLeft, Sparkles, HeartHandshake, Pause, RotateCcw, BedDouble, ShieldCheck, Volume2 } from "lucide-react";
+import { Loader2, ArrowLeft, Sparkles, HeartHandshake, Pause, RotateCcw, BedDouble, ShieldCheck, Volume2, ChevronDown, MessageSquareText } from "lucide-react";
 import { normalizeLang } from "@/lib/i18n";
 import ExperienceFeedbackForm from "@/components/feedback/ExperienceFeedbackForm";
 
@@ -378,26 +378,60 @@ export default function EdgeProgram() {
       </div>
 
       {program.status === "paused" && <Card className="p-4 border-amber-200 bg-amber-50"><p className="text-sm">{c.paused}</p>{cautionPaused && <p className="text-sm text-amber-800 mt-2">{c.caution}</p>}{!cautionPaused && <Button size="sm" className="mt-3" onClick={() => updateProgramState("resume")} disabled={working}>{c.resumeNow}</Button>}</Card>}
-      {program.status === "completed" && <Card className="p-4"><p>{c.completed}</p></Card>}
+      {program.status === "completed" && (
+        <>
+          <Card className="p-4"><p>{c.completed}</p></Card>
+          <button
+            type="button"
+            onClick={() => document.getElementById("edge-program-feedback")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className="w-full rounded-xl border border-primary/25 bg-primary/5 px-4 py-3 flex items-center justify-center gap-2 text-sm font-medium text-primary"
+          >
+            <MessageSquareText className="w-4 h-4" />
+            {lang === "es" ? "Cuéntanos cómo fue el programa completo" : "Расскажи, как прошла вся программа"}
+            <ChevronDown className="w-4 h-4" />
+          </button>
+          <div id="edge-program-feedback" className="scroll-mt-6">
+            <ExperienceFeedbackForm
+              user={{ ...authUser, name: appUsers[0]?.name || authUser?.full_name || authUser?.name || "" }}
+              lang={lang}
+              experienceType="edge_program_complete"
+              experienceLabel={lang === "ru" ? "28-дневная программа · итог" : "Programa de 28 días · valoración final"}
+              referenceId={program.id}
+              programId={program.id}
+              programName={lang === "ru" ? "Возвращение к себе — 28 дней" : "Volver a mí — 28 días"}
+              dayNumber={28}
+              weekNumber={4}
+            />
+          </div>
+        </>
+      )}
 
       {feedbackDay && authUser?.id && (
         <div id="edge-day-feedback" className="scroll-mt-6">
-          <Card className="p-4 border-primary/25 bg-primary/5">
-            <p className="text-sm font-medium">
-              {lang === "es"
-                ? `Has completado el día ${feedbackDay.day_number}. Cuéntanos cómo fue para ti.`
-                : `День ${feedbackDay.day_number} завершён. Расскажи, как он прошёл для тебя.`}
-            </p>
-          </Card>
-          <ExperienceFeedbackForm
-            user={authUser}
-            lang={lang}
-            experienceType="edge_program_day"
-            referenceId={feedbackDay.id}
-            programId={program.id}
-            dayNumber={feedbackDay.day_number}
-            weekNumber={feedbackDay.week_number}
-          />
+          <button
+            type="button"
+            onClick={() => document.getElementById("edge-day-feedback-form")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className="w-full rounded-xl border border-primary/25 bg-primary/5 px-4 py-3 flex items-center justify-center gap-2 text-sm font-medium text-primary"
+          >
+            <MessageSquareText className="w-4 h-4" />
+            {lang === "es"
+              ? `Día ${feedbackDay.day_number} completado · deja tu feedback`
+              : `День ${feedbackDay.day_number} завершён · оставь отзыв`}
+            <ChevronDown className="w-4 h-4" />
+          </button>
+          <div id="edge-day-feedback-form" className="scroll-mt-6">
+            <ExperienceFeedbackForm
+              user={{ ...authUser, name: appUsers[0]?.name || authUser?.full_name || authUser?.name || "" }}
+              lang={lang}
+              experienceType="edge_program_day"
+              experienceLabel={lang === "ru" ? "28-дневная программа · день" : "Programa de 28 días · día"}
+              referenceId={feedbackDay.id}
+              programId={program.id}
+              programName={lang === "ru" ? "Возвращение к себе — 28 дней" : "Volver a mí — 28 días"}
+              dayNumber={feedbackDay.day_number}
+              weekNumber={feedbackDay.week_number}
+            />
+          </div>
         </div>
       )}
       {program.status === "stopped" && <Card className="p-4"><p>{c.stopped}</p></Card>}
