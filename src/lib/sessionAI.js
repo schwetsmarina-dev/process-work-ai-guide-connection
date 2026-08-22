@@ -1251,35 +1251,45 @@ export async function getAIResponse(session, step, messages, userMessage, langua
   // onward — the facilitator would welcome the person back and then behave as
   // if nothing had preceded.
   const carryOverBlock = session?.carry_over_context
-    ? `\n\n━━━ CONTINUATION OF A PREVIOUS SESSION ━━━\n` +
-      `The person chose to carry this work forward. What follows is where they ` +
-      `stopped last time. Treat it as already known — do NOT ask them to repeat it.\n` +
-      `«${String(session.carry_over_context).substring(0, 1200)}»\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
+    ? (isEsRuntime
+      ? `\n\n━━━ CONTINUACIÓN DE UNA SESIÓN ANTERIOR ━━━\n` +
+        `La persona decidió continuar este trabajo. Lo siguiente describe dónde se quedó la vez anterior. Trátalo como ya conocido y NO le pidas que lo repita.\n` +
+        `«${String(session.carry_over_context).substring(0, 1200)}»\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
+      : `\n\n━━━ CONTINUATION OF A PREVIOUS SESSION ━━━\n` +
+        `The person chose to carry this work forward. What follows is where they ` +
+        `stopped last time. Treat it as already known — do NOT ask them to repeat it.\n` +
+        `«${String(session.carry_over_context).substring(0, 1200)}»\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`)
     : "";
 
-  const sessionStateBlock =
-    `\n\n━━━ CURRENT SESSION STATE — SOURCE OF TRUTH ━━━\n` +
-    `• stage_rank: ${sessionState.current_stage_rank} (${sessionState.current_stage})\n` +
-    `• primary_locked: ${sessionState.primary_locked}\n` +
-    `• secondary_locked: ${sessionState.secondary_locked}\n` +
-    `• focus_locked: ${sessionState.focus_locked}\n` +
-    (sessionState.selected_process_focus ? `• selected_focus: «${String(sessionState.selected_process_focus).substring(0, 140)}»\n` : "") +
-    (sessionState.current_process_target ? `• current_process_target: «${String(sessionState.current_process_target).substring(0, 140)}»\n` : "") +
-    `• exploration_active: ${sessionState.exploration_active} (depth ${sessionState.exploration_depth})\n` +
-    `\nYou must NOT ask questions from stages below current_stage_rank.\n` +
-    (sessionState.current_process_target
-      ? `You MUST continue unfolding current_process_target. Every next question must explicitly refer to it.\n`
-      : "") +
-    (sessionState.focus_locked
-      ? `Focus is already locked — do NOT return to mapping, image selection, energy selection, primary or secondary questions.\n`
-      : "") +
-    (sessionState.exploration_active && sessionState.exploration_depth < 2
-      ? `Integration / life-connection questions are NOT yet allowed (need exploration_depth >= 2).\n`
-      : "") +
-    (sessionState.last_intervention_type
-      ? `• last_intervention_type: ${sessionState.last_intervention_type} — do NOT use the same intervention type again this turn; pick a different one (immersion, amplification, body, resource, polarity, movement, atmosphere, dialogue, edge, temporal).\n`
-      : "");
+  const sessionStateBlock = isEsRuntime
+    ? `\n\n━━━ ESTADO ACTUAL DE LA SESIÓN — FUENTE DE VERDAD ━━━\n` +
+      `• stage_rank: ${sessionState.current_stage_rank} (${sessionState.current_stage})\n` +
+      `• primary_locked: ${sessionState.primary_locked}\n` +
+      `• secondary_locked: ${sessionState.secondary_locked}\n` +
+      `• focus_locked: ${sessionState.focus_locked}\n` +
+      (sessionState.selected_process_focus ? `• foco elegido: «${String(sessionState.selected_process_focus).substring(0, 140)}»\n` : "") +
+      (sessionState.current_process_target ? `• objetivo actual del proceso: «${String(sessionState.current_process_target).substring(0, 140)}»\n` : "") +
+      `• exploración activa: ${sessionState.exploration_active} (profundidad ${sessionState.exploration_depth})\n` +
+      `\nNo hagas preguntas pertenecientes a etapas anteriores al stage_rank actual.\n` +
+      (sessionState.current_process_target ? `Continúa desplegando el objetivo actual del proceso y haz referencia explícita a él.\n` : "") +
+      (sessionState.focus_locked ? `El foco ya está fijado: no vuelvas a cartografiar, elegir imagen/energía ni preguntar por procesos primario/secundario.\n` : "") +
+      (sessionState.exploration_active && sessionState.exploration_depth < 2 ? `Todavía no están permitidas preguntas de integración o conexión con la vida; primero profundiza un poco más en el foco.\n` : "") +
+      (sessionState.last_intervention_type ? `• última intervención: ${sessionState.last_intervention_type}; no repitas el mismo tipo de intervención en este turno.\n` : "")
+    : `\n\n━━━ CURRENT SESSION STATE — SOURCE OF TRUTH ━━━\n` +
+      `• stage_rank: ${sessionState.current_stage_rank} (${sessionState.current_stage})\n` +
+      `• primary_locked: ${sessionState.primary_locked}\n` +
+      `• secondary_locked: ${sessionState.secondary_locked}\n` +
+      `• focus_locked: ${sessionState.focus_locked}\n` +
+      (sessionState.selected_process_focus ? `• selected_focus: «${String(sessionState.selected_process_focus).substring(0, 140)}»\n` : "") +
+      (sessionState.current_process_target ? `• current_process_target: «${String(sessionState.current_process_target).substring(0, 140)}»\n` : "") +
+      `• exploration_active: ${sessionState.exploration_active} (depth ${sessionState.exploration_depth})\n` +
+      `\nYou must NOT ask questions from stages below current_stage_rank.\n` +
+      (sessionState.current_process_target ? `You MUST continue unfolding current_process_target. Every next question must explicitly refer to it.\n` : "") +
+      (sessionState.focus_locked ? `Focus is already locked — do NOT return to mapping, image selection, energy selection, primary or secondary questions.\n` : "") +
+      (sessionState.exploration_active && sessionState.exploration_depth < 2 ? `Integration / life-connection questions are NOT yet allowed (need exploration_depth >= 2).\n` : "") +
+      (sessionState.last_intervention_type ? `• last_intervention_type: ${sessionState.last_intervention_type} — do NOT use the same intervention type again this turn; pick a different one (immersion, amplification, body, resource, polarity, movement, atmosphere, dialogue, edge, temporal).\n` : "");
 
   const mappingCompleteContext = modeKey !== "body" && mappingStageComplete && mappingStage.primary_answer && mappingStage.secondary_answer
     ? !assistantReflectedMap
