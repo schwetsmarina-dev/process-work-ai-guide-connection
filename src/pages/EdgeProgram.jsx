@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, ArrowLeft, Sparkles, HeartHandshake, Pause, RotateCcw, BedDouble, ShieldCheck, Volume2 } from "lucide-react";
 import { normalizeLang } from "@/lib/i18n";
+import ExperienceFeedbackForm from "@/components/feedback/ExperienceFeedbackForm";
 
 const COPY = {
   ru: {
@@ -150,6 +151,7 @@ export default function EdgeProgram() {
   const [error, setError] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
   const [audioError, setAudioError] = useState("");
+  const [feedbackDay, setFeedbackDay] = useState(null);
 
   const { data: authUser = null } = useQuery({ queryKey: ["edge-program-user"], queryFn: () => base44.auth.me() });
   const { data: appUsers = [] } = useQuery({
@@ -331,6 +333,11 @@ export default function EdgeProgram() {
     if (!program?.id || !dayId || !analysis || !reviewsComplete) return;
     setWorking("finalize"); setError("");
     try {
+      const completedDay = {
+        id: dayId,
+        day_number: generated?.day_number || generated?.day_record?.day_number || program.current_day || 1,
+        week_number: generated?.week_number || generated?.day_record?.week_number || program.current_week || 1,
+      };
       const res = await base44.functions.invoke("completeEdgeProgramDay", {
         phase: "finalize", program_id: program.id, day_id: dayId,
         observation_review: Object.entries(observationReview).map(([id, x]) => ({ id, ...x })),
@@ -341,7 +348,9 @@ export default function EdgeProgram() {
         queryClient.invalidateQueries({ queryKey: ["edge-programs", authUser?.id] }),
         queryClient.invalidateQueries({ queryKey: ["edge-program-pending-days", program.id] }),
       ]);
+      setFeedbackDay(completedDay);
       resetDayState();
+      setTimeout(() => document.getElementById("edge-day-feedback")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
       const decision = res?.data?.progression_decision;
       if (decision === "resource") setTimeout(() => generate("resource_day"), 50);
       else if (decision === "repeat") setTimeout(() => generate("repeat_previous"), 50);
@@ -370,6 +379,27 @@ export default function EdgeProgram() {
 
       {program.status === "paused" && <Card className="p-4 border-amber-200 bg-amber-50"><p className="text-sm">{c.paused}</p>{cautionPaused && <p className="text-sm text-amber-800 mt-2">{c.caution}</p>}{!cautionPaused && <Button size="sm" className="mt-3" onClick={() => updateProgramState("resume")} disabled={working}>{c.resumeNow}</Button>}</Card>}
       {program.status === "completed" && <Card className="p-4"><p>{c.completed}</p></Card>}
+
+      {feedbackDay && authUser?.id && (
+        <div id="edge-day-feedback" className="scroll-mt-6">
+          <Card className="p-4 border-primary/25 bg-primary/5">
+            <p className="text-sm font-medium">
+              {lang === "es"
+                ? `Has completado el día ${feedbackDay.day_number}. Cuéntanos cómo fue para ti.`
+                : `День ${feedbackDay.day_number} завершён. Расскажи, как он прошёл для тебя.`}
+            </p>
+          </Card>
+          <ExperienceFeedbackForm
+            user={authUser}
+            lang={lang}
+            experienceType="edge_program_day"
+            referenceId={feedbackDay.id}
+            programId={program.id}
+            dayNumber={feedbackDay.day_number}
+            weekNumber={feedbackDay.week_number}
+          />
+        </div>
+      )}
       {program.status === "stopped" && <Card className="p-4"><p>{c.stopped}</p></Card>}
 
       {!content && !["completed", "stopped"].includes(program.status) && (
