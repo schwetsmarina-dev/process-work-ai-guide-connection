@@ -101,7 +101,13 @@ export function formatMemoriesForPrompt(memories, language = "es") {
 
 // Kept for compatibility with older callers. New live sessions persist episodic
 // memory through persistSessionMemory and rebuild longitudinal memory server-side.
-export async function saveUserMemories(userId, items, { sessionId, modeId } = {}) {
+/**
+ * @param {string} userId
+ * @param {Array<any>} items
+ * @param {{sessionId?: string, modeId?: string}} opts
+ */
+export async function saveUserMemories(userId, items, opts = {}) {
+  const { sessionId, modeId } = opts;
   if (!userId || !items?.length) return;
   const now = new Date().toISOString();
   for (const item of items) {
