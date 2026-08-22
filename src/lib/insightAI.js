@@ -8,7 +8,7 @@ async function getCurrentAppUserId() {
   return rows[0]?.id || null;
 }
 
-export async function extractInsightsFromSession(session, messages) {
+export async function extractInsightsFromSession(session, messages, language = "es") {
   // Insights must reflect the USER's own discoveries — use ONLY user messages.
   const userMessages = messages
     .filter((m) => m.role === "user")
@@ -18,8 +18,30 @@ export async function extractInsightsFromSession(session, messages) {
 
   if (!userMessages.trim()) return [];
 
-  const res = await base44.functions.invoke("invokeAI", {
-    prompt: `Ты — Process Work фасилитатор. На основе ОТВЕТОВ ПОЛЬЗОВАТЕЛЯ выдели 2-3 ключевых личных открытия.
+  const isEs = language === "es";
+  const prompt = isEs
+    ? `Eres facilitador de Process Work. A partir SOLO de las RESPUESTAS DEL USUARIO, extrae 2-3 descubrimientos personales clave.
+
+Modo: ${session.mode_id || session.mode}
+
+Reglas:
+- Idioma: español natural.
+- Cada descubrimiento debe ser una frase en PRIMERA PERSONA (por ejemplo: «Me doy cuenta de…», «Siento…», «Noto…»).
+- Basado SOLO en las palabras del usuario, nunca en frases del asistente.
+- Concreto, no diagnóstico y no interpretativo.
+- No uses frases como «esto significa», «esto indica» o «esto simboliza».
+- Conserva las palabras concretas del usuario.
+- importance: 1 = observación ligera, 2 = significativo, 3 = insight clave.
+
+Ejemplo válido:
+«Noto que cuando me siento segura, miro el mundo con más madurez.»
+
+Ejemplo no válido, porque es una frase del asistente:
+«Empecemos. ¿Qué quieres explorar hoy?»
+
+Respuestas del usuario:
+${userMessages}`
+    : `Ты — Process Work фасилитатор. На основе ОТВЕТОВ ПОЛЬЗОВАТЕЛЯ выдели 2-3 ключевых личных открытия.
 
 Режим: ${session.mode_id || session.mode}
 
@@ -32,14 +54,11 @@ export async function extractInsightsFromSession(session, messages) {
 - Сохраняй конкретные слова пользователя
 - importance: 1 = лёгкое наблюдение, 2 = значимое, 3 = ключевой инсайт
 
-Пример хорошего открытия:
-"Я замечаю, что когда я чувствую безопасность, я смотрю на мир более зрелыми глазами."
-
-Пример плохого открытия (реплика ассистента — НИКОГДА не использовать):
-"Давай начнём. О чём ты хочешь поисследовать?"
-
 Ответы пользователя:
-${userMessages}`,
+${userMessages}`;
+
+  const res = await base44.functions.invoke("invokeAI", {
+    prompt,
     response_json_schema: {
       type: "object",
       properties: {
