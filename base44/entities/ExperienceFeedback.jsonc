@@ -1,0 +1,115 @@
+{
+  "name": "ExperienceFeedback",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "experience_type": {
+      "type": "string",
+      "enum": [
+        "practice",
+        "edge_program_day",
+        "edge_program_week",
+        "edge_program_complete"
+      ]
+    },
+    "reference_id": {
+      "type": "string",
+      "description": "Practice/program/day id"
+    },
+    "program_id": {
+      "type": "string"
+    },
+    "day_number": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 28
+    },
+    "week_number": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "ru",
+        "es"
+      ]
+    },
+    "rating": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "helpful": {
+      "type": "string"
+    },
+    "difficult": {
+      "type": "string"
+    },
+    "insight": {
+      "type": "string"
+    },
+    "comment": {
+      "type": "string"
+    },
+    "would_continue": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "experience_type",
+    "reference_id"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
