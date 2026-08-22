@@ -26,7 +26,7 @@ const COPY = {
     rating: "¿Qué tan útil fue?",
     helpful: "¿Qué fue lo más útil?",
     difficult: "¿Qué fue confuso, incómodo o innecesario?",
-    insight: "¿Qué insight o experiencia importante te llevas contigo?"
+    insight: "¿Qué insight o experiencia importante te llevas contigo?",
     comment: "¿Hay algo más que quieras contarnos?",
     continue: "¿Te gustaría continuar?",
     yes: "Sí",
