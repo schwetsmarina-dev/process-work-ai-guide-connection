@@ -791,7 +791,7 @@ const RESISTANCE_SIGNALS = [
   "no me sale", "no puedo seguir", "no quiero seguir", "no quiero ir ahí",
   "es demasiado", "demasiado difícil", "me supera", "me está sobrepasando",
   "estoy cansada", "estoy cansado", "basta", "para", "quiero terminar",
-  "estás repitiendo", "ya respondí", "ya lo dije", "tengo que repetirme", "nada", "no",
+  "estás repitiendo", "ya respondí", "ya lo dije", "tengo que repetirme", "nada",
 ];
 
 function detectResistanceCount(messages) {
