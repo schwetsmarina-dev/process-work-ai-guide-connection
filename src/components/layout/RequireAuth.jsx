@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import AgeVerificationGate from "@/components/onboarding/AgeVerificationGate";
-import { normalizeLang, getStoredLanguage } from "@/lib/i18n";
+import { normalizeLang, getStoredLanguage, setStoredLanguage } from "@/lib/i18n";
 
 async function ensureAppUser(user) {
   // If user context is missing (403 path), try fetching directly
@@ -21,21 +21,26 @@ async function ensureAppUser(user) {
 
   const existing = await base44.entities.AppUser.filter({ email: resolvedUser.email });
   if (existing.length === 0) {
+    const initialLanguage = normalizeLang(getStoredLanguage());
     await base44.entities.AppUser.create({
       email: resolvedUser.email,
       name: resolvedUser.full_name || resolvedUser.email,
-      // Preserve the language selected on the public landing/auth screens.
-      // Hard-coding RU here made a first-time Spanish user complete the
-      // localized registration and then suddenly see Russian onboarding.
-      language: normalizeLang(getStoredLanguage()),
+      language: initialLanguage,
       plan: "free",
       onboarding_completed: false,
       consent_given: false,
       created_at: new Date().toISOString(),
       last_seen_at: new Date().toISOString(),
     });
+    setStoredLanguage(initialLanguage);
   } else {
+    const profileLanguage = normalizeLang(existing[0].language || getStoredLanguage());
+    // Once a profile exists, its language is authoritative. Keep browser
+    // storage synchronized so logout/login and direct auth URLs stay in the
+    // same language instead of resurrecting a stale previous locale.
+    setStoredLanguage(profileLanguage);
     await base44.entities.AppUser.update(existing[0].id, {
+      language: profileLanguage,
       last_seen_at: new Date().toISOString(),
     });
   }
