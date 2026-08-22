@@ -15,6 +15,10 @@
     "author": {
       "type": "string"
     },
+    "author_public_es": {
+      "type": "string",
+      "description": "Client-safe author attribution for Spanish UI; names only, no provenance or institution"
+    },
     "source": {
       "type": "string"
     },
