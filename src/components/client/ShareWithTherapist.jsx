@@ -19,8 +19,8 @@ const COPY = {
     memoryHint: "Подтверждённые и актуальные семантические гипотезы и изменения во времени. Отдельные сырые эпизоды не передаются.",
     map: "Карта связей процессов",
     mapHint: "Темы, сигналы, края, первичные и вторичные процессы и связи между ними.",
-    risks: "Сигналы безопасности",
-    risksHint: "Отдельное разрешение на передачу отмеченных системой событий риска. По умолчанию выключено.",
+    risks: "Подробности событий безопасности",
+    risksHint: "Если Talvira зафиксирует событие, связанное с безопасностью, терапевт получит уведомление о самом факте события. Без этого разрешения ему не передаются тип риска, уровень, содержание сессии или другие подробности. Включи этот доступ только если хочешь разрешить просмотр подробностей.",
   },
   es: {
     title: "Qué puede ver mi terapeuta",
@@ -35,8 +35,8 @@ const COPY = {
     memoryHint: "Hipótesis semánticas vigentes y cambios a lo largo del tiempo. No se comparten episodios brutos individuales.",
     map: "Mapa de relaciones del proceso",
     mapHint: "Temas, señales, bordes, procesos primarios/secundarios y sus relaciones.",
-    risks: "Señales de seguridad",
-    risksHint: "Permiso independiente para compartir eventos de riesgo marcados por el sistema. Desactivado por defecto.",
+    risks: "Detalles de eventos de seguridad",
+    risksHint: "Si Talvira registra un evento relacionado con tu seguridad, tu terapeuta recibirá una notificación de que el evento se ha producido. Sin este permiso no verá el tipo de riesgo, el nivel, el contenido de la sesión ni otros detalles. Activa este acceso solo si quieres permitir que vea los detalles.",
   },
 };
 
