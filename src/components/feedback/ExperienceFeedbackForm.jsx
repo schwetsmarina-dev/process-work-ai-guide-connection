@@ -20,12 +20,7 @@ const COPY = {
     saved: "Спасибо. Отзыв сохранён.",
     already: "Отзыв уже сохранён.",
   },
-  es: {
-    title: "Dejar feedback",
-    subtitle: "Cuéntanos cómo fue para ti. Este feedback nos ayuda a mejorar Talvira.",
 export default function ExperienceFeedbackForm({ user, lang = "es", experienceType, referenceId, programId = "", programName = "", experienceLabel = "", dayNumber = null, weekNumber = null }) {
-    insight: "¿Qué insight o experiencia importante te llevas contigo?",
-    comment: "¿Hay algo más que quieras contarnos?",
     continue: "¿Te gustaría continuar?",
     yes: "Sí",
     no: "No",
