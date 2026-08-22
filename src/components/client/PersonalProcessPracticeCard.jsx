@@ -60,7 +60,7 @@ const COPY = {
 };
 
 function copyFor(lang) {
-  return COPY[lang] || COPY.ru;
+  return COPY[lang] || COPY.es;
 }
 
 export default function PersonalProcessPracticeCard({ userId, lang = "es", completedSessions = [] }) {
@@ -81,7 +81,7 @@ export default function PersonalProcessPracticeCard({ userId, lang = "es", compl
     staleTime: 60_000,
   });
 
-  const latestPractice = practices[0] || null;
+  const latestPractice = practices.find((p) => p.language === lang) || null;
   const practiceExerciseIds = Array.isArray(latestPractice?.exercise_ids) ? latestPractice.exercise_ids.filter(Boolean) : [];
   const { data: sourceExercises = [] } = useQuery({
     queryKey: ["process-practice-exercises", latestPractice?.id, practiceExerciseIds.join("|")],
@@ -168,7 +168,7 @@ export default function PersonalProcessPracticeCard({ userId, lang = "es", compl
             )}
             {sourceExercises.length > 0 && (
               <p className="text-xs text-muted-foreground mb-4">
-                {c.basedOn}: {sourceExercises.map((x) => x.author || x.title_ru).filter(Boolean).join(" · ")}
+                {c.basedOn}: {sourceExercises.map((x) => x.author || (lang === "es" ? x.title_es : x.title_ru)).filter(Boolean).join(" · ")}
               </p>
             )}
             {visiblePractice.suggest_live_facilitator && visiblePractice.live_facilitator_note && (
