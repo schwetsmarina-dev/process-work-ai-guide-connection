@@ -42,8 +42,10 @@ Deno.serve(async (req) => {
     } else {
       const links = await base44.asServiceRole.entities.ClientLink.filter({
         therapist_email: user.email,
-        consent_to_share: true,
       });
+      // A linked therapist may always see that a safety event occurred. The
+      // client's general sharing consent still gates session/process data;
+      // detailed risk data is gated separately by share_risk_flags below.
       allowedClientEmails = new Set(links.map((l) => l.client_email).filter(Boolean));
     }
 
@@ -59,6 +61,11 @@ Deno.serve(async (req) => {
     // AppUser.id (user_id) and Session records also carry created_by (email).
     const allowedIds = new Set(consentedClients.map((c) => c.id));
     const allowedEmails = new Set(consentedClients.map((c) => c.email).filter(Boolean));
+    const linkByEmail = new Map();
+    if (user.role !== 'admin') {
+      const links = await base44.asServiceRole.entities.ClientLink.filter({ therapist_email: user.email });
+      for (const link of links) if (link.client_email) linkByEmail.set(link.client_email, link);
+    }
 
     // 3. All sessions & risk events, then filter down to consented clients only.
     const allSessions = await base44.asServiceRole.entities.Session.list('-created_date', 1000);
@@ -68,7 +75,12 @@ Deno.serve(async (req) => {
       (rec.user_id && allowedIds.has(rec.user_id)) ||
       (rec.created_by && allowedEmails.has(rec.created_by));
 
-    const sessions = allSessions.filter(isAllowed);
+    const sessions = allSessions.filter((rec) => {
+      if (!isAllowed(rec)) return false;
+      if (user.role === 'admin') return true;
+      const client = consentedClients.find((c) => rec.user_id === c.id || (c.email && rec.created_by === c.email));
+      return client?.email ? linkByEmail.get(client.email)?.consent_to_share === true : false;
+    });
     const flaggedRiskEvents = allRiskEvents
       .filter((e) => e.needs_human_review === true && isAllowed(e))
       .sort(
@@ -114,17 +126,24 @@ Deno.serve(async (req) => {
         edge_signals: s.edge_signals || [],
         edge_signal_count: s.edge_signal_count || (s.edge_signals || []).length || 0,
       })),
-      flaggedRiskEvents: flaggedRiskEvents.map((e) => ({
-        id: e.id,
-        user_id: e.user_id,
-        created_by: e.created_by,
-        session_id: e.session_id,
-        risk_type: e.risk_type,
-        severity: e.severity,
-        trigger_text: e.trigger_text,
-        detected_at: e.detected_at,
-        status: e.status,
-      })),
+      flaggedRiskEvents: flaggedRiskEvents.map((e) => {
+        const client = consentedClients.find((c) => e.user_id === c.id || (c.email && e.created_by === c.email));
+        const canSeeDetails = user.role === 'admin' || (client?.email && linkByEmail.get(client.email)?.share_risk_flags === true);
+        return {
+          id: e.id,
+          user_id: e.user_id,
+          created_by: e.created_by,
+          detected_at: e.detected_at,
+          status: e.status,
+          details_shared: !!canSeeDetails,
+          // Without explicit consent the therapist learns only that an event
+          // occurred and when. No category, severity, session id or text leaks.
+          session_id: canSeeDetails ? e.session_id : null,
+          risk_type: canSeeDetails ? e.risk_type : null,
+          severity: canSeeDetails ? e.severity : null,
+          trigger_text: canSeeDetails ? e.trigger_text : null,
+        };
+      }),
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
