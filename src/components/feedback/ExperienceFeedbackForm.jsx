@@ -23,9 +23,7 @@ const COPY = {
   es: {
     title: "Dejar feedback",
     subtitle: "Cuéntanos cómo fue para ti. Este feedback nos ayuda a mejorar Talvira.",
-    rating: "¿Qué tan útil fue?",
-    helpful: "¿Qué fue lo más útil?",
-    difficult: "¿Qué fue confuso, incómodo o innecesario?",
+export default function ExperienceFeedbackForm({ user, lang = "es", experienceType, referenceId, programId = "", programName = "", experienceLabel = "", dayNumber = null, weekNumber = null }) {
     insight: "¿Qué insight o experiencia importante te llevas contigo?",
     comment: "¿Hay algo más que quieras contarnos?",
     continue: "¿Te gustaría continuar?",
@@ -71,11 +69,13 @@ export default function ExperienceFeedbackForm({ user, lang = "es", experienceTy
         : await base44.auth.me().catch(() => user);
       await base44.entities.ExperienceFeedback.create({
         user_id: user.id,
-        user_name: authUser?.full_name || authUser?.name || "",
-        user_email: authUser?.email || "",
+        user_name: user?.name || authUser?.full_name || authUser?.name || "",
+        user_email: user?.email || authUser?.email || "",
         experience_type: experienceType,
+        experience_label: experienceLabel || (experienceType === "practice" ? (lang === "ru" ? "Персональная практика" : "Práctica personal") : (lang === "ru" ? "28-дневная программа" : "Programa de 28 días")),
         reference_id: referenceId,
         program_id: programId || "",
+        program_name: programName || (experienceType.startsWith("edge_program") ? (lang === "ru" ? "Возвращение к себе — 28 дней" : "Volver a mí — 28 días") : ""),
         day_number: dayNumber || undefined,
         week_number: weekNumber || undefined,
         language: lang === "ru" ? "ru" : "es",
