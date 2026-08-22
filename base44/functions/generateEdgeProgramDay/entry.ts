@@ -251,8 +251,15 @@ Deno.serve(async (req) => {
         : mode === 'repeat_previous'
           ? `REPEAT MODE. Revisit day ${requestedDay} without copying the prior text verbatim. Use the user's corrections and what helped/overwhelmed them last time. Repetition must feel familiar and safer, not more advanced.`
           : `STANDARD MODE. Follow the approved day methodology while adapting it to the user's confirmed material.`;
+    const resourceModeRuleEs = mode === 'resource_day'
+      ? `MODO SOLO RECURSOS. No reabras material difícil, figuras prohibitivas, recuerdos tempranos, conflictos ni exposición. Construye una práctica de baja exigencia a partir de recursos confirmados. Si hay pocos recursos confirmados, ofrece tres opciones suaves de la biblioteca inicial y deja elegir a la persona. No exijas escribir un diario.`
+      : mode === 'soft_version'
+        ? `VERSIÓN SUAVE. Conserva la finalidad metodológica del día reduciendo intensidad, número de pasos y profundidad. No fuerces movimiento, toma de roles, amplificación, recuerdos tempranos ni confrontación. Mantén salidas fáciles y retorno a recursos durante toda la práctica.`
+        : mode === 'repeat_previous'
+          ? `MODO REPETICIÓN. Vuelve al día ${requestedDay} sin copiar literalmente el texto anterior. Usa las correcciones de la persona y lo que le ayudó o la sobrecargó la vez anterior. La repetición debe sentirse familiar y más manejable, no más avanzada.`
+          : `MODO ESTÁNDAR. Sigue la metodología aprobada del día adaptándola únicamente al material confirmado de la persona.`;
 
-    const prompt = `You generate ONE day of Talvira's 28-day program “Возвращение к себе / Return to Self”.
+    const promptDefault = `You generate ONE day of Talvira's 28-day program “Возвращение к себе / Return to Self”.
 
 ${languageRule(lang)}
 
