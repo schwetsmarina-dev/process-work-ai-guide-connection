@@ -481,7 +481,11 @@ export default function SessionSummary() {
       {/* Feedback (beta) — only for completed sessions owned by the user */}
       {session.status === "completed" && currentUser && session.user_id === currentUser.id && (
         <div id="session-feedback" className="scroll-mt-6">
-          <SessionFeedbackForm session={session} user={currentUser} language={language} />
+          <SessionFeedbackForm
+            session={session}
+            user={{ ...currentUser, name: appUser?.name || currentUser?.full_name || currentUser?.name || "" }}
+            language={language}
+          />
         </div>
       )}
 
