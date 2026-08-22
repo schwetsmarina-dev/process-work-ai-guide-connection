@@ -6,9 +6,16 @@ function clean(v: unknown) {
   return String(v || '').trim();
 }
 
+function hasNamedAuthor(value: unknown) {
+  const s = clean(value);
+  if (!s) return false;
+  const genericOnly = /^(process work учебная практика|ispwr training materials|ispwr\s*\/\s*сертификационные материалы|ispwr\s*\/\s*talvira adaptation|talvira methodology synthesis|ispwr trauma\/resource materials\s*\/\s*talvira adaptation)$/i;
+  return !genericOnly.test(s);
+}
+
 function eligible(row: any) {
   return row?.active !== false
-    && clean(row?.author)
+    && hasNamedAuthor(row?.author)
     && row?.requires_live_facilitator !== true
     && row?.delivery_level !== 'live_specialist'
     && row?.intensity !== 'high';
