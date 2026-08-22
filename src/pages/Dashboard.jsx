@@ -133,7 +133,7 @@ export default function Dashboard() {
       const msgs = await listMessages(session.id);
       const transcript = (msgs || [])
         .filter((m) => m.role === "user" || m.role === "assistant")
-        .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
+        .map((m) => `${m.role === "user" ? (lang === "es" ? "Usuario" : "Пользователь") : (lang === "es" ? "Asistente" : "Ассистент")}: ${m.content}`)
         .join("\n");
       if (!transcript.trim()) return null;
 
@@ -147,11 +147,15 @@ export default function Dashboard() {
           ...session,
           _recovered_from_transcript: true,
           _continuation_preview: edgeFigure,
-          _continuation_context:
-            `ПРОДОЛЖЕНИЕ ЗАВЕРШЁННОЙ СЕССИИ. В предыдущей работе уже выявилась краевая фигура/функция: «${edgeFigure}». ` +
-            `Это не новая тема и не новый сон. Не проси повторять материал и не возвращайся к картированию с нуля. ` +
-            `Продолжай работу с этой фигурой: её голосом, запретом, функцией и тем, что она не допускает.\n\n` +
-            `Фрагмент предыдущей сессии для контекста:\n${transcript.slice(-2400)}`,
+          _continuation_context: lang === "es"
+            ? `CONTINUACIÓN DE UNA SESIÓN COMPLETADA. En el trabajo anterior ya apareció una figura/función de borde: «${edgeFigure}». ` +
+              `No es un tema nuevo ni un sueño nuevo. No pidas repetir el material ni vuelvas a mapear desde cero. ` +
+              `Continúa trabajando con esta figura: su voz, su prohibición, su función y aquello que no permite.\n\n` +
+              `Fragmento de la sesión anterior para contexto:\n${transcript.slice(-2400)}`
+            : `ПРОДОЛЖЕНИЕ ЗАВЕРШЁННОЙ СЕССИИ. В предыдущей работе уже выявилась краевая фигура/функция: «${edgeFigure}». ` +
+              `Это не новая тема и не новый сон. Не проси повторять материал и не возвращайся к картированию с нуля. ` +
+              `Продолжай работу с этой фигурой: её голосом, запретом, функцией и тем, что она не допускает.\n\n` +
+              `Фрагмент предыдущей сессии для контекста:\n${transcript.slice(-2400)}`,
         };
       }
 
@@ -160,9 +164,11 @@ export default function Dashboard() {
           ...session,
           _recovered_from_transcript: true,
           _continuation_preview: String(fallbackPreview).slice(0, 700),
-          _continuation_context:
-            `ПРОДОЛЖЕНИЕ ЗАВЕРШЁННОЙ СЕССИИ. Резюме в записи отсутствует, поэтому восстанови контекст по фрагменту диалога. ` +
-            `Не начинай режим с нуля и не проси повторять уже сказанное.\n\n${transcript.slice(-2400)}`,
+          _continuation_context: lang === "es"
+            ? `CONTINUACIÓN DE UNA SESIÓN COMPLETADA. No hay resumen guardado, así que recupera el contexto a partir del fragmento de diálogo. ` +
+              `No empieces el modo desde cero ni pidas repetir lo que ya se dijo.\n\n${transcript.slice(-2400)}`
+            : `ПРОДОЛЖЕНИЕ ЗАВЕРШЁННОЙ СЕССИИ. Резюме в записи отсутствует, поэтому восстанови контекст по фрагменту диалога. ` +
+              `Не начинай режим с нуля и не проси повторять уже сказанное.\n\n${transcript.slice(-2400)}`,
         };
       }
     } catch (e) {
@@ -304,7 +310,9 @@ export default function Dashboard() {
       "";
 
     const carryOverContext = carrySource
-      ? `Пользователь возвращается к теме прошлой завершённой сессии. ${carrySource}`
+      ? (lang === "es"
+          ? `El usuario vuelve al tema de una sesión anterior ya completada. ${carrySource}`
+          : `Пользователь возвращается к теме прошлой завершённой сессии. ${carrySource}`)
       : "";
 
     await createSession(mode, { continuedFromSessionId: prev.id, carryOverContext });
