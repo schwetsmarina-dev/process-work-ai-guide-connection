@@ -14,6 +14,23 @@ function clean(value: unknown, max = 1600) {
   return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
 }
 function arr(value: unknown): any[] { return Array.isArray(value) ? value : []; }
+const SAFETY_LABELS_ES: Record<string, string> = {
+  acute_crisis: 'crisis aguda',
+  high_unresolved_risk: 'riesgo alto todavía no resuelto',
+  loss_of_orientation: 'desorientación o dificultad para mantenerse conectada/o con el presente',
+  active_violence: 'violencia actual',
+  coercive_control: 'control coercitivo actual',
+  recent_severe_trauma_activation: 'activación traumática intensa y reciente',
+  new_symptom: 'síntoma nuevo',
+  acute_symptom: 'síntoma agudo o que está empeorando',
+  medical_red_flag: 'señales médicas que requieren valoración profesional',
+  psychotic_symptoms: 'síntomas psicóticos o pérdida de contacto con la realidad',
+  ai_only: 'uso únicamente con IA',
+  self_guided: 'práctica autoguiada',
+};
+function safetyLabelsEs(value: unknown) {
+  return arr(value).map((x) => SAFETY_LABELS_ES[String(x)] || String(x).replaceAll('_', ' '));
+}
 function languageRule(lang: string) {
   if (lang === 'es') return 'Escribe TODO el contenido visible para la persona en español natural.';
   if (lang === 'en') return 'Write ALL user-visible content in natural English.';
@@ -219,9 +236,9 @@ Deno.serve(async (req) => {
           `ID: ${clean(exercise.exercise_id, 100)} | ${clean(lang === 'es' ? (exercise.title_es || exercise.title_ru) : exercise.title_ru, 180)}`,
           `Term keys: ${arr(exercise.term_keys).join(', ')}`,
           `${lang === 'es' ? 'Objetivo' : 'Назначение'}: ${clean(lang === 'es' ? (exercise.purpose_es || exercise.purpose) : exercise.purpose, 700)}`,
-          `Уровень самостоятельности: ${clean(exercise.delivery_level || 'conditional', 80)}`,
+          `${lang === 'es' ? 'Nivel de uso autónomo' : 'Уровень самостоятельности'}: ${clean(exercise.delivery_level || 'conditional', 80)}`,
           `${lang === 'es' ? 'Condiciones' : 'Условия'}: ${(lang === 'es' && Array.isArray(exercise.delivery_conditions_es) ? exercise.delivery_conditions_es : arr(exercise.delivery_conditions)).map((x) => clean(x, 400)).join(' | ') || '—'}`,
-          `${lang === 'es' ? 'Evitar cuando' : 'Не предлагать при'}: ${(lang === 'es' && Array.isArray(exercise.exclude_if_es) ? exercise.exclude_if_es : arr(exercise.exclude_if)).join(', ') || '—'}`,
+          `${lang === 'es' ? 'Evitar cuando' : 'Не предлагать при'}: ${(lang === 'es' ? safetyLabelsEs(exercise.exclude_if) : arr(exercise.exclude_if)).join(', ') || '—'}`,
           `${lang === 'es' ? 'Secuencia' : 'Ход'}: ${(lang === 'es' && Array.isArray(exercise.steps_es) && exercise.steps_es.length === arr(exercise.steps).length ? exercise.steps_es : arr(exercise.steps)).map((x) => clean(x, 500)).join(' → ')}`,
         ].join('\n')).join('\n\n')
       : '—';
