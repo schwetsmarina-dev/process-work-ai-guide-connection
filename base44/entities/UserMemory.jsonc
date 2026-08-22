@@ -4,31 +4,55 @@
   "properties": {
     "user_id": {
       "type": "string",
-      "description": "Reference to AppUser"
+      "description": "Authenticated owner user id"
+    },
+    "memory_level": {
+      "type": "string",
+      "enum": [
+        "episodic",
+        "semantic",
+        "dynamic"
+      ],
+      "default": "episodic",
+      "description": "episodic = source session observation; semantic = cross-session process hypothesis; dynamic = change over time"
     },
     "memory_type": {
       "type": "string",
-      "description": "Type of memory"
+      "description": "Type of memory: theme, pattern, body_signal, edge, primary_process, secondary_process, resource, progress, change"
     },
     "memory_key": {
       "type": "string",
-      "description": "Memory key/topic"
+      "description": "Stable topic/key used for retrieval and grouping"
     },
     "memory_value": {
       "type": "string",
-      "description": "Memory content"
+      "description": "Human-readable memory content"
     },
     "source_mode_id": {
       "type": "string",
-      "description": "Mode where memory was created"
+      "description": "Mode where an episodic memory was created"
     },
     "source_session_id": {
       "type": "string",
-      "description": "Session where memory was created"
+      "description": "Primary source session for episodic memory"
+    },
+    "evidence_session_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Sessions supporting this semantic/dynamic hypothesis"
+    },
+    "evidence_count": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 1
     },
     "confidence": {
       "type": "number",
-      "description": "Confidence score 0-1"
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Confidence 0-1; hypotheses remain provisional"
     },
     "importance": {
       "type": "string",
@@ -39,6 +63,54 @@
       ],
       "default": "medium"
     },
+    "trend": {
+      "type": "string",
+      "enum": [
+        "new",
+        "stable",
+        "strengthening",
+        "weakening",
+        "changed",
+        "resolved"
+      ],
+      "description": "Longitudinal direction for dynamic memories"
+    },
+    "first_seen_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_seen_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "user_status": {
+      "type": "string",
+      "enum": [
+        "unreviewed",
+        "confirmed",
+        "corrected",
+        "rejected"
+      ],
+      "default": "unreviewed",
+      "description": "User review state; rejected items must not be used by AI"
+    },
+    "user_note": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "original_value": {
+      "type": "string",
+      "description": "Original AI wording retained when user corrects a memory"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "excluded_from_ai": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, keep visible to the user but never inject into AI context"
+    },
     "created_at": {
       "type": "string",
       "format": "date-time"
@@ -46,10 +118,6 @@
     "updated_at": {
       "type": "string",
       "format": "date-time"
-    },
-    "is_active": {
-      "type": "boolean",
-      "default": true
     },
     "description": {
       "type": "string",
