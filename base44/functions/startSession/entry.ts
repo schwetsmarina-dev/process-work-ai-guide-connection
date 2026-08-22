@@ -155,6 +155,13 @@ Deno.serve(async (req) => {
     const svc = base44.asServiceRole;
     const email = String(user.email || '').toLowerCase();
     const now = new Date();
+    let language = 'es';
+    try {
+      const appUsers = (await svc.entities.AppUser.filter({ email: user.email })) || [];
+      if (appUsers[0]?.language === 'ru') language = 'ru';
+    } catch (e) {
+      console.warn('[startSession] could not resolve language; defaulting to es:', e?.message);
+    }
 
     // ── Entitlement ──────────────────────────────────────────────────────────
     const rows = (await svc.entities.Entitlement.filter({ user_email: email })) || [];
@@ -196,7 +203,7 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Previous session does not belong to current user' }, { status: 403 });
       }
 
-      continuation = buildContinuationContext(previous, body?.carryOverContext || '');
+      continuation = buildContinuationContext(previous, body?.carryOverContext || '', language);
     }
 
     // ── Create ───────────────────────────────────────────────────────────────
@@ -232,6 +239,7 @@ Deno.serve(async (req) => {
         edgeFigure: continuation.edgeFigure,
         summary: continuation.summary,
         nextStep: continuation.nextStep,
+        language,
       });
 
       await svc.entities.Message.create({
@@ -258,6 +266,7 @@ Deno.serve(async (req) => {
       sessionId: session?.id,
       fullAccess: hasFullAccess,
       continued: !!previous,
+      language,
     });
 
     return Response.json({ session });
