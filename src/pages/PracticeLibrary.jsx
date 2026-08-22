@@ -8,11 +8,26 @@ import { normalizeLang } from "@/lib/i18n";
 import useEntitlement from "@/hooks/useEntitlement";
 import { FEATURES } from "@/lib/entitlement";
 
+function publicAuthor(value) {
+  let s = String(value || "").trim();
+  if (!s) return "";
+  // Author is public; provenance is not. Some imported rows historically mixed
+  // a person's name with a training source in the same field. Strip only
+  // source/institution qualifiers while preserving real multi-author names.
+  s = s.split(";")[0].trim();
+  s = s.replace(/,\s*Process Work Institute(?:\s+Zurich)?\b.*$/i, "").trim();
+  s = s.replace(/,\s*ISPWR\b.*$/i, "").trim();
+  s = s.replace(/,\s*(?:training|certification|diploma)\s+(?:material|materials|program|programme)\b.*$/i, "").trim();
+  s = s.replace(/,\s*по\s+(?:геопсихологии|материалам|программе)\b.*$/i, "").trim();
+  return s;
+}
+
 function hasNamedAuthor(value) {
-  const s = String(value || "").trim();
+  const raw = String(value || "").trim();
+  const s = publicAuthor(raw);
   if (!s) return false;
   const genericOnly = /^(process work учебная практика|ispwr training materials|ispwr\s*\/\s*сертификационные материалы|ispwr\s*\/\s*talvira adaptation|talvira methodology synthesis|ispwr trauma\/resource materials\s*\/\s*talvira adaptation)$/i;
-  return !genericOnly.test(s);
+  return !genericOnly.test(raw) && !genericOnly.test(s);
 }
 
 const COPY = {
@@ -125,8 +140,8 @@ export default function PracticeLibrary() {
     return localizedRows.filter((x) => {
       if (!q) return true;
       const haystack = lang === "es"
-        ? [x.title_es, x.author, x.purpose_es, ...(x.steps_es || []), ...(x.search_tags_es || []), ...(x.term_keys || [])].join(" ").toLocaleLowerCase()
-        : [x.title_ru, x.author, x.purpose, ...(x.steps || []), ...(x.search_tags || []), ...(x.term_keys || [])].join(" ").toLocaleLowerCase();
+        ? [x.title_es, publicAuthor(x.author), x.purpose_es, ...(x.steps_es || []), ...(x.search_tags_es || []), ...(x.term_keys || [])].join(" ").toLocaleLowerCase()
+        : [x.title_ru, publicAuthor(x.author), x.purpose, ...(x.steps || []), ...(x.search_tags || []), ...(x.term_keys || [])].join(" ").toLocaleLowerCase();
       return haystack.includes(q);
     });
   }, [visibleRows, query, lang]);
@@ -176,7 +191,7 @@ export default function PracticeLibrary() {
                   <div className="min-w-0">
                     <h2 className="font-serif text-xl font-semibold">{lang === "es" ? exercise.title_es : exercise.title_ru}</h2>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1"><UserRound className="w-3.5 h-3.5" />{c.author}: {exercise.author}</span>
+                      <span className="inline-flex items-center gap-1"><UserRound className="w-3.5 h-3.5" />{c.author}: {publicAuthor(exercise.author)}</span>
                     </div>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => setOpenId(expanded ? "" : exercise.id)}>{expanded ? c.close : c.open}</Button>
