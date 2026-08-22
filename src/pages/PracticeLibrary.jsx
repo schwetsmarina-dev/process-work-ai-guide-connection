@@ -127,8 +127,8 @@ export default function PracticeLibrary() {
   });
 
   const visibleRows = useMemo(() => rows
-    .filter((x) => hasNamedAuthor(x.author))
-    .filter((x) => x.requires_live_facilitator !== true && ["ai_self_guided", "conditional"].includes(x.delivery_level) && x.intensity !== "high"), [rows]);
+    .filter((x) => lang === "es" ? Boolean(String(x.author_public_es || "").trim()) : hasNamedAuthor(x.author))
+    .filter((x) => x.requires_live_facilitator !== true && ["ai_self_guided", "conditional"].includes(x.delivery_level) && x.intensity !== "high"), [rows, lang]);
 
   const spanishMissing = useMemo(() => visibleRows.filter((x) => {
     const arrayMissing = (source, translated) => Array.isArray(source) && source.length > 0 && (!Array.isArray(translated) || translated.length !== source.length);
@@ -168,7 +168,7 @@ export default function PracticeLibrary() {
     return localizedRows.filter((x) => {
       if (!q) return true;
       const haystack = lang === "es"
-        ? [x.title_es, publicAuthor(x.author), x.purpose_es, ...(x.steps_es || []), ...(x.search_tags_es || []), ...(x.term_keys || [])].join(" ").toLocaleLowerCase()
+        ? [x.title_es, x.author_public_es, x.purpose_es, ...(x.steps_es || []), ...(x.search_tags_es || []), ...(x.term_keys || [])].join(" ").toLocaleLowerCase()
         : [x.title_ru, publicAuthor(x.author), x.purpose, ...(x.steps || []), ...(x.search_tags || []), ...(x.term_keys || [])].join(" ").toLocaleLowerCase();
       return haystack.includes(q);
     });
@@ -219,7 +219,7 @@ export default function PracticeLibrary() {
                   <div className="min-w-0">
                     <h2 className="font-serif text-xl font-semibold">{lang === "es" ? exercise.title_es : exercise.title_ru}</h2>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1"><UserRound className="w-3.5 h-3.5" />{c.author}: {publicAuthor(exercise.author)}</span>
+                      <span className="inline-flex items-center gap-1"><UserRound className="w-3.5 h-3.5" />{c.author}: {lang === "es" ? exercise.author_public_es : publicAuthor(exercise.author)}</span>
                     </div>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => setOpenId(expanded ? "" : exercise.id)}>{expanded ? c.close : c.open}</Button>
