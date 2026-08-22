@@ -30,8 +30,10 @@ export default function Landing() {
         const rows = await base44.entities.AppUser.filter({ email: u.email });
         const appUser = rows[0];
         if (appUser?.language) {
-          // AppUser language is the source of truth once it exists
-          setLang(normalizeLang(appUser.language));
+          // AppUser language is the source of truth once it exists.
+          const profileLanguage = normalizeLang(appUser.language);
+          setStoredLanguage(profileLanguage);
+          setLang(profileLanguage);
         } else {
           // First login: sync stored visitor language onto AppUser
           const stored = getStoredLanguage();
