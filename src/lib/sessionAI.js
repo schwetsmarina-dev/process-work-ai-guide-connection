@@ -878,9 +878,9 @@ export function detectLoopInLastExchanges(messages) {
 function buildModeStepInstruction(step, language) {
   if (!step || !step.question) return "";
   const isEs = language === "es";
-  const goal = isEs ? (step.goal_es || step.goal) : step.goal;
-  const question = isEs ? (step.question_es || step.question) : step.question;
-  const facilitatorHint = isEs ? (step.facilitator_hint_es || step.facilitator_hint) : step.facilitator_hint;
+  const goal = isEs ? (step.goal_es || "") : step.goal;
+  const question = isEs ? (step.question_es || "") : step.question;
+  const facilitatorHint = isEs ? (step.facilitator_hint_es || "") : step.facilitator_hint;
 
   if (isEs) {
     return (
@@ -1417,7 +1417,7 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
           ? "\n\nSEIS CANALES DE PROCESS WORK — definiciones cargadas desde Term. Úsalas solo internamente al desplegar la experiencia; un canal describe la vía de percepción/expresión y NO sustituye la experiencia concreta de la persona:\n"
           : "\n\nConceptos relevantes de Process Work (uso INTERNO para elegir la intervención adecuada):\n") +
         terms
-          .map((t) => `• ${t.term_es || t.term}: ${t.short_definition_es || t.short_definition || ""}${(t.practical_application_es || t.practical_application) ? " | Aplicación: " + (t.practical_application_es || t.practical_application) : ""}`)
+          .map((t) => `• ${t.term_es || t.latin_key || "Concepto"}: ${t.short_definition_es || ""}${t.practical_application_es ? " | Aplicación: " + t.practical_application_es : ""}`)
           .join("\n") +
         "\n\nNo expliques teoría salvo que la persona la pida. No recites definiciones. Usa estos conceptos solo para elegir una intervención coherente."
       : (modeKey === "body"
