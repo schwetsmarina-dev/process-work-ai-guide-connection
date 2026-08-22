@@ -12,11 +12,19 @@
     },
     "term": {
       "type": "string",
-      "description": "Term name"
+      "description": "Term name in Russian/source language"
+    },
+    "term_es": {
+      "type": "string",
+      "description": "Spanish term name"
     },
     "category": {
       "type": "string",
       "description": "Term category"
+    },
+    "category_es": {
+      "type": "string",
+      "description": "Spanish localization of category when user-visible"
     },
     "is_cross_cutting": {
       "type": "boolean",
@@ -32,11 +40,19 @@
     },
     "short_definition": {
       "type": "string",
-      "description": "Short definition of the term"
+      "description": "Short definition in Russian/source language"
+    },
+    "short_definition_es": {
+      "type": "string",
+      "description": "Spanish short definition"
     },
     "practical_application": {
       "type": "string",
-      "description": "How to apply this term in practice"
+      "description": "Practical application in Russian/source language"
+    },
+    "practical_application_es": {
+      "type": "string",
+      "description": "Spanish practical application"
     },
     "related_terms": {
       "type": "string",
@@ -44,7 +60,11 @@
     },
     "search_tags": {
       "type": "string",
-      "description": "Tags for search"
+      "description": "Search tags in Russian/source language"
+    },
+    "search_tags_es": {
+      "type": "string",
+      "description": "Spanish search tags"
     },
     "source": {
       "type": "string",
@@ -56,11 +76,19 @@
     },
     "aliases": {
       "type": "string",
-      "description": "Alternative names for this term"
+      "description": "Aliases in Russian/source language"
+    },
+    "aliases_es": {
+      "type": "string",
+      "description": "Spanish aliases and natural search synonyms"
     },
     "notes": {
       "type": "string",
-      "description": "Additional notes"
+      "description": "Additional internal notes"
+    },
+    "notes_es": {
+      "type": "string",
+      "description": "Spanish localization of notes only if ever user-visible"
     }
   },
   "required": [
