@@ -66,9 +66,7 @@ If you're going through a hard time right now, please reach out:
 📞 Your local crisis or suicide helpline
 📱 If you're in immediate danger, contact emergency services now.
 
-You are not alone. Help is available.
-
-If your account is linked to a therapist, Talvira will notify them only that a safety event has occurred. The content of this session and the details of the situation will not be shared without your specific consent.`,
+You are not alone. Help is available.`,}]}
 };
 
 // Backward-compatible default (Russian).
