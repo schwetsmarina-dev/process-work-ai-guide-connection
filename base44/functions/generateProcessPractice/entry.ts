@@ -350,7 +350,7 @@ Deno.serve(async (req) => {
       ].join('\n');
     }).join('\n\n') || '—';
 
-    const prompt = `Ты — процессуально-ориентированный фасилитатор (Process Work / Арнольд Минделл). Построй персональную ПРОЦЕССУАЛЬНУЮ ПРАКТИКУ по материалу конкретного пользователя. Это не релаксационная медитация: цель — продолжить уже проявившийся процесс, не интерпретируя человека за него.
+    const promptRu = `Ты — процессуально-ориентированный фасилитатор (Process Work / Арнольд Минделл). Построй персональную ПРОЦЕССУАЛЬНУЮ ПРАКТИКУ по материалу конкретного пользователя. Это не релаксационная медитация: цель — продолжить уже проявившийся процесс, не интерпретируя человека за него.
 
 Глоссарий:
 ${glossaryBlock}
@@ -407,6 +407,66 @@ ${exerciseLibraryBlock}
 
 Также верни theme_label (3–6 слов), dominant_channel (body/dream/conflict/journaling/mixed), offer_text (короткое приглашение без обещаний результата), used_exercise_ids (0–2 ID реально использованных упражнений).
 Верни только JSON.`;
+
+    const promptEs = `Eres una persona facilitadora orientada a Process Work (Arnold Mindell). Construye una PRÁCTICA PROCESUAL PERSONALIZADA a partir del material real de esta persona. No es una meditación de relajación: la finalidad es continuar un proceso que ya se ha manifestado sin interpretar a la persona por ella.
+
+GLOSARIO INTERNO:
+${glossaryBlock}
+
+Tema recurrente: ${selectedThemeLabel || clusterLabel || '(datos insuficientes: modo de prueba; no inventes hechos personales)'}
+${selectedThemeObservation ? `Observación preliminar sobre este tema: ${selectedThemeObservation}\n` : ''}Señales/temas relacionados: ${neighbors.join(', ') || '—'}
+
+SESIONES COMPLETADAS:
+${sessionsBlock}
+
+MEMORIA ACTIVA:
+${memoryBlock}
+
+CLAVES CANÓNICAS DETECTADAS EN EL MATERIAL (solo uso interno): ${canonicalTermKeys.join(', ') || '—'}
+
+BIBLIOTECA DE EJERCICIOS PROCESUALES:
+${exerciseLibraryBlock}
+
+USO DE LA BIBLIOTECA:
+- Los ejercicios son apoyos metodológicos, no un guion obligatorio.
+- Elige como máximo 1–2 solo cuando su lógica esté realmente respaldada por el material de la persona.
+- No copies mecánicamente un ejercicio: adapta lenguaje, intensidad y vía de experiencia al proceso concreto.
+- Autoría, source, programas de formación/certificación, escuelas y cualquier procedencia son información metodológica interna. NUNCA los menciones en theme_label, offer_text, label ni en el texto de ningún paso.
+- La selección excluye deliberadamente ejercicios high-intensity y los que requieren una persona facilitadora en vivo.
+- Si ningún ejercicio encaja, no uses la biblioteca y sigue el proceso de la persona.
+- ai_self_guided puede utilizarse autónomamente. conditional solo cuando el contexto cumple claramente sus condiciones y no aparece ninguna señal de exclusión. live_specialist nunca se utiliza en una práctica AI personal.
+- Ante la duda sobre un ejercicio conditional, omítelo y elige una continuación más suave.
+- Devuelve en used_exercise_ids únicamente los IDs realmente utilizados (0–2); si no utilizas ninguno, devuelve [].
+
+REGLAS ESTRICTAS:
+1. No llames a esto meditación ni visualización de relajación; es una práctica procesual.
+2. No diagnostiques, no expliques a la persona «lo que significa» su experiencia y no añadas detalles biográficos ausentes en los datos.
+3. No impongas un proceso secundario. Formula invitaciones abiertas como «si este movimiento siguiera desplegándose…» o «¿qué podría aparecer…?».
+4. Si aparece una figura que frena —por ejemplo una voz crítica, una parte prohibitiva o una parte que no permite avanzar— no la esquives. Explora su función y su energía como parte potencialmente significativa del proceso y pregunta si contiene alguna cualidad, fuerza, necesidad o mensaje útil. No conviertas la práctica en una batalla contra esa figura ni en dramatización negativa.
+5. Ante un límite fuerte, nunca ordenes «atravesarlo». La persona debe poder reducir intensidad, detenerse o volver a un recurso.
+6. Elige exploration según la vía dominante: body → movimiento/sensación; dream → imagen/voz; conflict → rol/diálogo; journaling/mixed → asociación libre y seguimiento de señales.
+7. transition debe vincular al menos dos fuentes concretas de fragmentos distintos del material anterior. No inventes una conexión si no existe.
+7a. Si se proporcionan source_session_ids concretos y un tema seleccionado, trabaja SOLO con esas sesiones. El nombre y la observación sirven para navegar; si no están respaldados por las sesiones, ignóralos y usa únicamente el material confirmado.
+8. grounding significa contacto con el cuerpo y el entorno presente, sin prometer calma.
+9. Deben existir exactamente siete pasos y en este orden.
+10. Escribe TODO el contenido visible en español natural de España, tratando a la persona de tú.
+11. NUNCA reveles procedencia de ejercicios, programas de formación, escuelas, certificaciones ni fuentes metodológicas internas.
+
+PASOS:
+1 grounding
+2 contact
+3 amplification
+4 exploration
+5 transition
+6 secondary_process
+7 integration
+
+Cada paso debe tener 1–3 frases cortas, naturales y adecuadas para voz. No añadas marcas técnicas, markdown ni instrucciones para locución en text.
+
+Devuelve también theme_label (3–6 palabras), dominant_channel (body/dream/conflict/journaling/mixed), offer_text (invitación breve sin prometer resultados) y used_exercise_ids (0–2 IDs realmente utilizados).
+Devuelve únicamente JSON.`;
+
+    const prompt = language === 'es' ? promptEs : promptRu;
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
