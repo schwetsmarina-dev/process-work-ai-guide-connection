@@ -163,22 +163,23 @@ export function getModeKey(modeId) {
 }
 
 const PRIMARY_QUESTION_MARKERS = {
-  dream:      ["откликается с твоей реальной жизнью", "привычными чувствами", "знакомыми ситуациями", "больше всего откликается"],
+  dream:      ["откликается с твоей реальной жизнью", "привычными чувствами", "знакомыми ситуациями", "больше всего откликается", "resuena más con tu vida", "sentimientos habituales", "situaciones conocidas", "te resulta más familiar"],
   body:       [],
-  conflict:   ["более привычная, знакомая", "ближе к тому, как ты обычно"],
-  journaling: ["уже понятно, знакомо", "похоже на твой обычный способ"],
+  conflict:   ["более привычная, знакомая", "ближе к тому, как ты обычно", "te resulta más habitual", "más familiar para ti", "se parece más a cómo sueles"],
+  journaling: ["уже понятно, знакомо", "похоже на твой обычный способ", "ya te resulta conocido", "se parece a tu manera habitual", "qué te resulta familiar"],
 };
 
 const SECONDARY_QUESTION_MARKERS = {
-  dream:      ["самым странным", "новым, непривычным", "заряженным", "совсем не похожим на тебя"],
+  dream:      ["самым странным", "новым, непривычным", "заряженным", "совсем не похожим на тебя", "lo más extraño", "lo más nuevo", "menos habitual", "menos se parece a ti", "más cargado"],
   body:       [],
-  conflict:   ["более новая, непривычная", "труднее принимается", "больше напряжения"],
-  journaling: ["новым, странным, живым", "тревожащим, непривычным", "пока не до конца понятным"],
+  conflict:   ["более новая, непривычная", "труднее принимается", "больше напряжения", "más nueva", "menos habitual", "más difícil de aceptar", "genera más tensión"],
+  journaling: ["новым, странным, живым", "тревожащим, непривычным", "пока не до конца понятным", "nuevo o extraño", "más vivo", "inquietante", "todavía no entiendes del todo"],
 };
 
 const DREAM_INVITE_MARKERS = [
   "расскажи", "расскажи мне свой сон", "расскажи сон", "расскажи его",
   "как ты его помнишь", "какие моменты", "что тебе запомнилось",
+  "cuéntame tu sueño", "cuéntame el sueño", "tal y como lo recuerdas", "qué recuerdas del sueño", "qué momentos recuerdas",
 ];
 
 const DREAM_ALREADY_TOLD_SIGNALS = [
@@ -191,6 +192,9 @@ const DREAM_ALREADY_TOLD_SIGNALS = [
   "ты уже спрашивал", "ты уже спрашивала",
   "я уже написала", "я уже написал",
   "опять то же самое",
+  "ya te lo conté", "ya te conté el sueño", "ya lo he contado", "ya te lo dije",
+  "ya lo dije", "ya te lo escribí", "ya lo escribí", "otra vez lo mismo",
+  "me lo vuelves a preguntar", "ya me lo preguntaste", "por qué me lo preguntas otra vez",
 ];
 
 function detectDreamAlreadyTold(userMessage) {
@@ -202,6 +206,8 @@ function detectDreamAlreadyTold(userMessage) {
 const BEGINNER_CONFUSION_SIGNALS = [
   "не знаю", "сложно сказать", "не понимаю", "непонятно",
   "затрудняюсь", "не чувствую", "не могу описать", "трудно сказать",
+  "no sé", "no lo sé", "no entiendo", "no lo entiendo", "no me queda claro",
+  "me cuesta decirlo", "me cuesta explicarlo", "no sabría decir", "no puedo describirlo", "no noto nada",
 ];
 
 function detectBeginnerConfusion(userMessage) {
@@ -218,6 +224,10 @@ const MISMATCH_SIGNALS = [
   "я не упоминала", "я не упоминал",
   "ты путаешь", "не об этом", "не про это",
   "вернись", "подожди", "стоп",
+  "todavía no te lo he contado", "no te he contado", "te has adelantado", "eso no es",
+  "no es eso", "yo no he dicho eso", "no he dicho eso", "no he hablado de eso",
+  "de dónde has sacado eso", "no lo mencioné", "no he mencionado", "te estás confundiendo",
+  "no va de eso", "vuelve atrás", "espera", "para", "alto",
 ];
 
 const MAP_STATUS_SIGNALS = [
@@ -225,6 +235,8 @@ const MAP_STATUS_SIGNALS = [
   "первичный процесс", "вторичный процесс", "карта", "карту",
   "разве мы уже", "мы наметили", "ты уже понял", "ты уже поняла",
   "понятие о моём", "понятие о моем",
+  "ya tienes", "ya sabes", "qué sabes de", "qué has entendido", "tenemos ya un mapa",
+  "el mapa", "proceso primario", "proceso secundario", "ya hemos definido", "ya lo tienes claro",
 ];
 
 function detectMismatch(userMessage) {
