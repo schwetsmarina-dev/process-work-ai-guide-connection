@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
     const risks = await base44.asServiceRole.entities.RiskEvent.filter({ user_id: caller.id }, '-detected_at', 20).catch(() => []);
     const unresolvedHighRisk = recentRiskBlocks(risks);
 
-    let lang = 'ru';
+    let lang = 'es';
     try {
       const appUsers = caller.email ? await base44.asServiceRole.entities.AppUser.filter({ email: caller.email }) : [];
       if (['ru', 'es', 'en'].includes(appUsers[0]?.language)) lang = appUsers[0].language;

@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
     }
     const userId = caller.role === 'admin' && requestedUserId ? requestedUserId : caller.id;
 
-    let language = 'ru';
+    let language = 'es';
     try {
       // AppUser ownership is canonical by email; created_by_id is not reliable
       // for records created through older onboarding flows.
@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
         : await base44.asServiceRole.entities.AppUser.filter({ created_by_id: userId });
       if (['ru', 'es', 'en'].includes(owners[0]?.language)) language = owners[0].language;
     } catch (e) {
-      console.warn('[generateProcessPractice] language lookup failed; defaulting to ru:', e?.message);
+      console.warn('[generateProcessPractice] language lookup failed; defaulting to es:', e?.message);
     }
 
     let nodes = [];

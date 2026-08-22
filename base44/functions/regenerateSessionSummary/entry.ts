@@ -44,14 +44,14 @@ Deno.serve(async (req) => {
     // sessions are created server-side (startSession), so it never resolves
     // to a real AppUser. AppUser rows are created client-side, so their own
     // created_by_id still correctly reflects the real user.
-    let language = 'ru';
+    let language = 'es';
     try {
       const owners = await base44.asServiceRole.entities.AppUser.filter({
         created_by_id: session.user_id,
       });
       if (owners[0]?.language === 'es') language = 'es';
     } catch (e) {
-      console.warn('[regenerateSessionSummary] could not resolve owner language, defaulting to ru:', e?.message);
+      console.warn('[regenerateSessionSummary] could not resolve owner language, defaulting to es:', e?.message);
     }
     const languageRule =
       language === 'es'
