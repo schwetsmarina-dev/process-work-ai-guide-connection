@@ -22,7 +22,7 @@
     "consent_to_share": {
       "type": "boolean",
       "default": false,
-      "description": "Client's explicit consent to share their data with this therapist"
+      "description": "Client's explicit consent to share data with this therapist"
     },
     "share_scope": {
       "type": "string",
@@ -32,9 +32,38 @@
         "both"
       ],
       "default": "summaries",
-      "description": "What the client agrees to share"
+      "description": "Legacy compatibility scope"
+    },
+    "share_session_summaries": {
+      "type": "boolean",
+      "default": true,
+      "description": "Client-controlled permission for session summaries"
+    },
+    "share_insights": {
+      "type": "boolean",
+      "default": false,
+      "description": "Client-controlled permission for saved insights"
+    },
+    "share_memory_profile": {
+      "type": "boolean",
+      "default": false,
+      "description": "Client-controlled permission for semantic/dynamic memory profile"
+    },
+    "share_process_map": {
+      "type": "boolean",
+      "default": false,
+      "description": "Client-controlled permission for longitudinal process map"
+    },
+    "share_risk_flags": {
+      "type": "boolean",
+      "default": false,
+      "description": "Client-controlled permission for risk/safety flags; off by default"
     },
     "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "consent_updated_at": {
       "type": "string",
       "format": "date-time"
     }
