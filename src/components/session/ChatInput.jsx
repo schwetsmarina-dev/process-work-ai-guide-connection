@@ -15,7 +15,7 @@ export default function ChatInput({ onSend, isLoading, disabled, seedText = "", 
   }, [seedNonce]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { isSupported, isListening, toggle } = useSpeechRecognition({
-    lang: "ru-RU",
+    lang: lang === "es" ? "es-ES" : "ru-RU",
     onResult: (transcript) => {
       setText((prev) => (prev ? `${prev} ${transcript}` : transcript));
     },
