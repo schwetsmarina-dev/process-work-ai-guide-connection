@@ -1,121 +1,130 @@
 import { base44 } from "@/api/base44Client";
 
-const MEMORY_LIMIT = 20;
+const SEMANTIC_LIMIT = 8;
+const DYNAMIC_LIMIT = 5;
+const EPISODIC_LIMIT = 7;
 
-// ─── 1. Load all active memories for the current user ────────────────────────
+function usable(row) {
+  return row?.is_active !== false && row?.excluded_from_ai !== true && row?.user_status !== "rejected";
+}
+
+function priority(row) {
+  const reviewed = row.user_status === "corrected" ? 4 : row.user_status === "confirmed" ? 3 : 1;
+  const importance = row.importance === "high" ? 2 : row.importance === "medium" ? 1 : 0;
+  const confidence = Number(row.confidence || 0);
+  return reviewed * 10 + importance * 2 + confidence;
+}
+
+// Return a compact, layered context instead of pushing the entire lifetime archive
+// into every model call. Full episodic history remains stored in the database.
 export async function loadUserMemories(userId) {
   if (!userId) return [];
   try {
-    const rows = await base44.entities.UserMemory.filter(
-      { user_id: userId, is_active: true },
-      "-updated_at",
-      MEMORY_LIMIT
-    );
-    return rows || [];
+    const rows = await base44.entities.UserMemory.filter({ user_id: userId }, "-updated_at", 500);
+    const active = (rows || []).filter(usable);
+
+    const semantic = active
+      .filter((m) => m.memory_level === "semantic")
+      .sort((a, b) => priority(b) - priority(a))
+      .slice(0, SEMANTIC_LIMIT);
+    const dynamic = active
+      .filter((m) => m.memory_level === "dynamic")
+      .sort((a, b) => priority(b) - priority(a))
+      .slice(0, DYNAMIC_LIMIT);
+    const episodic = active
+      .filter((m) => !m.memory_level || m.memory_level === "episodic")
+      .slice(0, EPISODIC_LIMIT);
+
+    return [...semantic, ...dynamic, ...episodic];
   } catch (e) {
     console.error("[UserMemory] load failed:", e?.message);
     return [];
   }
 }
 
-// ─── 2. Format memories block for the system prompt ──────────────────────────
-// The wrapper text is part of the prompt, so it must be written in the session
-// language — a Russian instruction block inside a Spanish conversation nudges
-// the model to drift back into Russian.
 const MEMORY_PREAMBLE = {
   ru: {
-    intro: "Вот что известно об этом пользователе из прошлых сессий:",
+    intro: "Контекст из прошлых сессий. Это изменяемые наблюдения и гипотезы, а не факты о личности:",
+    semantic: "Устойчивые гипотезы",
+    dynamic: "Изменения во времени",
+    episodic: "Недавние эпизоды",
     rule:
-      "Учитывай это при работе, но не упоминай явно что ты «помнишь» — " +
-      "просто используй как контекст.",
+      "Используй только как мягкий контекст. Не превращай гипотезы в диагнозы или окончательные характеристики. " +
+      "Если текущий опыт человека противоречит памяти, приоритет всегда у текущего опыта.",
   },
   es: {
-    intro: "Esto es lo que se sabe de esta persona por sesiones anteriores:",
+    intro: "Contexto de sesiones anteriores. Son observaciones e hipótesis revisables, no hechos fijos sobre la persona:",
+    semantic: "Hipótesis longitudinales",
+    dynamic: "Cambios a lo largo del tiempo",
+    episodic: "Episodios recientes",
     rule:
-      "Tenlo en cuenta durante la sesión, pero no menciones explícitamente que lo " +
-      "«recuerdas» — úsalo solo como contexto.",
+      "Úsalo solo como contexto suave. No conviertas hipótesis en diagnósticos ni rasgos fijos. " +
+      "Si la experiencia actual contradice la memoria, la experiencia actual siempre tiene prioridad.",
+  },
+  en: {
+    intro: "Context from previous sessions. These are revisable observations and hypotheses, not fixed facts about the person:",
+    semantic: "Longitudinal hypotheses",
+    dynamic: "Changes over time",
+    episodic: "Recent episodes",
+    rule:
+      "Use this only as soft context. Do not turn hypotheses into diagnoses or fixed traits. " +
+      "If current experience contradicts memory, current experience always takes priority.",
   },
 };
 
 export function formatMemoriesForPrompt(memories, language = "es") {
   if (!memories || memories.length === 0) return "";
   const copy = MEMORY_PREAMBLE[language] || MEMORY_PREAMBLE.es;
-  const lines = memories
-    .map((m) => `${m.memory_key}: ${m.memory_value}`)
-    .join("\n");
-  return `\n\n${copy.intro}\n${lines}\n${copy.rule}`;
+  const groups = {
+    semantic: memories.filter((m) => m.memory_level === "semantic"),
+    dynamic: memories.filter((m) => m.memory_level === "dynamic"),
+    episodic: memories.filter((m) => !m.memory_level || m.memory_level === "episodic"),
+  };
+
+  const block = [];
+  const add = (label, rows) => {
+    if (!rows.length) return;
+    block.push(`${label}:`);
+    rows.forEach((m) => {
+      const review = ["confirmed", "corrected"].includes(m.user_status) ? " [user-validated]" : "";
+      const evidence = Number(m.evidence_count || 0) > 1 ? ` [evidence:${m.evidence_count}]` : "";
+      const trend = m.trend ? ` [trend:${m.trend}]` : "";
+      block.push(`- ${m.memory_key}: ${m.memory_value}${review}${evidence}${trend}`);
+    });
+  };
+
+  add(copy.semantic, groups.semantic);
+  add(copy.dynamic, groups.dynamic);
+  add(copy.episodic, groups.episodic);
+  return `\n\n${copy.intro}\n${block.join("\n")}\n${copy.rule}`;
 }
 
-// ─── 3. Save memories: dedupe by memory_key, deactivate oldest over limit ────
-// items: [{ memory_type, memory_key, memory_value }]
-/**
- * @param {any} userId
- * @param {any} items
- * @param {{ sessionId?: any, modeId?: any }} [opts]
- */
+// Kept for compatibility with older callers. New live sessions persist episodic
+// memory through persistSessionMemory and rebuild longitudinal memory server-side.
 export async function saveUserMemories(userId, items, { sessionId, modeId } = {}) {
-  if (!userId || !items || items.length === 0) return;
-
-  const existing = await base44.entities.UserMemory.filter({ user_id: userId });
-  // newest record per memory_key (update target)
-  const byKey = {};
-  for (const row of existing) {
-    const prev = byKey[row.memory_key];
-    if (!prev || new Date(row.updated_at || row.created_date) > new Date(prev.updated_at || prev.created_date)) {
-      byKey[row.memory_key] = row;
-    }
-  }
-
+  if (!userId || !items?.length) return;
   const now = new Date().toISOString();
-
   for (const item of items) {
     if (!item.memory_value || !item.memory_key) continue;
-    const target = byKey[item.memory_key];
-    if (target) {
-      // Update existing record with same memory_key
-      await base44.entities.UserMemory.update(target.id, {
-        memory_value: item.memory_value,
-        memory_type: item.memory_type || target.memory_type,
-        source_session_id: sessionId,
-        source_mode_id: modeId,
-        importance: "medium",
-        is_active: true,
-        updated_at: now,
-      });
-    } else {
-      // Create new record
-      await base44.entities.UserMemory.create({
-        user_id: userId,
-        memory_type: item.memory_type || item.memory_key,
-        memory_key: item.memory_key,
-        memory_value: item.memory_value,
-        source_session_id: sessionId,
-        source_mode_id: modeId,
-        importance: "medium",
-        is_active: true,
-        created_at: now,
-        updated_at: now,
-      });
-    }
-  }
-
-  // ─── Enforce limit: deactivate oldest active records beyond MEMORY_LIMIT ───
-  const active = await base44.entities.UserMemory.filter(
-    { user_id: userId, is_active: true },
-    "-updated_at",
-    200
-  );
-  if (active.length > MEMORY_LIMIT) {
-    const toDeactivate = active.slice(MEMORY_LIMIT);
-    for (const row of toDeactivate) {
-      await base44.entities.UserMemory.update(row.id, { is_active: false });
-    }
+    await base44.entities.UserMemory.create({
+      user_id: userId,
+      memory_level: "episodic",
+      memory_type: item.memory_type || item.memory_key,
+      memory_key: item.memory_key,
+      memory_value: item.memory_value,
+      source_session_id: sessionId,
+      source_mode_id: modeId,
+      evidence_session_ids: sessionId ? [sessionId] : [],
+      evidence_count: sessionId ? 1 : 0,
+      confidence: 0.65,
+      importance: "medium",
+      user_status: "unreviewed",
+      excluded_from_ai: false,
+      is_active: true,
+      first_seen_at: now,
+      last_seen_at: now,
+      created_at: now,
+      updated_at: now,
+    });
   }
 }
-
-// ─── 4. (removed) Client-side session analysis ───────────────────────────────
-// `extractMemoriesFromSession` used to analyze the transcript here and had no
-// callers — the live implementation is the `persistSessionMemory` backend
-// function, which already handles both languages and strips the subject from
-// each phrase. Keeping a second copy on the client meant two prompts drifting
-// apart, with only the backend one actually running.
