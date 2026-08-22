@@ -11,7 +11,7 @@ const COPY = {
     rating: "Насколько это было полезно?",
     helpful: "Что было самым полезным?",
     difficult: "Что было непонятным, неудобным или лишним?",
-    insight: "Какой инсайт или наблюдение ты забираешь с собой?",
+    insight: "Какой инсайт или важный опыт ты забираешь с собой?",
     comment: "Что ещё важно сказать?",
     continue: "Ты хотела бы продолжить?",
     yes: "Да",
@@ -26,7 +26,7 @@ const COPY = {
     rating: "¿Qué tan útil fue?",
     helpful: "¿Qué fue lo más útil?",
     difficult: "¿Qué fue confuso, incómodo o innecesario?",
-    insight: "¿Qué insight u observación te llevas?",
+    insight: "¿Qué insight o experiencia importante te llevas contigo?"
     comment: "¿Hay algo más que quieras contarnos?",
     continue: "¿Te gustaría continuar?",
     yes: "Sí",
@@ -66,9 +66,13 @@ export default function ExperienceFeedbackForm({ user, lang = "es", experienceTy
   const submit = async () => {
     setSaving(true);
     try {
+      const authUser = user?.email || user?.full_name || user?.name
+        ? user
+        : await base44.auth.me().catch(() => user);
       await base44.entities.ExperienceFeedback.create({
         user_id: user.id,
-        user_email: user.email || "",
+        user_name: authUser?.full_name || authUser?.name || "",
+        user_email: authUser?.email || "",
         experience_type: experienceType,
         reference_id: referenceId,
         program_id: programId || "",
