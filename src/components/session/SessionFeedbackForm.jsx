@@ -18,6 +18,7 @@ export default function SessionFeedbackForm({ session, user, language }) {
   const [rating, setRating] = useState(0);
   const [useful, setUseful] = useState("");
   const [confusing, setConfusing] = useState("");
+  const [insight, setInsight] = useState("");
   const [wouldUseAgain, setWouldUseAgain] = useState(null);
   const [comment, setComment] = useState("");
 
@@ -39,12 +40,14 @@ export default function SessionFeedbackForm({ session, user, language }) {
       session_id: session.id,
       user_id: user.id,
       user_email: user.email,
+      user_name: user.name || user.full_name || "",
       mode_id: session.mode_id || session.mode,
       language: lang,
       summary_accuracy: summaryAccuracy || undefined,
       rating: rating || undefined,
       useful,
       confusing,
+      insight,
       would_use_again: wouldUseAgain,
       comment,
       created_at: new Date().toISOString(),
@@ -57,6 +60,7 @@ export default function SessionFeedbackForm({ session, user, language }) {
       summary_accuracy: summaryAccuracy || "not_answered",
       useful: Boolean(useful),
       confusing: Boolean(confusing),
+      insight: Boolean(insight),
       would_use_again: Boolean(wouldUseAgain),
       has_comment: Boolean(comment && comment.trim()),
     });
@@ -138,6 +142,11 @@ export default function SessionFeedbackForm({ session, user, language }) {
         <div>
           <label className="text-sm font-medium block mb-2">{t("feedback_confusing", lang)}</label>
           <Textarea value={confusing} onChange={(e) => setConfusing(e.target.value)} rows={2} />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium block mb-2">{t("feedback_insight", lang)}</label>
+          <Textarea value={insight} onChange={(e) => setInsight(e.target.value)} rows={2} />
         </div>
 
         {/* Would use again */}
