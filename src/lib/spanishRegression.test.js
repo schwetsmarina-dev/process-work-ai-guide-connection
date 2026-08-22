@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { detectProcessMappingStage } from "./sessionAI";
+import { detectProcessMappingStage, detectResistanceCount } from "./sessionAI";
 import { getSafeFallback } from "./sessionValidation";
 
 const ai = (content) => ({ role: "assistant", content });
@@ -47,5 +47,17 @@ describe("Spanish customer journey regression guards", () => {
   it("never emits Cyrillic from Spanish integration fallback", () => {
     const result = getSafeFallback("conflict", null, true, { stage: "complete" }, false, false, "es");
     expect(result).not.toMatch(CYRILLIC);
+  });
+
+  it("does not misclassify normal short Spanish answers as resistance", () => {
+    expect(detectResistanceCount([
+      user("sí"), user("vale"), user("en casa"), user("en el pecho"), user("un perro"),
+    ])).toBe(0);
+  });
+
+  it("does count explicit Spanish stuck/refusal signals as resistance", () => {
+    expect(detectResistanceCount([
+      user("no sé"), user("no quiero seguir"), user("es demasiado"),
+    ])).toBe(3);
   });
 });
