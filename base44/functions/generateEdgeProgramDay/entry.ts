@@ -326,6 +326,75 @@ Return structure:
 - used_exercise_ids: 0–2 IDs from MATCHED EXERCISE LIBRARY that were actually used; [] if none
 - extraction: structured candidate fields to save after the user completes the day: expected keys are signal, stopping_signal, stopping_message, familiar_way, emerging_signal, emerging_quality, resource, support_figure, preferred_support, next_day_adjustment. Put empty strings for unknown values; these are CANDIDATES only and must later be confirmed from user responses.`;
 
+    const promptEs = `Genera UN solo día del programa de 28 días de Talvira «Volver a mí».
+
+Escribe TODO el contenido visible en español natural de España.
+
+METODOLOGÍA INTERNA DEL DÍA ${requestedDay} — ${spec.title}
+Finalidad: ${spec.purpose}
+Pasos aprobados:\n- ${spec.steps.join('\n- ')}
+Preguntas de diario aprobadas:\n- ${spec.journal.join('\n- ')}
+Indicadores internos: apoyo=${Boolean(spec.support)} celebración=${Boolean(spec.celebration)} adaptativo=${Boolean(spec.adaptive)} riesgo=${spec.risk || 'low'}
+
+MODO DE GENERACIÓN: ${mode}
+${resourceModeRuleEs}
+
+REGLAS GLOBALES OBLIGATORIAS:
+${[...rules.language, ...rules.safety, ...rules.support, ...rules.weekly].map((x: string) => `- ${x}`).join('\n')}
+
+BIBLIOTECA INICIAL DE RECURSOS — son opciones, nunca prescripciones:
+${rules.resourceProtocol.starterExercises.map((x: string) => `- ${x}`).join('\n')}
+
+CONTEXTO DE LA PERSONA Y DEL PROGRAMA:
+Tema procedente de la práctica personal: ${clean(program.theme_label, 300) || '—'}
+Contexto de la práctica personal: ${clean(sourcePractice?.offer_text || program.personalization_context, 1000) || '—'}
+Recursos confirmados: ${resources.join(' | ') || '—'}
+Correcciones anteriores de la persona — AUTORITATIVAS:\n${corrections}
+Días recientes completados:\n${recentDaysBlock}
+Sesiones de origen — solo contexto interno; nunca expongas jerga de Process Work:\n${JSON.stringify(sessionBlock)}
+Títulos/prácticas ya generados: ${usedPracticeTitles}
+
+TERM KEYS CANÓNICOS PARA HOY — uso interno: ${wantedTermKeys.join(', ') || '—'}
+EJERCICIOS METODOLÓGICOS COINCIDENTES:
+${exerciseLibraryBlock}
+
+REGLAS DE USO DE EJERCICIOS:
+- La biblioteca es un apoyo metodológico opcional, no un guion obligatorio.
+- Usa como máximo 1–2 ejercicios y solo cuando encajen con la metodología aprobada de hoy y con material confirmado de la persona.
+- Adapta redacción, ritmo e intensidad. Nunca pegues mecánicamente un ejercicio.
+- Si ninguno encaja, no uses ninguno.
+- Nunca muestres term keys internos, jerga de Process Work, source/provenance, nombres de programas de formación, escuelas, certificaciones ni fuentes metodológicas internas.
+- Nunca selecciones automáticamente ejercicios de alta intensidad o que requieran especialista en vivo.
+- ai_self_guided puede usarse si encaja metodológicamente. conditional solo cuando se cumplen claramente sus condiciones y no aparece ninguna exclusión. Ante la duda, omítelo.
+- Devuelve únicamente IDs realmente utilizados en used_exercise_ids; si no usaste ninguno, [].
+
+REGLAS ESTRICTAS DE CONTENIDO:
+1. No uses jerga técnica de Process Work en contenido visible: no digas borde, figura del borde, proceso primario/secundario, canal ni amplificación.
+2. Usa las palabras confirmadas de la persona siempre que sea posible. Una corrección de la persona prevalece sobre cualquier interpretación anterior de la IA.
+3. No inventes causas infantiles, trauma, diagnósticos, emociones ocultas, motivos ni relaciones.
+4. Evita repetir ejercicios ya usados salvo que la metodología del día lo requiera explícitamente, la persona haya elegido repetición o sea necesario como apoyo. Si repites, reconoce la continuidad y adapta la práctica.
+5. El apoyo debe estar disponible durante todo el programa. Nunca presentes el avance como obligatorio. La persona puede elegir versión suave, recursos, descanso o pausa en cualquier momento.
+6. Ajusta los verbos a la experiencia: las emociones se sienten, los pensamientos se piensan/exploran, las imágenes se observan, las sensaciones corporales se sienten y los movimientos se realizan físicamente si es posible.
+7. Si la metodología incluye una hipótesis o síntesis, pregunta explícitamente si encaja e invita a corregirla.
+8. Si propones movimiento físico, indica «si te resulta físicamente posible» y permite permanecer sentada/o o elegir otra forma.
+9. No prometas calma, curación, resolución de trauma, reducción de síntomas ni seguridad.
+10. En el día 24, conserva la cualidad emergente disponible y con capacidad de acción. Si vuelve una prohibición antigua, nómbrala brevemente y redirige sin construir una batalla.
+11. Nunca menciones procedencia, programa de formación/diploma/certificación, campo source ni provenance de un ejercicio en title, intro, steps, journal_questions, closing, support_options o confirmation_prompt.
+12. Devuelve únicamente JSON.
+
+ESTRUCTURA DE RESPUESTA:
+- title: título natural para la persona
+- intro: 1–3 párrafos breves sin jerga
+- steps: 2–7 objetos secuenciales {title,text}, concretos y practicables
+- journal_questions: 0–5 preguntas; en resource mode no hay diario obligatorio
+- closing: reorientación/retorno y permiso explícito para detenerse o tomar un día de recursos/descanso
+- support_options: 0–5 apoyos concretos relevantes
+- confirmation_prompt: pregunta opcional para confirmar/corregir una observación de la IA
+- used_exercise_ids: 0–2 IDs realmente utilizados
+- extraction: candidatos estructurados para guardar tras completar el día: signal, stopping_signal, stopping_message, familiar_way, emerging_signal, emerging_quality, resource, support_figure, preferred_support, next_day_adjustment. Usa cadenas vacías cuando no se sepa. Son CANDIDATOS y deberán confirmarse con respuestas posteriores de la persona.`;
+
+    const prompt = lang === 'es' ? promptEs : promptDefault;
+
     const llm = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
       response_json_schema: {
