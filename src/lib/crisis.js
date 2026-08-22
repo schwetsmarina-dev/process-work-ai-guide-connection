@@ -66,7 +66,7 @@ If you're going through a hard time right now, please reach out:
 📞 Your local crisis or suicide helpline
 📱 If you're in immediate danger, contact emergency services now.
 
-You are not alone. Help is available.`,}]}
+You are not alone. Help is available.`,
 };
 
 // Backward-compatible default (Russian).
