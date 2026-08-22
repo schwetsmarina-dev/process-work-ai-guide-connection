@@ -113,7 +113,7 @@ const translations = {
     onb_step3_button: "Выбрать",
     onb_step4_title: "Несколько слов о конфиденциальности",
     onb_step4_text:
-      "Твои ответы сохраняются только для улучшения твоего персонального опыта. Мы не передаём данные третьим лицам. Ты можешь удалить все данные в любой момент в настройках.",
+      "Твои ответы сохраняются для работы и персонализации Talvira. Для предоставления сервиса могут использоваться технологические поставщики, которые обрабатывают данные от нашего имени в соответствии с Политикой конфиденциальности. Ты можешь удалить свои пользовательские данные в настройках.",
     onb_step4_check1: "Я понимаю, что это не психотерапия и не замена профессиональной помощи",
     onb_step4_check2: "Я явно соглашаюсь на обработку и хранение моих ответов, которые могут содержать данные о моём физическом и психическом состоянии, для работы и персонализации Talvira",
     onb_step4_check3: "Я понимаю, что беседу ведёт система искусственного интеллекта, а не человек",
@@ -594,7 +594,7 @@ const translations = {
     onb_step3_button: "Elegir",
     onb_step4_title: "Unas palabras sobre la privacidad",
     onb_step4_text:
-      "Tus respuestas se guardan solo para mejorar tu experiencia personal. No compartimos datos con terceros. Puedes eliminar todos tus datos en cualquier momento en los ajustes.",
+      "Tus respuestas se guardan para prestar y personalizar Talvira. Para ofrecer el servicio podemos utilizar proveedores tecnológicos que tratan datos por nuestra cuenta, de acuerdo con la Política de privacidad. Puedes eliminar tus datos de usuario desde los ajustes.",
     onb_step4_check1: "Entiendo que esto no es psicoterapia ni un sustituto de la ayuda profesional",
     onb_step4_check2: "Doy mi consentimiento explícito para que Talvira trate y almacene mis respuestas, que pueden incluir datos sobre mi estado físico y psicológico, con el fin de prestar y personalizar el servicio",
     onb_step4_check3: "Entiendo que la conversación la conduce un sistema de inteligencia artificial, no una persona",
