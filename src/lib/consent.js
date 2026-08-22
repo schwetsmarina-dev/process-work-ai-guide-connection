@@ -26,7 +26,7 @@ export function buildConsentRecord(lang, birthYear) {
     ai_disclosure_ack: true,
     consent_version: CONSENT_VERSION,
     consent_given_at: new Date().toISOString(),
-    consent_locale: lang || "ru",
+    consent_locale: lang || "es",
   };
 }
 
