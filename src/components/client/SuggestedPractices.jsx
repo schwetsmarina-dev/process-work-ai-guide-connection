@@ -86,6 +86,7 @@ export default function SuggestedPractices({ clientEmail }) {
         <>
           <PersonalProcessPracticeCard
             userId={authUser.id}
+            user={{ ...authUser, name: appUsers[0]?.name || authUser?.full_name || authUser?.name || "" }}
             lang={lang}
             completedSessions={completedSessions}
           />
