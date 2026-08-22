@@ -1740,7 +1740,7 @@ export async function generateSessionSummary(session, messages, language = "es")
   const lang = language === "es" ? "es" : "ru";
   const conversation = messages
     .filter((m) => m.role === "user" || m.role === "assistant")
-    .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
+    .map((m) => `${m.role === "user" ? (lang === "es" ? "Persona" : "Пользователь") : (lang === "es" ? "Talvira" : "Ассистент")}: ${m.content}`)
     .join("\n");
 
   const timeoutPromise = new Promise((_, reject) =>
@@ -1755,8 +1755,32 @@ export async function generateSessionSummary(session, messages, language = "es")
     ? "Escribe TODO en español natural."
     : "Пиши ВСЁ на русском языке.";
 
-  const llmPromise = base44.functions.invoke("invokeAI", {
-    prompt: `Ты — процессуально-ориентированный фасилитатор. Проанализируй эту сессию и выдай ТОЛЬКО JSON без markdown:
+  const spanishSummaryPrompt = `Eres una persona facilitadora orientada a Process Work. Analiza esta sesión y devuelve ÚNICAMENTE JSON, sin markdown:
+{
+  "summary": "párrafo descriptivo de 3–5 frases sobre lo que apareció y se exploró en la sesión",
+  "themes": ["tema 1", "tema 2", "tema 3"],
+  "signals": ["señal corporal o emocional 1", "señal 2"],
+  "edge_signals": ["descripción breve de un momento de freno, vergüenza, repetición o prohibición interna, si realmente apareció; si no, []"],
+  "primary_process": ["descripción breve de lo que resultaba habitual o familiar para la persona"],
+  "secondary_process": ["descripción breve de lo que apareció como nuevo, poco habitual o emergente"],
+  "next_step_suggestion": "una posible línea para una próxima sesión",
+  "confidence_note": "${confidenceNote}"
+}
+
+REGLAS:
+- edge_signals es un campo interno. Rellénalo solo cuando el diálogo contenga evidencia clara de una interrupción del proceso: caída marcada de energía, risa nerviosa, vergüenza, repetición sin desarrollo, rechazo de una identidad o una prohibición interna explícita. Describe lo ocurrido sin usar «borde» ni «límite». Si no ocurrió, devuelve [].
+- primary_process y secondary_process son campos internos. En sus valores NO escribas jerga de Process Work: describe simplemente el contenido con palabras cotidianas.
+- No inventes resultados. No afirmes que la persona comprendió, integró, logró o transformó algo salvo que lo haya dicho explícitamente.
+- Prefiere formulaciones descriptivas: «En la sesión aparecieron…», «La persona exploró…», «Al final dijo…».
+- Apóyate únicamente en lo expresado de forma explícita. Si no hubo conclusión final, descríbelo sin fabricar una.
+- Todo el contenido textual del JSON debe estar en español natural y ser concreto.
+
+Modo: ${session.mode_id || session.mode}
+
+Sesión:
+${conversation}`;
+
+  const russianSummaryPrompt = `Ты — процессуально-ориентированный фасилитатор. Проанализируй эту сессию и выдай ТОЛЬКО JSON без markdown:
 {
   "summary": "описательный абзац 3-5 предложений — что звучало и что исследовалось в сессии",
   "themes": ["тема 1", "тема 2", "тема 3"],
