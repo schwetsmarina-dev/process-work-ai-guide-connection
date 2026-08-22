@@ -30,6 +30,26 @@ function hasNamedAuthor(value) {
   return !genericOnly.test(raw) && !genericOnly.test(s);
 }
 
+const SAFETY_LABELS_ES = {
+  acute_crisis: "crisis aguda",
+  high_unresolved_risk: "riesgo alto todavía no resuelto",
+  loss_of_orientation: "desorientación o dificultad para mantenerse conectada/o con el presente",
+  active_violence: "violencia actual",
+  coercive_control: "control coercitivo actual",
+  recent_severe_trauma_activation: "activación traumática intensa y reciente",
+  new_symptom: "síntoma nuevo",
+  acute_symptom: "síntoma agudo o que está empeorando",
+  medical_red_flag: "señales médicas que requieren valoración profesional",
+  psychotic_symptoms: "síntomas psicóticos o pérdida de contacto con la realidad",
+  ai_only: "uso únicamente con IA",
+  self_guided: "práctica autoguiada",
+};
+
+function spanishSafetyLabels(exercise) {
+  const codes = Array.isArray(exercise?.exclude_if) ? exercise.exclude_if : [];
+  return codes.map((code) => SAFETY_LABELS_ES[code] || String(code).replaceAll("_", " "));
+}
+
 const COPY = {
   ru: {
     title: "Библиотека практик",
@@ -118,7 +138,6 @@ export default function PracticeLibrary() {
       || x.steps_es.length !== (x.steps || []).length
       || arrayMissing(x.search_tags, x.search_tags_es)
       || arrayMissing(x.delivery_conditions, x.delivery_conditions_es)
-      || arrayMissing(x.exclude_if, x.exclude_if_es)
       || arrayMissing(x.contraindications, x.contraindications_es);
   }), [visibleRows]);
 
@@ -143,7 +162,6 @@ export default function PracticeLibrary() {
             && x.steps_es.length === (x.steps || []).length
             && completeArray(x.search_tags, x.search_tags_es)
             && completeArray(x.delivery_conditions, x.delivery_conditions_es)
-            && completeArray(x.exclude_if, x.exclude_if_es)
             && completeArray(x.contraindications, x.contraindications_es);
         })
       : visibleRows;
@@ -210,7 +228,7 @@ export default function PracticeLibrary() {
                 {expanded && (
                   <div className="mt-5 space-y-4 border-t pt-4">
                     {(lang === "es" ? exercise.purpose_es : exercise.purpose) && <div><p className="text-sm font-medium mb-1">{c.purpose}</p><p className="text-sm text-muted-foreground leading-relaxed">{lang === "es" ? exercise.purpose_es : exercise.purpose}</p></div>}
-                    {exercise.delivery_level === "conditional" && <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900 space-y-2"><div className="flex gap-2"><ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" /><span>{c.conditional}</span></div>{(lang === "es" ? (exercise.delivery_conditions_es || []) : (exercise.delivery_conditions || [])).length > 0 && <p><strong>{c.conditions}:</strong> {(lang === "es" ? exercise.delivery_conditions_es : exercise.delivery_conditions).join(" · ")}</p>}{(lang === "es" ? [...(exercise.exclude_if_es || []), ...(exercise.contraindications_es || [])] : [...(exercise.exclude_if || []), ...(exercise.contraindications || [])]).length > 0 && <p><strong>{c.avoidIf}:</strong> {(lang === "es" ? [...(exercise.exclude_if_es || []), ...(exercise.contraindications_es || [])] : [...(exercise.exclude_if || []), ...(exercise.contraindications || [])]).join(" · ")}</p>}</div>}
+                    {exercise.delivery_level === "conditional" && <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900 space-y-2"><div className="flex gap-2"><ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" /><span>{c.conditional}</span></div>{(lang === "es" ? (exercise.delivery_conditions_es || []) : (exercise.delivery_conditions || [])).length > 0 && <p><strong>{c.conditions}:</strong> {(lang === "es" ? exercise.delivery_conditions_es : exercise.delivery_conditions).join(" · ")}</p>}{(lang === "es" ? [...spanishSafetyLabels(exercise), ...(exercise.contraindications_es || [])] : [...(exercise.exclude_if || []), ...(exercise.contraindications || [])]).length > 0 && <p><strong>{c.avoidIf}:</strong> {(lang === "es" ? [...spanishSafetyLabels(exercise), ...(exercise.contraindications_es || [])] : [...(exercise.exclude_if || []), ...(exercise.contraindications || [])]).join(" · ")}</p>}</div>}
                     <div><p className="text-sm font-medium mb-2">{c.steps}</p><ol className="space-y-2 list-decimal pl-5 text-sm leading-relaxed">{(lang === "es" ? exercise.steps_es : (exercise.steps || [])).map((step, i) => <li key={i}>{step}</li>)}</ol></div>
                     <div className="pt-2">
                       {audioById[exercise.exercise_id] ? (
