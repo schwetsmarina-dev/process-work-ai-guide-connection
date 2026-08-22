@@ -10,17 +10,29 @@
       "type": "string",
       "description": "Mode name in Russian"
     },
+    "mode_name_es": {
+      "type": "string",
+      "description": "Mode name in Spanish"
+    },
     "mode_name_en": {
       "type": "string",
       "description": "Mode name in English"
     },
     "description": {
       "type": "string",
-      "description": "Mode description"
+      "description": "Mode description in Russian (legacy/source field)"
+    },
+    "description_es": {
+      "type": "string",
+      "description": "Mode description in Spanish"
     },
     "start_message": {
       "type": "string",
-      "description": "Opening message when mode starts"
+      "description": "Opening message in Russian (legacy/source field)"
+    },
+    "start_message_es": {
+      "type": "string",
+      "description": "Opening message in Spanish"
     },
     "sort_order": {
       "type": "number",
