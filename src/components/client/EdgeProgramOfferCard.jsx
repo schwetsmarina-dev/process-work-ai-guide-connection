@@ -137,7 +137,7 @@ export default function EdgeProgramOfferCard({ lang = "es", enabled = true }) {
             <p className="text-xs uppercase tracking-wide text-primary font-medium mb-1">{c.eyebrow}</p>
             <h3 className="font-serif text-xl font-semibold mb-2">{c.title}</h3>
             <p className="text-sm text-muted-foreground mb-4">{c.body}</p>
-            {readiness.theme_label && <p className="text-sm mb-4"><span className="font-medium">{readiness.theme_label}</span></p>}
+            {readiness.theme_label && !(lang === "es" && /[А-Яа-яЁё]/.test(readiness.theme_label)) && <p className="text-sm mb-4"><span className="font-medium">{readiness.theme_label}</span></p>}
             {readiness?.reason === "rescreen_caution" && <p className="text-sm text-amber-800 mb-4">{c.cautionExisting}</p>}
             <Button variant="outline" onClick={() => { setResult(null); setOpen(true); }}>
               <ShieldCheck className="w-4 h-4 mr-2" />
