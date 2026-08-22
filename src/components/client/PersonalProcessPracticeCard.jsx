@@ -61,7 +61,7 @@ function copyFor(lang) {
   return COPY[lang] || COPY.es;
 }
 
-export default function PersonalProcessPracticeCard({ userId, lang = "es", completedSessions = [] }) {
+export default function PersonalProcessPracticeCard({ userId, user = null, lang = "es", completedSessions = [] }) {
   const queryClient = useQueryClient();
   const c = copyFor(lang);
   const [working, setWorking] = useState(false);
@@ -199,7 +199,13 @@ export default function PersonalProcessPracticeCard({ userId, lang = "es", compl
               <ChevronDown className="w-4 h-4" />
             </button>
             <div id={`practice-feedback-${visiblePractice.id}`} className="scroll-mt-6">
-              <ExperienceFeedbackForm user={{ id: userId }} lang={lang} experienceType="practice" referenceId={visiblePractice.id} />
+              <ExperienceFeedbackForm
+                user={user || { id: userId }}
+                lang={lang}
+                experienceType="practice"
+                experienceLabel={lang === "ru" ? "Персональная практика" : "Práctica personal"}
+                referenceId={visiblePractice.id}
+              />
             </div>
 
             {!latestPracticeCoversNewestSession && readiness?.ready && (
