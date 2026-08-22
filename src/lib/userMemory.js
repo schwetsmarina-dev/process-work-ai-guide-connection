@@ -37,9 +37,9 @@ const MEMORY_PREAMBLE = {
   },
 };
 
-export function formatMemoriesForPrompt(memories, language = "ru") {
+export function formatMemoriesForPrompt(memories, language = "es") {
   if (!memories || memories.length === 0) return "";
-  const copy = MEMORY_PREAMBLE[language] || MEMORY_PREAMBLE.ru;
+  const copy = MEMORY_PREAMBLE[language] || MEMORY_PREAMBLE.es;
   const lines = memories
     .map((m) => `${m.memory_key}: ${m.memory_value}`)
     .join("\n");
