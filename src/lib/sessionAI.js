@@ -936,14 +936,23 @@ export async function getAIResponse(session, step, messages, userMessage, langua
   }
 
   const edgeLimitInstruction = resistanceCount >= 3
-    ? `\n\n⚠️ EDGE LIMIT REACHED (${resistanceCount} resistance signals detected)\n` +
-      `STOP ALL DEEPENING. Do NOT ask immersion/amplification/exploration questions.\n` +
-      `REQUIRED: Acknowledge the edge respectfully. Say one of:\n` +
-      `'Похоже, сейчас это место становится слишком трудным для дальнейшего углубления.' / \n` +
-      `'Давай не будем тащить процесс через силу.' / \n` +
-      `'Похоже, часть тебя пока не готова двигаться дальше — и это тоже важно.'\n` +
-      `Then ask ONLY ONE memory-knot question:\n` +
-      `'Что для тебя было самым важным в этой сессии?' or 'Какой инсайт тебе хочется сохранить?' or 'Что сейчас кажется самым ценным?'`
+    ? (language === "es"
+      ? `\n\n⚠️ EDGE LIMIT REACHED (${resistanceCount} resistance signals detected)\n` +
+        `STOP ALL DEEPENING. Do NOT ask immersion/amplification/exploration questions.\n` +
+        `REQUIRED: acknowledge the edge respectfully in natural Spanish. Say one of:\n` +
+        `'Parece que ahora mismo este lugar se está volviendo demasiado difícil para seguir profundizando.' / \n` +
+        `'No hace falta empujar el proceso a la fuerza.' / \n` +
+        `'Parece que una parte de ti todavía no está preparada para seguir avanzando, y eso también importa.'\n` +
+        `Then ask ONLY ONE memory-knot question in Spanish:\n` +
+        `'¿Qué ha sido lo más importante para ti en esta sesión?' or '¿Qué te gustaría conservar de lo que has descubierto?' or '¿Qué te parece más valioso ahora?'`
+      : `\n\n⚠️ EDGE LIMIT REACHED (${resistanceCount} resistance signals detected)\n` +
+        `STOP ALL DEEPENING. Do NOT ask immersion/amplification/exploration questions.\n` +
+        `REQUIRED: Acknowledge the edge respectfully. Say one of:\n` +
+        `'Похоже, сейчас это место становится слишком трудным для дальнейшего углубления.' / \n` +
+        `'Давай не будем тащить процесс через силу.' / \n` +
+        `'Похоже, часть тебя пока не готова двигаться дальше — и это тоже важно.'\n` +
+        `Then ask ONLY ONE memory-knot question:\n` +
+        `'Что для тебя было самым важным в этой сессии?' or 'Какой инсайт тебе хочется сохранить?' or 'Что сейчас кажется самым ценным?'`)
     : "";
 
   const isBeginnerConfused = detectBeginnerConfusion(userMessage);
@@ -952,13 +961,21 @@ export async function getAIResponse(session, step, messages, userMessage, langua
     if (import.meta.env.DEV) console.log("[BEGINNER_CHOICES_OFFERED]", { mode: currentMode });
   }
   const beginnerChoicesInstruction = isBeginnerConfused
-    ? `\n\n🟢 ПОЛЬЗОВАТЕЛЬ ЗАТРУДНЯЕТСЯ ОТВЕТИТЬ — НЕ УГЛУБЛЯЙ\n` +
-      `Пользователь сказал, что не знает / сложно сказать / не понимает. Не углубляйся и не дави.\n` +
-      `Тепло предложи варианты на выбор (используй короткий список):\n` +
-      (isBodyModeEarly
-        ? `«Можно выбрать из вариантов:\n— напряжение\n— давление\n— тепло\n— холод\n— пустота\n— движение\n— пульсация\n— или что-то другое?»`
-        : `«Это больше похоже на:\n— страх\n— злость\n— усталость\n— сопротивление\n— интерес\n— облегчение\n— или что-то своё?»`) +
-      `\nТолько в этом случае список вариантов разрешён.`
+    ? (language === "es"
+      ? `\n\n🟢 LA PERSONA TIENE DIFICULTAD PARA RESPONDER — NO PROFUNDICES\n` +
+        `Ha dicho que no sabe, que le cuesta decirlo o que no entiende. No presiones ni profundices.\n` +
+        `Ofrece con calidez unas pocas opciones para orientarse:\n` +
+        (isBodyModeEarly
+          ? `«Puedes elegir lo que más se acerque:\n— tensión\n— presión\n— calor\n— frío\n— vacío\n— movimiento\n— pulsación\n— u otra cosa.»`
+          : `«¿Se parece más a:\n— miedo\n— rabia\n— cansancio\n— resistencia\n— interés\n— alivio\n— o a algo distinto?»`) +
+        `\nSolo en esta situación se permite una lista breve de opciones.`
+      : `\n\n🟢 ПОЛЬЗОВАТЕЛЬ ЗАТРУДНЯЕТСЯ ОТВЕТИТЬ — НЕ УГЛУБЛЯЙ\n` +
+        `Пользователь сказал, что не знает / сложно сказать / не понимает. Не углубляйся и не дави.\n` +
+        `Тепло предложи варианты на выбор (используй короткий список):\n` +
+        (isBodyModeEarly
+          ? `«Можно выбрать из вариантов:\n— напряжение\n— давление\n— тепло\n— холод\n— пустота\n— движение\n— пульсация\n— или что-то другое?»`
+          : `«Это больше похоже на:\n— страх\n— злость\n— усталость\n— сопротивление\n— интерес\n— облегчение\n— или что-то своё?»`) +
+        `\nТолько в этом случае список вариантов разрешён.`)
     : "";
 
   const mappingStage = detectProcessMappingStage(messages, currentMode);
