@@ -49,7 +49,6 @@ async function synthesize(apiKey: string, voiceId: string, text: string, languag
         text,
         model_id: 'eleven_v3',
         language_code: languageCode,
-        voice_settings: { stability: 0.35, similarity_boost: 0.87, style: 0.55, use_speaker_boost: true },
       }),
     });
     if (!res.ok) throw new Error(`ElevenLabs ${res.status}: ${(await res.text().catch(() => '')).slice(0, 300)}`);
