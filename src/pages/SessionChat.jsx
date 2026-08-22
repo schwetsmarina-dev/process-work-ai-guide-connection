@@ -689,10 +689,11 @@ export default function SessionChat() {
       // Fire-and-forget: do NOT await — must not delay the redirect or surface errors.
       base44.functions
         .invoke("persistSessionMemory", { session_id: sessionId })
+        .then(() => base44.functions.invoke("rebuildMemoryProfile", {}))
         .then(() => {
-          if (import.meta.env.DEV) console.log("[SessionFlow] memory persist requested");
+          if (import.meta.env.DEV) console.log("[SessionFlow] episodic memory persisted and longitudinal profile rebuild requested");
         })
-        .catch((memErr) => console.error("[SessionFlow] memory persist request failed (silent):", memErr?.message));
+        .catch((memErr) => console.error("[SessionFlow] memory pipeline failed (silent):", memErr?.message));
     } catch (e) {
       if (import.meta.env.DEV) console.error("[SessionFlow] finalization error:", e);
       reportOperationalError("session_finalization_failed", { mode: session?.mode_id || session?.mode || "unknown" });
