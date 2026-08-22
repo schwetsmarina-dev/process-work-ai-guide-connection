@@ -105,10 +105,17 @@ async function fetchRelatedTerms(relatedTermIds) {
   if (!relatedTermIds) return [];
   const ids = relatedTermIds.split(";").map((s) => s.trim()).filter(Boolean);
   if (!ids.length) return [];
-  const results = await Promise.all(
-    ids.map((tid) => base44.entities.Term.filter({ term_id: tid }))
-  );
-  return results.flat();
+
+  // ModeStep.related_term_ids now uses canonical Term.latin_key values
+  // (primary_process, edge, polarity...). Older rows may still contain a
+  // legacy term_id, so keep a fallback without making legacy naming the
+  // primary retrieval path.
+  const results = await Promise.all(ids.map(async (key) => {
+    const canonical = await base44.entities.Term.filter({ latin_key: key }).catch(() => []);
+    if (canonical?.length) return canonical;
+    return base44.entities.Term.filter({ term_id: key }).catch(() => []);
+  }));
+  return [...new Map(results.flat().map((row) => [row.id || row.latin_key || row.term_id, row])).values()];
 }
 
 // BODY CHANNELS: authoritative channel definitions come from the Term table, not hardcoded prompt theory.
@@ -871,9 +878,27 @@ export function detectLoopInLastExchanges(messages) {
 function buildModeStepInstruction(step, language) {
   if (!step || !step.question) return "";
   const isEs = language === "es";
-  const langLine = isEs
-    ? "Если language = es — переведи/адаптируй вопрос на естественный испанский, СОХРАНИВ процессуальную функцию шага.\n"
-    : "";
+  const goal = isEs ? (step.goal_es || step.goal) : step.goal;
+  const question = isEs ? (step.question_es || step.question) : step.question;
+  const facilitatorHint = isEs ? (step.facilitator_hint_es || step.facilitator_hint) : step.facilitator_hint;
+
+  if (isEs) {
+    return (
+      `\n\n━━━ PASO METODOLÓGICO ACTUAL OBLIGATORIO (MODE_STEPS) ━━━\n` +
+      `Formula la siguiente intervención a partir de ESTE paso. No repitas preguntas anteriores.\n` +
+      `Puedes adaptar la redacción a las palabras de la persona, pero no puedes ignorar la función ni la dirección metodológica del paso.\n\n` +
+      `• step_number: ${step.step_number ?? "?"}\n` +
+      `• step_key: ${step.step_key || "—"}\n` +
+      `• objetivo: ${goal || "—"}\n` +
+      `• pregunta/dirección: ${question || "—"}\n` +
+      (facilitatorHint ? `• indicación para facilitación: ${facilitatorHint}\n` : "") +
+      (step.response_type ? `• tipo de respuesta esperado: ${step.response_type}\n` : "") +
+      (step.related_term_ids ? `• conceptos internos: ${step.related_term_ids}\n` : "") +
+      `\nTAREA: formula exactamente UNA pregunta que haga avanzar este paso.\n` +
+      `No hagas una pregunta genérica sobre mapa/cuerpo/diálogo si este paso no lo requiere.\n` +
+      `Usa las palabras concretas de la persona. Responde solo en español natural.`
+    );
+  }
 
   return (
     `\n\n━━━ ОБЯЗАТЕЛЬНЫЙ ТЕКУЩИЙ ШАГ ИЗ MODE_STEPS ━━━\n` +
@@ -881,15 +906,14 @@ function buildModeStepInstruction(step, language) {
     `Можно адаптировать формулировку под слова пользователя, но нельзя игнорировать цель и направление шага.\n\n` +
     `• step_number: ${step.step_number ?? "?"}\n` +
     `• step_key: ${step.step_key || "—"}\n` +
-    `• goal (цель): ${step.goal || "—"}\n` +
-    `• question (направление): ${step.question || "—"}\n` +
-    (step.facilitator_hint ? `• facilitator_hint: ${step.facilitator_hint}\n` : "") +
+    `• goal (цель): ${goal || "—"}\n` +
+    `• question (направление): ${question || "—"}\n` +
+    (facilitatorHint ? `• facilitator_hint: ${facilitatorHint}\n` : "") +
     (step.response_type ? `• expected_response_type: ${step.response_type}\n` : "") +
     (step.related_term_ids ? `• related_term_ids: ${step.related_term_ids}\n` : "") +
     `\nЗАДАЧА: задай ровно ОДИН вопрос, который продвигает именно этот шаг.\n` +
     `Не задавай общий вопрос про карту/тело/диалог, если этот шаг прямо этого не требует.\n` +
-    `Используй точные слова пользователя.\n` +
-    langLine
+    `Используй точные слова пользователя.`
   );
 }
 
