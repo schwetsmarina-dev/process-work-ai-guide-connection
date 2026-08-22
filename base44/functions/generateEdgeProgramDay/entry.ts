@@ -206,14 +206,13 @@ Deno.serve(async (req) => {
       .map((x: any) => x.exercise);
     const exerciseLibraryBlock = eligibleExercises.length
       ? eligibleExercises.map((exercise: any) => [
-          `ID: ${clean(exercise.exercise_id, 100)} | ${clean(exercise.title_ru, 180)}`,
+          `ID: ${clean(exercise.exercise_id, 100)} | ${clean(lang === 'es' ? (exercise.title_es || exercise.title_ru) : exercise.title_ru, 180)}`,
           `Term keys: ${arr(exercise.term_keys).join(', ')}`,
-          `Автор/источник: ${clean(exercise.author, 220)}${exercise.source ? `; ${clean(exercise.source, 240)}` : ''}`,
-          `Назначение: ${clean(exercise.purpose, 700)}`,
+          `${lang === 'es' ? 'Objetivo' : 'Назначение'}: ${clean(lang === 'es' ? (exercise.purpose_es || exercise.purpose) : exercise.purpose, 700)}`,
           `Уровень самостоятельности: ${clean(exercise.delivery_level || 'conditional', 80)}`,
-          `Условия: ${arr(exercise.delivery_conditions).map((x) => clean(x, 400)).join(' | ') || '—'}`,
-          `Не предлагать при: ${arr(exercise.exclude_if).join(', ') || '—'}`,
-          `Ход: ${arr(exercise.steps).map((x) => clean(x, 500)).join(' → ')}`,
+          `${lang === 'es' ? 'Condiciones' : 'Условия'}: ${(lang === 'es' && Array.isArray(exercise.delivery_conditions_es) ? exercise.delivery_conditions_es : arr(exercise.delivery_conditions)).map((x) => clean(x, 400)).join(' | ') || '—'}`,
+          `${lang === 'es' ? 'Evitar cuando' : 'Не предлагать при'}: ${(lang === 'es' && Array.isArray(exercise.exclude_if_es) ? exercise.exclude_if_es : arr(exercise.exclude_if)).join(', ') || '—'}`,
+          `${lang === 'es' ? 'Secuencia' : 'Ход'}: ${(lang === 'es' && Array.isArray(exercise.steps_es) && exercise.steps_es.length === arr(exercise.steps).length ? exercise.steps_es : arr(exercise.steps)).map((x) => clean(x, 500)).join(' → ')}`,
         ].join('\n')).join('\n\n')
       : '—';
     const eligibleExerciseIds = new Set(eligibleExercises.map((x: any) => String(x.exercise_id)));
