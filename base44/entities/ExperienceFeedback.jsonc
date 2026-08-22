@@ -8,6 +8,10 @@
     "user_email": {
       "type": "string"
     },
+    "user_name": {
+      "type": "string",
+      "description": "Display name of the user at the time of feedback"
+    },
     "experience_type": {
       "type": "string",
       "enum": [
@@ -17,12 +21,20 @@
         "edge_program_complete"
       ]
     },
+    "experience_label": {
+      "type": "string",
+      "description": "Human-readable experience label, e.g. personal practice or 28-day program"
+    },
     "reference_id": {
       "type": "string",
       "description": "Practice/program/day id"
     },
     "program_id": {
       "type": "string"
+    },
+    "program_name": {
+      "type": "string",
+      "description": "Human-readable program name"
     },
     "day_number": {
       "type": "integer",
