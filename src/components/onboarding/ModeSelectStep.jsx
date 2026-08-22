@@ -13,7 +13,7 @@ export default function ModeSelectStep({ modes, loading, selectedId, onSelect, l
   return (
     <div className="space-y-3">
       {modes.map((mode) => {
-        const name = lang === "es" ? (mode.mode_name_es || mode.mode_name_en || mode.mode_name_ru) : mode.mode_name_ru;
+        const name = lang === "es" ? (mode.mode_name_es || "") : mode.mode_name_ru;
         const isSelected = selectedId === mode.id;
         return (
           <button
