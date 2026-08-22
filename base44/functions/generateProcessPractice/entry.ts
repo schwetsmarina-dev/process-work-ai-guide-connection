@@ -266,9 +266,14 @@ Deno.serve(async (req) => {
       console.warn('[generateProcessPractice] glossary lookup failed:', e?.message);
     }
     const glossaryBlock = terms
-      .map((term) => `${normalizeText(term.latin_key)}: ${normalizeText(term.short_definition)}`)
+      .map((term) => {
+        const label = language === 'es' ? (term.term_es || term.term || term.latin_key) : (term.term || term.latin_key);
+        const definition = language === 'es' ? (term.short_definition_es || term.short_definition) : term.short_definition;
+        const application = language === 'es' ? (term.practical_application_es || term.practical_application) : term.practical_application;
+        return `${normalizeText(term.latin_key)} — ${normalizeText(label)}: ${normalizeText(definition)}${application ? ` | ${language === 'es' ? 'Aplicación' : 'Применение'}: ${normalizeText(application)}` : ''}`;
+      })
       .filter(Boolean)
-      .join('\n') || '(глоссарий недоступен)';
+      .join('\n') || (language === 'es' ? '(glosario no disponible)' : '(глоссарий недоступен)');
 
     const languageRule = language === 'es'
       ? 'Escribe TODO en español.'
@@ -315,16 +320,35 @@ Deno.serve(async (req) => {
       .slice(0, 8)
       .map((x) => x.item);
     const eligibleExerciseIds = new Set(exerciseCandidates.map((item) => String(item.exercise_id)));
-    const exerciseLibraryBlock = exerciseCandidates.map((item) => [
-      `${item.exercise_id} — ${item.title_ru}`,
-      `Связанные term keys: ${(item.term_keys || []).join(', ')}`,
-      `Автор/источник: ${item.author || '—'}${item.source ? `; ${item.source}` : ''}`,
-      `Назначение: ${item.purpose}`,
-      `Уровень самостоятельности: ${item.delivery_level || 'conditional'}`,
-      `Условия: ${(item.delivery_conditions || []).join(' | ') || '—'}`,
-      `Не предлагать при: ${(item.exclude_if || []).join(', ') || '—'}`,
-      `Ход: ${(item.steps || []).join(' → ')}`,
-    ].join('\n')).join('\n\n') || '—';
+    const exerciseLibraryBlock = exerciseCandidates.map((item) => {
+      const title = language === 'es' ? (item.title_es || item.title_ru) : item.title_ru;
+      const purpose = language === 'es' ? (item.purpose_es || item.purpose) : item.purpose;
+      const conditions = language === 'es' && Array.isArray(item.delivery_conditions_es)
+        ? item.delivery_conditions_es : (item.delivery_conditions || []);
+      const excludeIf = language === 'es' && Array.isArray(item.exclude_if_es)
+        ? item.exclude_if_es : (item.exclude_if || []);
+      const contraindications = language === 'es' && Array.isArray(item.contraindications_es)
+        ? item.contraindications_es : (item.contraindications || []);
+      const steps = language === 'es' && Array.isArray(item.steps_es) && item.steps_es.length === (item.steps || []).length
+        ? item.steps_es : (item.steps || []);
+      return language === 'es' ? [
+        `${item.exercise_id} — ${title}`,
+        `Term keys internos: ${(item.term_keys || []).join(', ')}`,
+        `Objetivo: ${purpose}`,
+        `Nivel de uso autónomo: ${item.delivery_level || 'conditional'}`,
+        `Condiciones: ${conditions.join(' | ') || '—'}`,
+        `No usar si: ${[...excludeIf, ...contraindications].join(', ') || '—'}`,
+        `Secuencia: ${steps.join(' → ')}`,
+      ].join('\n') : [
+        `${item.exercise_id} — ${title}`,
+        `Связанные term keys: ${(item.term_keys || []).join(', ')}`,
+        `Назначение: ${purpose}`,
+        `Уровень самостоятельности: ${item.delivery_level || 'conditional'}`,
+        `Условия: ${conditions.join(' | ') || '—'}`,
+        `Не предлагать при: ${[...excludeIf, ...contraindications].join(', ') || '—'}`,
+        `Ход: ${steps.join(' → ')}`,
+      ].join('\n');
+    }).join('\n\n') || '—';
 
     const prompt = `Ты — процессуально-ориентированный фасилитатор (Process Work / Арнольд Минделл). Построй персональную ПРОЦЕССУАЛЬНУЮ ПРАКТИКУ по материалу конкретного пользователя. Это не релаксационная медитация: цель — продолжить уже проявившийся процесс, не интерпретируя человека за него.
 
