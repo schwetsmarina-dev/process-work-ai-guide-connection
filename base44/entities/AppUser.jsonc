@@ -10,7 +10,7 @@
     },
     "language": {
       "type": "string",
-      "default": "ru"
+      "default": "es"
     },
     "current_mode": {
       "type": "string"
