@@ -11,40 +11,40 @@ export default function AdminFeedback() {
   const navigate = useNavigate();
   const [language, setLanguage] = React.useState("all");
   const [rating, setRating] = React.useState("all");
-  const [wouldUseAgain, setWouldUseAgain] = React.useState("all");
-  const [modeId, setModeId] = React.useState("all");
+  const [type, setType] = React.useState("all");
+  const [userQuery, setUserQuery] = React.useState("");
 
   const { data: feedback = [], isLoading } = useQuery({
-    queryKey: ["admin-feedback"],
-    queryFn: () => base44.entities.SessionFeedback.list("-created_date", 500),
+    queryKey: ["admin-feedback-all"],
+    queryFn: async () => {
+      const [sessions, experiences] = await Promise.all([
+        base44.entities.SessionFeedback.list("-created_date", 500),
+        base44.entities.ExperienceFeedback.list("-created_date", 500),
+      ]);
+      return [
+        ...(sessions || []).map((x) => ({ ...x, _feedback_kind: "session" })),
+        ...(experiences || []).map((x) => ({ ...x, _feedback_kind: "experience" })),
+      ].sort((a, b) => new Date(b.created_at || b.created_date || 0) - new Date(a.created_at || a.created_date || 0));
+    },
   });
-  const { data: experienceFeedback = [], isLoading: experienceLoading } = useQuery({
-    queryKey: ["admin-experience-feedback"],
-    queryFn: () => base44.entities.ExperienceFeedback.list("-created_at", 500),
-  });
-
-  React.useEffect(() => {
-    if (!isLoading) {
-      const rated = feedback.filter((f) => typeof f.rating === "number");
-      const avg = rated.length ? rated.reduce((s, f) => s + f.rating, 0) / rated.length : 0;
-      console.log("[ADMIN_FEEDBACK_LOADED]", { count: feedback.length, averageRating: Number(avg.toFixed(2)) });
-    }
-  }, [isLoading, feedback]);
 
   const filtered = useMemo(() => {
+    const q = userQuery.trim().toLowerCase();
     return feedback.filter((f) => {
       if (language !== "all" && f.language !== language) return false;
       if (rating !== "all" && f.rating !== Number(rating)) return false;
-      if (wouldUseAgain === "yes" && f.would_use_again !== true) return false;
-      if (wouldUseAgain === "no" && f.would_use_again !== false) return false;
-      if (modeId !== "all" && f.mode_id !== modeId) return false;
+      if (type === "session" && f._feedback_kind !== "session") return false;
+      if (type === "practice" && f.experience_type !== "practice") return false;
+      if (type === "edge_program_day" && f.experience_type !== "edge_program_day") return false;
+      if (type === "edge_program_complete" && f.experience_type !== "edge_program_complete") return false;
+      if (q && !`${f.user_name || ""} ${f.user_email || ""}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [feedback, language, rating, wouldUseAgain, modeId]);
+  }, [feedback, language, rating, type, userQuery]);
 
   const FilterSelect = ({ value, onChange, options, placeholder }) => (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-36">
+      <SelectTrigger className="w-44">
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
@@ -62,7 +62,7 @@ export default function AdminFeedback() {
         <h1 className="text-2xl font-serif font-semibold">Beta tester feedback</h1>
       </div>
 
-      {isLoading || experienceLoading ? (
+      {isLoading ? (
         <div className="flex items-center justify-center gap-2 py-20 text-muted-foreground">
           <Loader2 className="w-5 h-5 animate-spin" /> Loading…
         </div>
@@ -71,6 +71,12 @@ export default function AdminFeedback() {
           <FeedbackSummary feedback={feedback} />
 
           <div className="flex flex-wrap gap-2 mb-5">
+            <input
+              value={userQuery}
+              onChange={(e) => setUserQuery(e.target.value)}
+              placeholder="Name or email"
+              className="h-10 w-56 rounded-md border border-input bg-background px-3 text-sm"
+            />
             <FilterSelect
               value={language}
               onChange={setLanguage}
@@ -91,25 +97,15 @@ export default function AdminFeedback() {
               ]}
             />
             <FilterSelect
-              value={wouldUseAgain}
-              onChange={setWouldUseAgain}
-              placeholder="Would use again"
+              value={type}
+              onChange={setType}
+              placeholder="Feedback type"
               options={[
-                { value: "all", label: "Would use again: all" },
-                { value: "yes", label: "Yes" },
-                { value: "no", label: "No" },
-              ]}
-            />
-            <FilterSelect
-              value={modeId}
-              onChange={setModeId}
-              placeholder="Mode"
-              options={[
-                { value: "all", label: "All modes" },
-                { value: "dream", label: "Dream" },
-                { value: "body", label: "Body" },
-                { value: "conflict", label: "Conflict" },
-                { value: "journaling", label: "Journaling" },
+                { value: "all", label: "All feedback" },
+                { value: "session", label: "Sessions" },
+                { value: "practice", label: "Personal practices" },
+                { value: "edge_program_day", label: "28-day program · days" },
+                { value: "edge_program_complete", label: "28-day program · final" },
               ]}
             />
           </div>
@@ -121,7 +117,7 @@ export default function AdminFeedback() {
           <div className="space-y-3">
             {filtered.map((item) => (
               <FeedbackCard
-                key={item.id}
+                key={`${item._feedback_kind}-${item.id}`}
                 item={item}
                 onOpenSession={(sid) =>
                   navigate(
@@ -133,37 +129,10 @@ export default function AdminFeedback() {
               />
             ))}
             {filtered.length === 0 && (
-              <div className="text-center py-10 text-muted-foreground text-sm">No session feedback found</div>
+              <div className="text-center py-16 text-muted-foreground text-sm">
+                No feedback found
+              </div>
             )}
-          </div>
-
-          <div className="mt-10 pt-8 border-t">
-            <h2 className="text-xl font-serif font-semibold mb-1">Practice & 28-day program feedback</h2>
-            <p className="text-sm text-muted-foreground mb-4">Every entry includes tester identity and the exact experience/day it belongs to.</p>
-            <div className="space-y-3">
-              {experienceFeedback.map((item) => (
-                <div key={item.id} className="rounded-xl border bg-card p-4 space-y-2">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="font-medium text-sm">{item.user_name || item.user_email || item.user_id}</p>
-                      <p className="text-xs text-muted-foreground">{item.user_email || ""}</p>
-                    </div>
-                    <div className="text-right text-xs text-muted-foreground">
-                      <p>{item.experience_type === "edge_program_day" ? "28-day program" : item.experience_type === "practice" ? "Personal practice" : item.experience_type}</p>
-                      {item.day_number && <p>Day {item.day_number} · Week {item.week_number || "—"}</p>}
-                    </div>
-                  </div>
-                  {item.rating && <p className="text-sm"><strong>Rating:</strong> {item.rating}/5</p>}
-                  {item.helpful && <p className="text-sm"><strong>Most useful:</strong> {item.helpful}</p>}
-                  {item.difficult && <p className="text-sm"><strong>Confusing / difficult:</strong> {item.difficult}</p>}
-                  {item.insight && <p className="text-sm"><strong>Insight / important experience:</strong> {item.insight}</p>}
-                  {item.comment && <p className="text-sm"><strong>Comment:</strong> {item.comment}</p>}
-                  {typeof item.would_continue === "boolean" && <p className="text-sm"><strong>Would continue:</strong> {item.would_continue ? "Yes" : "No"}</p>}
-                  <p className="text-xs text-muted-foreground">{item.created_at || item.created_date || ""}</p>
-                </div>
-              ))}
-              {experienceFeedback.length === 0 && <div className="text-sm text-muted-foreground py-6">No practice/program feedback yet.</div>}
-            </div>
           </div>
         </>
       )}
