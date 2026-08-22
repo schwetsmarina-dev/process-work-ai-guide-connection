@@ -1,8 +1,8 @@
 // Minimal i18n helper for RU / ES (beta testing phase).
-// Default language is Russian.
+// Spanish is the safe default for new or unidentified visitors.
 
 export const SUPPORTED_LANGUAGES = ["ru", "es"];
-export const DEFAULT_LANGUAGE = "ru";
+export const DEFAULT_LANGUAGE = "es";
 
 export function normalizeLang(lang) {
   return SUPPORTED_LANGUAGES.includes(lang) ? lang : DEFAULT_LANGUAGE;
