@@ -80,7 +80,21 @@ export default function Insights() {
         setPracticeError(lang === "es" ? "Aún no hay suficiente material para crear una práctica segura con este tema." : "Пока недостаточно материала, чтобы безопасно собрать практику по этой теме.");
         return;
       }
-      if (res?.data?.practice) setGeneratedPractice(res.data.practice);
+      if (res?.data?.practice) {
+        const practice = res.data.practice;
+        setGeneratedPractice(practice);
+        try {
+          const audioRes = await base44.functions.invoke("generatePracticeAudio", { practice_id: practice.id });
+          if (audioRes?.data?.ok && audioRes.data.audio_url) {
+            setGeneratedPractice({ ...practice, audio_status: "ready", audio_url: audioRes.data.audio_url });
+          } else if (audioRes?.data?.ok === false) {
+            setGeneratedPractice({ ...practice, audio_status: "failed", audio_error: audioRes.data.reason || "audio_failed" });
+          }
+        } catch (audioError) {
+          console.warn("[Insights] selected-theme practice audio failed:", audioError?.message);
+          setGeneratedPractice({ ...practice, audio_status: "failed", audio_error: audioError?.message || "audio_failed" });
+        }
+      }
     } catch (e) {
       console.error("[Insights] selected-theme practice generation failed:", e?.message);
       setPracticeError(lang === "es" ? "No se pudo crear la práctica. Inténtalo de nuevo más tarde." : "Не удалось создать практику. Попробуй ещё раз позже.");
@@ -214,6 +228,14 @@ export default function Insights() {
                 <p className="font-medium text-sm">{generatedPractice.theme_label}</p>
                 {generatedPractice.offer_text && (
                   <p className="text-sm text-muted-foreground mt-1">{generatedPractice.offer_text}</p>
+                )}
+                {generatedPractice.audio_status === "ready" && generatedPractice.audio_url && (
+                  <audio controls preload="none" className="w-full mt-3" src={generatedPractice.audio_url} />
+                )}
+                {generatedPractice.audio_status === "failed" && (
+                  <p className="text-xs text-muted-foreground mt-3">
+                    {lang === "es" ? "El texto está listo, pero no se pudo generar el audio." : "Текст готов, но аудио создать не удалось."}
+                  </p>
                 )}
                 {generatedPractice.full_text && (
                   <details className="mt-3 text-sm">
