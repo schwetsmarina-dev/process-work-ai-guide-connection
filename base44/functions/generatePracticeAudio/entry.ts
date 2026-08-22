@@ -98,12 +98,12 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             text,
-            model_id: 'eleven_multilingual_v2',
+            model_id: 'eleven_v3',
+            language_code: ['ru', 'es'].includes(practice.language) ? practice.language : 'es',
             voice_settings: {
-              stability: 0.16,
+              stability: 0.35,
               similarity_boost: 0.87,
-              style: 0.70,
-              speed: 0.90,
+              style: 0.55,
               use_speaker_boost: true,
             },
           }),
