@@ -81,7 +81,8 @@ function arrayText(value) {
   return Array.isArray(value) ? value.filter(Boolean).join('; ') : '';
 }
 
-function buildContinuationContext(previous, legacyContext = '') {
+function buildContinuationContext(previous, legacyContext = '', language = 'es') {
+  const isEs = language === 'es';
   const summary = String(previous?.summary || '').trim();
   const nextStep = String(previous?.next_step_suggestion || '').trim();
   const primary = arrayText(previous?.primary_process);
@@ -94,23 +95,21 @@ function buildContinuationContext(previous, legacyContext = '') {
   const edgeFigure = detectEdgeFigure(processEvidence);
 
   const blocks = [
-    'ПРОДОЛЖЕНИЕ ПРЕДЫДУЩЕЙ СЕССИИ. Это уже пройденный материал; не проси пользователя повторять его и не запускай режим с нуля.',
+    isEs
+      ? 'CONTINUACIÓN DE LA SESIÓN ANTERIOR. Este material ya se trabajó; no pidas al usuario que lo repita ni reinicies el modo desde cero.'
+      : 'ПРОДОЛЖЕНИЕ ПРЕДЫДУЩЕЙ СЕССИИ. Это уже пройденный материал; не проси пользователя повторять его и не запускай режим с нуля.',
   ];
 
-  if (summary) blocks.push(`Итог предыдущей сессии: ${summary.slice(0, 1200)}`);
-  if (primary) blocks.push(`Уже выявленный первичный процесс: ${primary.slice(0, 500)}`);
-  if (secondary) blocks.push(`Уже выявленный вторичный процесс: ${secondary.slice(0, 500)}`);
-  if (storedEdges) blocks.push(`Ранее отмеченные сигналы края/сопротивления (внутренняя профессиональная метка): ${storedEdges.slice(0, 500)}`);
-  if (nextStep) blocks.push(`Следующий незавершённый шаг: ${nextStep.slice(0, 900)}`);
+  if (summary) blocks.push(isEs ? `Resumen de la sesión anterior: ${summary.slice(0, 1200)}` : `Итог предыдущей сессии: ${summary.slice(0, 1200)}`);
+  if (primary) blocks.push(isEs ? `Proceso primario ya identificado: ${primary.slice(0, 500)}` : `Уже выявленный первичный процесс: ${primary.slice(0, 500)}`);
+  if (secondary) blocks.push(isEs ? `Proceso secundario ya identificado: ${secondary.slice(0, 500)}` : `Уже выявленный вторичный процесс: ${secondary.slice(0, 500)}`);
+  if (storedEdges) blocks.push(isEs ? `Señales de borde/resistencia ya observadas (etiqueta profesional interna): ${storedEdges.slice(0, 500)}` : `Ранее отмеченные сигналы края/сопротивления (внутренняя профессиональная метка): ${storedEdges.slice(0, 500)}`);
+  if (nextStep) blocks.push(isEs ? `Siguiente paso que quedó abierto: ${nextStep.slice(0, 900)}` : `Следующий незавершённый шаг: ${nextStep.slice(0, 900)}`);
 
   if (edgeFigure) {
-    blocks.push(
-      `EDGE_FIGURE_DETECTED (внутренняя метка, НЕ произносить пользователю): «${edgeFigure.slice(0, 500)}». ` +
-      'Это уже выявленная краевая фигура/функция, а не новая тема. Продолжай протокол работы с краевой фигурой: ' +
-      'исследуй её голос/роль/запрет, что именно она охраняет или не допускает, и что происходит у перехода. ' +
-      'Не возвращайся к рассказу сна, картированию с нуля, первичному/вторичному вопросу или выбору нового фокуса, ' +
-      'если пользователь сам явно не меняет тему.'
-    );
+    blocks.push(isEs
+      ? `EDGE_FIGURE_DETECTED (etiqueta interna, NO decirla al usuario): «${edgeFigure.slice(0, 500)}». Es una figura/función de borde ya identificada, no un tema nuevo. Continúa explorando su voz, rol, prohibición, qué protege o no permite y qué ocurre en la transición. No vuelvas al relato del sueño, al mapeo desde cero, a las preguntas primaria/secundaria ni a elegir un foco nuevo salvo que el usuario cambie explícitamente de tema.`
+      : `EDGE_FIGURE_DETECTED (внутренняя метка, НЕ произносить пользователю): «${edgeFigure.slice(0, 500)}». Это уже выявленная краевая фигура/функция, а не новая тема. Продолжай протокол работы с краевой фигурой: исследуй её голос/роль/запрет, что именно она охраняет или не допускает, и что происходит у перехода. Не возвращайся к рассказу сна, картированию с нуля, первичному/вторичному вопросу или выбору нового фокуса, если пользователь сам явно не меняет тему.`);
   }
 
   if (!summary && !nextStep && !primary && !secondary && legacyContext) {
@@ -120,26 +119,24 @@ function buildContinuationContext(previous, legacyContext = '') {
   return { context: blocks.join('\n\n'), edgeFigure, summary, nextStep };
 }
 
-function buildContinuationGreeting({ modeId, previous, edgeFigure, summary, nextStep }) {
-  const previousPoint = (edgeFigure || nextStep || summary || 'предыдущем процессе').trim();
+function buildContinuationGreeting({ modeId, previous, edgeFigure, summary, nextStep, language = 'es' }) {
+  const isEs = language === 'es';
+  const previousPoint = (edgeFigure || nextStep || summary || (isEs ? 'el proceso anterior' : 'предыдущем процессе')).trim();
   const cleanPoint = previousPoint.replace(/\s+/g, ' ').slice(0, 520);
 
   if (edgeFigure) {
-    return (
-      `В прошлый раз мы остановились вот здесь: «${cleanPoint}». ` +
-      'Не будем начинать всё заново — продолжим именно с этого внутреннего голоса или части. ' +
-      'Что он сейчас говорит или делает, когда ты приближаешься к тому, что он тебе не разрешает?'
-    );
+    return isEs
+      ? `La última vez nos quedamos aquí: «${cleanPoint}». No empecemos de nuevo; sigamos desde esta voz o parte interna. ¿Qué dice o hace ahora cuando te acercas a aquello que no te permite?`
+      : `В прошлый раз мы остановились вот здесь: «${cleanPoint}». Не будем начинать всё заново — продолжим именно с этого внутреннего голоса или части. Что он сейчас говорит или делает, когда ты приближаешься к тому, что он тебе не разрешает?`;
   }
 
   const modeNote = modeId === 'dream'
-    ? 'Новый сон рассказывать не нужно, если ты сама не хочешь сменить тему.'
-    : 'Начинать тему заново не нужно.';
+    ? (isEs ? 'No hace falta contar un sueño nuevo salvo que tú quieras cambiar de tema.' : 'Новый сон рассказывать не нужно, если ты сама не хочешь сменить тему.')
+    : (isEs ? 'No hace falta empezar el tema desde cero.' : 'Начинать тему заново не нужно.');
 
-  return (
-    `В прошлый раз мы остановились вот здесь: «${cleanPoint}». ${modeNote} ` +
-    'Продолжим отсюда: что сейчас в этом месте кажется самым живым или незавершённым?'
-  );
+  return isEs
+    ? `La última vez nos quedamos aquí: «${cleanPoint}». ${modeNote} Sigamos desde ahí: ¿qué se siente ahora más vivo o inconcluso en este punto?`
+    : `В прошлый раз мы остановились вот здесь: «${cleanPoint}». ${modeNote} Продолжим отсюда: что сейчас в этом месте кажется самым живым или незавершённым?`;
 }
 
 Deno.serve(async (req) => {
