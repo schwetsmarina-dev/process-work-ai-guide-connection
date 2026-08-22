@@ -170,6 +170,8 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
     const EXPLORATION_PHRASES_AT_CLOSURE = [
       "что начинает происходить", "что происходит дальше", "если усилить",
       "если позволить", "давай исследуем", "пойдём глубже",
+      "qué empieza a pasar", "qué ocurre después", "si lo intensificas", "si permites",
+      "vamos a explorar", "vamos más profundo", "profundicemos",
     ];
     const hit = EXPLORATION_PHRASES_AT_CLOSURE.find((p) => lower.includes(p));
     if (hit) {
@@ -219,6 +221,10 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
       "самым странным", "не похожим на тебя", "какая часть менее привычная",
       // conflict material re-ask
       "между какими двумя позициями", "какие стороны", "какой конфликт",
+      // ES primary / secondary / conflict re-asks
+      "qué te resulta familiar", "más habitual para ti", "cómo sueles reaccionar",
+      "qué te parece extraño", "qué es nuevo", "menos habitual", "más difícil de aceptar", "más tensión",
+      "qué partes chocan", "qué conflicto", "entre qué posiciones",
     ];
     const repeatedHit = STAGE_QUESTION_PHRASES.find((p) => lower.includes(p));
     if (repeatedHit) {
@@ -243,6 +249,8 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
   const REPEATED_STEMS = [
     "что происходит", "что начинает происходить", "что замечаешь",
     "что в этом", "где это", "если бы это могло сказать",
+    "qué ocurre", "qué empieza a pasar", "qué notas", "qué hay en esto",
+    "dónde lo", "si pudiera hablar", "si esto pudiera decir",
   ];
   const previousAssistantQuestions = (conversationHistory || [])
     .filter((m) => m.role === "assistant")
@@ -279,6 +287,8 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
       "какая сторона привычнее", "что связано с обычной жизнью",
       "как ты обычно объясняешь", "более привычная", "уже понятно, знакомо",
       "что в этом странное", "что здесь нового", "что непривычное",
+      "qué te resulta familiar", "qué es habitual para ti", "tu forma habitual",
+      "qué te parece extraño", "qué es nuevo", "qué es poco habitual",
     ];
     const hit = PRIMARY_SECONDARY_PHRASES.find((p) => lower.includes(p));
     if (hit) {
@@ -323,6 +333,10 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
       "что раскрывается", "куда это ведёт", "что хочет проявиться",
       "давай исследуем", "пойдём глубже",
       "позволь себе", "попробуй остаться", "погрузись",
+      "qué ocurre", "qué empieza a pasar", "cómo cambia", "qué se hace más fuerte",
+      "si lo intensificas", "si sigues con", "qué se abre", "a dónde lleva",
+      "qué quiere aparecer", "vamos a explorar", "vamos más profundo", "profundicemos",
+      "permítete", "intenta quedarte", "sumérgete",
     ];
     const hit = DEEPENING_PHRASES.find((p) => lower.includes(p));
     if (hit) {
@@ -347,6 +361,8 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
       "более новая, непривычная", "труднее принимается", "больше напряжения",
       "новым, странным, живым", "тревожащим, непривычным",
       "что здесь нового", "что в этом странное", "что непривычное",
+      "qué te parece más extraño", "menos parecido a ti", "más nueva", "poco habitual",
+      "más difícil de aceptar", "más tensión", "qué hay de nuevo", "qué es extraño",
     ];
     const secHit = SECONDARY_PHRASES.find((p) => lower.includes(p));
     if (secHit) {
@@ -368,6 +384,9 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
       "где ты ощущаешь", "в теле", "в груди", "в животе",
       "что ты чувствуешь", "что ощущаешь", "какой образ",
       "что хочет сказать", "что это значит",
+      "qué te resulta familiar en este sueño", "qué parte de este sueño resuena",
+      "proceso primario", "proceso secundario", "dónde lo notas", "en el cuerpo",
+      "en el pecho", "en el abdomen", "qué sientes", "qué imagen", "qué quiere decir", "qué significa",
     ];
     for (const phrase of prematurePhrases) {
       if (lower.includes(phrase)) {
@@ -383,7 +402,8 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
   // 0b. Somatic gate
   if (dreamMappingComplete === false) {
     const somaticPhrases = ["где ты ощущаешь", "ощущаешь в теле", "что ты чувствуешь телесно",
-      "телесный отклик", "в теле", "в груди", "в животе", "в горле", "в плечах"];
+      "телесный отклик", "в теле", "в груди", "в животе", "в горле", "в плечах",
+      "dónde lo notas", "dónde lo sientes", "en el cuerpo", "respuesta corporal", "en el pecho", "en el abdomen", "en la garganta", "en los hombros"];
     for (const phrase of somaticPhrases) {
       if (lower.includes(phrase)) {
         return {
