@@ -141,11 +141,11 @@ export default function SessionSummary() {
 
   useEffect(() => {
     if (session && messages.length > 0 && insightSuggestions.length === 0) {
-      extractInsightsFromSession(session, messages)
+      extractInsightsFromSession(session, messages, language)
         .then(setInsightSuggestions)
         .catch(() => {});
     }
-  }, [session, messages]);
+  }, [session, messages, language, insightSuggestions.length]);
 
   // Talvira Pro: if this session was started from an assigned practice, mark
   // that Assignment done once we're on its summary (session finished).
