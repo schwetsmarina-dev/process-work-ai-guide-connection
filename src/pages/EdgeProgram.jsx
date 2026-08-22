@@ -180,6 +180,26 @@ export default function EdgeProgram() {
     staleTime: 10_000,
   });
 
+  // Feedback CTA must survive page reloads. Find the most recent completed
+  // program day that still has no ExperienceFeedback and surface it again.
+  useEffect(() => {
+    if (!authUser?.id || !program?.id || feedbackDay) return;
+    let active = true;
+    (async () => {
+      const [days, feedback] = await Promise.all([
+        base44.entities.EdgeProgramDay.filter({ user_id: authUser.id, program_id: program.id, completed: true }, "-completed_at", 50).catch(() => []),
+        base44.entities.ExperienceFeedback.filter({ user_id: authUser.id, program_id: program.id, experience_type: "edge_program_day" }, "-created_at", 100).catch(() => []),
+      ]);
+      if (!active) return;
+      const reviewed = new Set((feedback || []).map((x) => x.reference_id).filter(Boolean));
+      const missing = (days || []).find((d) => d.id && !reviewed.has(d.id));
+      if (missing) {
+        setFeedbackDay({ id: missing.id, day_number: missing.day_number, week_number: missing.week_number });
+      }
+    })();
+    return () => { active = false; };
+  }, [authUser?.id, program?.id, feedbackDay]);
+
   useEffect(() => {
     if (generated || !pendingDays.length) return;
     const row = pendingDays[0];
