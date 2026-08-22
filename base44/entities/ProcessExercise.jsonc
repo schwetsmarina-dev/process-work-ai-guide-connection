@@ -30,7 +30,14 @@
       "items": {
         "type": "string"
       },
-      "description": "Non-canonical retrieval hints not represented by Term.latin_key"
+      "description": "Russian/source retrieval hints"
+    },
+    "search_tags_es": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Spanish retrieval hints"
     },
     "channels": {
       "type": "array",
@@ -77,6 +84,13 @@
       },
       "description": "Conditions required when delivery_level=conditional"
     },
+    "delivery_conditions_es": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Spanish localization of conditions"
+    },
     "exclude_if": {
       "type": "array",
       "items": {
@@ -84,11 +98,25 @@
       },
       "description": "Signals or contexts where AI must not offer this exercise"
     },
+    "exclude_if_es": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Spanish localization of exclusion conditions"
+    },
     "contraindications": {
       "type": "array",
       "items": {
         "type": "string"
       }
+    },
+    "contraindications_es": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Spanish localization of contraindications"
     },
     "purpose": {
       "type": "string"
