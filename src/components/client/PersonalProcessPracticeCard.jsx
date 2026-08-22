@@ -63,7 +63,7 @@ function copyFor(lang) {
   return COPY[lang] || COPY.ru;
 }
 
-export default function PersonalProcessPracticeCard({ userId, lang = "ru", completedSessions = [] }) {
+export default function PersonalProcessPracticeCard({ userId, lang = "es", completedSessions = [] }) {
   const queryClient = useQueryClient();
   const c = copyFor(lang);
   const [working, setWorking] = useState(false);

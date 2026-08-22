@@ -64,7 +64,7 @@ const L = {
   },
 };
 
-export default function PrivacyControls({ user, appUser, lang = "ru" }) {
+export default function PrivacyControls({ user, appUser, lang = "es" }) {
   const tx = L[lang] || L.ru;
   const email = user?.email;
 

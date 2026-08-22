@@ -57,7 +57,7 @@ const COPY = {
   },
 };
 
-export default function EdgeProgramOfferCard({ lang = "ru", enabled = true }) {
+export default function EdgeProgramOfferCard({ lang = "es", enabled = true }) {
   const c = COPY[lang] || COPY.ru;
   const navigate = useNavigate();
   const queryClient = useQueryClient();

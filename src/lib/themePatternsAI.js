@@ -4,7 +4,7 @@ function signature(sessions) {
   return sessions.map((s) => s.id).filter(Boolean).sort().join(",");
 }
 
-export async function generateThemePatterns({ sessions, lang = "ru" }) {
+export async function generateThemePatterns({ sessions, lang = "es" }) {
   const completed = (sessions || []).filter((s) => s.status === "completed").slice(0, 30);
   if (completed.length < 3) return [];
 

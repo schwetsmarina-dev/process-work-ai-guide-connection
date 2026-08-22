@@ -8,7 +8,7 @@ import { t } from "@/lib/i18n";
 
 const IMPORTANCE_KEYS = { 1: "importance_1", 2: "importance_2", 3: "importance_3" };
 
-export default function SessionInsightSuggestions({ suggestions, session, lang = "ru" }) {
+export default function SessionInsightSuggestions({ suggestions, session, lang = "es" }) {
   const [savedIds, setSavedIds] = useState(new Set());
   const [savingIdx, setSavingIdx] = useState(null);
 

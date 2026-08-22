@@ -19,7 +19,7 @@ const METRIC_LABELS = {
 
 // Pairs the body-mode session's signals with physiological data recorded in the
 // same period (±12h window around the session). Body mode only.
-export default function BodySignalMatch({ session, userId, lang = "ru" }) {
+export default function BodySignalMatch({ session, userId, lang = "es" }) {
   const [physioData, setPhysioData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showImport, setShowImport] = useState(false);

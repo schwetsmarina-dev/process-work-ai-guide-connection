@@ -15,7 +15,7 @@ function weekSignature(sessions) {
  * session set) so it is generated at most once per distinct week state.
  * Returns a string, or null on empty input / failure (caller falls back).
  */
-export async function generateWeeklyRecap({ weekStartKey, sessions, lang = "ru" }) {
+export async function generateWeeklyRecap({ weekStartKey, sessions, lang = "es" }) {
   if (!sessions || sessions.length === 0) return null;
 
   const cacheKey = `pw_recap_${weekStartKey}_${weekSignature(sessions)}`;

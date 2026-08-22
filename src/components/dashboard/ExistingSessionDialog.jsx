@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { t } from "@/lib/i18n";
 
-export default function ExistingSessionDialog({ open, onContinue, onStartNew, onOpenChange, lang = "ru" }) {
+export default function ExistingSessionDialog({ open, onContinue, onStartNew, onOpenChange, lang = "es" }) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>

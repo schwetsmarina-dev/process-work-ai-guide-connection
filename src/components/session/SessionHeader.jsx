@@ -22,7 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-export default function SessionHeader({ session, totalSteps, onEndSession, lang = "ru" }) {
+export default function SessionHeader({ session, totalSteps, onEndSession, lang = "es" }) {
   const navigate = useNavigate();
   const modeId = session.mode_id || session.mode || "";
   const label = MODE_LABELS[modeId]?.[lang] || session.mode_name_ru || modeId;

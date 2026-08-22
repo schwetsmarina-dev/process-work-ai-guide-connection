@@ -12,7 +12,7 @@ import { t } from "@/lib/i18n";
 
 const WEEKS = 12;
 
-export default function ConsistencyCalendar({ sessions = [], lang = "ru" }) {
+export default function ConsistencyCalendar({ sessions = [], lang = "es" }) {
   // Days (date-only) with at least one completed session
   const completedDays = useMemo(() => {
     return sessions

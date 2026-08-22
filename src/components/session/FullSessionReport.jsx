@@ -13,7 +13,7 @@ import { downloadSummaryTxt } from "@/lib/downloadSummary";
 const escapeHtml = (str) =>
   String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-export default function FullSessionReport({ session, messages, lang = "ru" }) {
+export default function FullSessionReport({ session, messages, lang = "es" }) {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(true);

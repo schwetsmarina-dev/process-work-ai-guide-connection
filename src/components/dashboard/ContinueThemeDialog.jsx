@@ -16,7 +16,7 @@ import { t } from "@/lib/i18n";
 // *active*/unfinished session). This makes cross-session continuity visible
 // and explicit — addressing the feedback that users didn't understand how to
 // return to and deepen a theme from a prior session.
-export default function ContinueThemeDialog({ open, summary, onContinueTheme, onStartNew, onOpenChange, lang = "ru" }) {
+export default function ContinueThemeDialog({ open, summary, onContinueTheme, onStartNew, onOpenChange, lang = "es" }) {
   const snippet = String(summary || "").trim().slice(0, 220);
   const text = t("continue_theme_text", lang).replace("{summary}", snippet);
 

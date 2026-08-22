@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import useSpeechRecognition from "@/hooks/useSpeechRecognition";
 import { t } from "@/lib/i18n";
 
-export default function ChatInput({ onSend, isLoading, disabled, seedText = "", seedNonce = 0, lang = "ru" }) {
+export default function ChatInput({ onSend, isLoading, disabled, seedText = "", seedNonce = 0, lang = "es" }) {
   const [text, setText] = useState("");
 
   // When the parent bumps seedNonce (e.g. after "step back"), load the returned

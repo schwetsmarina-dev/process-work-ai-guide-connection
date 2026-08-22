@@ -18,7 +18,7 @@ export function getModeIcon(mode) {
   return iconMap[MODE_ICONS[key]] || Heart;
 }
 
-export function getModeLabel(mode, lang = "ru") {
+export function getModeLabel(mode, lang = "es") {
   const key = normalizeMode(mode);
   return MODE_LABELS[key]?.[lang] || MODE_LABELS[key]?.ru || mode || "—";
 }
