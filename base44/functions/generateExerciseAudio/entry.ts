@@ -1,10 +1,49 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
 
 const MAX_TOTAL_CHARS = 9000;
+const MAX_CHARS_PER_CHUNK = 2800;
 const TTS_TIMEOUT_MS = 45_000;
 
 function clean(value: unknown) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function splitText(text: string) {
+  const sentences = String(text || '').trim().split(/(?<=[.!?…])\s+/).filter(Boolean);
+  const chunks: string[] = [];
+  let current = '';
+  for (const sentence of sentences) {
+    if ((current + ' ' + sentence).trim().length > MAX_CHARS_PER_CHUNK && current) {
+      chunks.push(current.trim());
+      current = '';
+    }
+    if (sentence.length > MAX_CHARS_PER_CHUNK) {
+      if (current) { chunks.push(current.trim()); current = ''; }
+      for (let i = 0; i < sentence.length; i += MAX_CHARS_PER_CHUNK) chunks.push(sentence.slice(i, i + MAX_CHARS_PER_CHUNK));
+    } else current = `${current} ${sentence}`.trim();
+  }
+  if (current) chunks.push(current.trim());
+  return chunks;
+}
+
+async function synthesize(apiKey: string, voiceId: string, text: string, lang: 'ru' | 'es') {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TTS_TIMEOUT_MS);
+  try {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`, {
+      method: 'POST', signal: controller.signal,
+      headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
+      body: JSON.stringify({ text, model_id: 'eleven_v3', language_code: lang }),
+    });
+    if (!res.ok) throw new Error(`ElevenLabs ${res.status}: ${(await res.text().catch(() => '')).slice(0, 300)}`);
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.toLowerCase().includes('audio')) throw new Error(`unexpected_content_type:${contentType}`);
+    const buffer = new Uint8Array(await res.arrayBuffer());
+    if (!buffer.byteLength) throw new Error('empty_audio');
+    return buffer;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function hasNamedAuthor(value: unknown) {
@@ -60,35 +99,15 @@ Deno.serve(async (req) => {
     const voiceId = Deno.env.get('ELEVENLABS_VOICE_ID');
     if (!apiKey || !voiceId) return Response.json({ ok: false, reason: 'missing_secret' });
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), TTS_TIMEOUT_MS);
-    let res;
-    try {
-      res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`, {
-        method: 'POST',
-        signal: controller.signal,
-        headers: {
-          'xi-api-key': apiKey,
-          'Content-Type': 'application/json',
-          Accept: 'audio/mpeg',
-        },
-        body: JSON.stringify({
-          text,
-          model_id: 'eleven_v3',
-          language_code: lang,
-        }),
-      });
-    } finally {
-      clearTimeout(timeout);
-    }
+    const chunks = splitText(text);
+    const buffers: Uint8Array[] = [];
+    for (const chunk of chunks) buffers.push(await synthesize(apiKey, voiceId, chunk, lang as 'ru' | 'es'));
+    const total = buffers.reduce((sum, buffer) => sum + buffer.byteLength, 0);
+    const merged = new Uint8Array(total);
+    let offset = 0;
+    for (const buffer of buffers) { merged.set(buffer, offset); offset += buffer.byteLength; }
 
-    if (!res.ok) throw new Error(`ElevenLabs ${res.status}: ${(await res.text().catch(() => '')).slice(0, 300)}`);
-    const contentType = res.headers.get('content-type') || '';
-    if (!contentType.toLowerCase().includes('audio')) throw new Error(`unexpected_content_type:${contentType}`);
-    const buffer = await res.arrayBuffer();
-    if (!buffer.byteLength) throw new Error('empty_audio');
-
-    const file = new File([buffer], `exercise-${exerciseId}-${lang}.mp3`, { type: 'audio/mpeg' });
+    const file = new File([merged], `exercise-${exerciseId}-${lang}.mp3`, { type: 'audio/mpeg' });
     const upload = await base44.asServiceRole.integrations.Core.UploadFile({ file });
     const audioUrl = upload?.file_url;
     if (!audioUrl) throw new Error('upload_no_url');
