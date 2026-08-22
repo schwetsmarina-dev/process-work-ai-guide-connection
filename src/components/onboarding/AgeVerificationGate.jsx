@@ -11,7 +11,7 @@ import { birthYearOptions, isOldEnough } from "@/lib/ageGate";
  * The gate was added to onboarding, which only covers people registering from
  * that point on. Everyone who signed up earlier has no birth_year at all, so
  * their age is simply unknown — and "unknown" is not a defensible answer for a
- * service that must not be used by under-16s.
+ * service that must not be used by under-18s.
  *
  * This asks once, blocks the app until answered, and then never appears again.
  */
