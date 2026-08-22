@@ -8,6 +8,13 @@ import { normalizeLang } from "@/lib/i18n";
 import useEntitlement from "@/hooks/useEntitlement";
 import { FEATURES } from "@/lib/entitlement";
 
+function hasNamedAuthor(value) {
+  const s = String(value || "").trim();
+  if (!s) return false;
+  const genericOnly = /^(process work учебная практика|ispwr training materials|ispwr\s*\/\s*сертификационные материалы|ispwr\s*\/\s*talvira adaptation|talvira methodology synthesis|ispwr trauma\/resource materials\s*\/\s*talvira adaptation)$/i;
+  return !genericOnly.test(s);
+}
+
 const COPY = {
   ru: {
     title: "Библиотека практик",
@@ -85,7 +92,7 @@ export default function PracticeLibrary() {
   });
 
   const visibleRows = useMemo(() => rows
-    .filter((x) => String(x.author || "").trim())
+    .filter((x) => hasNamedAuthor(x.author))
     .filter((x) => x.requires_live_facilitator !== true && ["ai_self_guided", "conditional"].includes(x.delivery_level) && x.intensity !== "high"), [rows]);
 
   const spanishMissing = useMemo(() => visibleRows.filter((x) => !String(x.title_es || "").trim() || !String(x.purpose_es || "").trim() || !Array.isArray(x.steps_es) || x.steps_es.length !== (x.steps || []).length), [visibleRows]);
