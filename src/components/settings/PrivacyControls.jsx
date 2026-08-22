@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Trash2, Loader2, ShieldCheck, CheckCircle2, Brain } from "lucide-react";
+import { Download, Trash2, Loader2, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { listMessages } from "@/lib/messageApi";
+import MemoryControlPanel from "@/components/settings/MemoryControlPanel";
 
 const L = {
   ru: {
@@ -73,17 +74,6 @@ export default function PrivacyControls({ user, appUser, lang = "es" }) {
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [done, setDone] = useState(false);
-  const [memoryEnabled, setMemoryEnabled] = useState(appUser?.memory_enabled !== false);
-  const [memorySaving, setMemorySaving] = useState(false);
-  const [memoryDeleting, setMemoryDeleting] = useState(false);
-  const [memoryDeleted, setMemoryDeleted] = useState(false);
-  const [memoryOpen, setMemoryOpen] = useState(false);
-  const [memoryItems, setMemoryItems] = useState([]);
-  const [memoryLoading, setMemoryLoading] = useState(false);
-
-  useEffect(() => {
-    setMemoryEnabled(appUser?.memory_enabled !== false);
-  }, [appUser?.memory_enabled]);
 
   const handleExport = async () => {
     if (!email) return;
@@ -169,53 +159,6 @@ export default function PrivacyControls({ user, appUser, lang = "es" }) {
     }
   };
 
-  const handleMemoryToggle = async () => {
-    if (!appUser?.id || memorySaving) return;
-    const next = !memoryEnabled;
-    setMemorySaving(true);
-    try {
-      await base44.entities.AppUser.update(appUser.id, { memory_enabled: next });
-      setMemoryEnabled(next);
-    } catch {
-      alert(tx.memory_error);
-    } finally {
-      setMemorySaving(false);
-    }
-  };
-
-  const handleViewMemory = async () => {
-    if (memoryOpen) {
-      setMemoryOpen(false);
-      return;
-    }
-    if (!user?.id || memoryLoading) return;
-    setMemoryLoading(true);
-    try {
-      const rows = await base44.entities.UserMemory.filter({ user_id: user.id, is_active: true }, "-updated_at", 50);
-      setMemoryItems(rows || []);
-      setMemoryOpen(true);
-    } catch {
-      alert(tx.memory_error);
-    } finally {
-      setMemoryLoading(false);
-    }
-  };
-
-  const handleDeleteMemory = async () => {
-    if (!user?.id || memoryDeleting) return;
-    setMemoryDeleting(true);
-    try {
-      const rows = await base44.entities.UserMemory.filter({ user_id: user.id }, "-updated_at", 1000);
-      for (const row of rows) await base44.entities.UserMemory.delete(row.id);
-      setMemoryItems([]);
-      setMemoryDeleted(true);
-    } catch {
-      alert(tx.memory_error);
-    } finally {
-      setMemoryDeleting(false);
-    }
-  };
-
   const canDelete = confirmText.trim().toUpperCase() === tx.confirm_word;
 
   const handleDelete = async () => {
@@ -258,41 +201,8 @@ export default function PrivacyControls({ user, appUser, lang = "es" }) {
         <p className="text-xs text-muted-foreground mt-2">{tx.export_hint}</p>
       </div>
 
-      {/* Cross-session memory controls */}
-      <div className="py-5 border-t border-border">
-        <div className="flex items-center gap-2 mb-1">
-          <Brain className="w-4 h-4 text-primary" />
-          <p className="text-sm font-medium">{tx.memory_title}</p>
-        </div>
-        <p className="text-xs text-muted-foreground mb-3">{tx.memory_hint}</p>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={handleMemoryToggle} disabled={!appUser?.id || memorySaving}>
-            {memorySaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {memoryEnabled ? tx.memory_on : tx.memory_off}
-          </Button>
-          <Button variant="ghost" onClick={handleViewMemory} disabled={!user?.id || memoryLoading}>
-            {memoryLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {memoryOpen ? tx.memory_hide : tx.memory_view}
-          </Button>
-          <Button variant="ghost" onClick={handleDeleteMemory} disabled={!user?.id || memoryDeleting} className="text-destructive">
-            {memoryDeleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-            {tx.memory_delete}
-          </Button>
-        </div>
-        {memoryOpen && (
-          <div className="mt-3 rounded-lg border border-border bg-muted/30 p-3 space-y-2">
-            {memoryItems.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{tx.memory_empty}</p>
-            ) : memoryItems.map((item) => (
-              <div key={item.id} className="text-xs leading-relaxed">
-                <span className="font-medium text-foreground">{item.memory_type || item.memory_key}: </span>
-                <span className="text-muted-foreground">{item.memory_value}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {memoryDeleted && <p className="text-xs text-primary mt-2">{tx.memory_deleted}</p>}
-      </div>
+      {/* Three-level longitudinal memory and user controls */}
+      <MemoryControlPanel user={user} appUser={appUser} lang={lang} />
 
       {/* Danger zone */}
       <div className="pt-5 border-t border-destructive/15">
