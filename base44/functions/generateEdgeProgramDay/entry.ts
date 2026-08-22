@@ -331,6 +331,12 @@ Return structure:
         distress_before: body.distress_before === null || body.distress_before === undefined || body.distress_before === '' ? null : Math.max(0, Math.min(10, Math.round(Number(body.distress_before) || 0))),
         generation_mode: mode,
         exercise_ids: usedExerciseIds,
+        // Regenerating the same unfinished day changes the spoken text too.
+        // Never keep an audio file generated for an older version of that day.
+        audio_status: 'none',
+        audio_url: '',
+        audio_error: '',
+        voice_id: '',
         completion_phase: 'generated',
         safety_action: mode === 'soft_version' ? 'soft_version' : mode === 'repeat_previous' ? 'repeat_previous' : 'none',
         // Methodological extraction is returned to the caller as a CANDIDATE only.
