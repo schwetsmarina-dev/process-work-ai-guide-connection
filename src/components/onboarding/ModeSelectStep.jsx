@@ -1,6 +1,13 @@
 import React from "react";
 import { Loader2 } from "lucide-react";
 
+const SPANISH_DESCRIPTIONS = {
+  body: "Exploración de sensaciones corporales, tensión, dolor y otras señales del cuerpo.",
+  dream: "Exploración de imágenes, símbolos, atmósferas y figuras que aparecen en tus sueños.",
+  conflict: "Exploración de posiciones, deseos o partes de ti que tiran en direcciones distintas.",
+  journaling: "Exploración guiada y suave de lo que estás viviendo, sintiendo o pensando ahora.",
+};
+
 export default function ModeSelectStep({ modes, loading, selectedId, onSelect, lang }) {
   if (loading) {
     return (
@@ -14,6 +21,9 @@ export default function ModeSelectStep({ modes, loading, selectedId, onSelect, l
     <div className="space-y-3">
       {modes.map((mode) => {
         const name = lang === "es" ? (mode.mode_name_es || "") : mode.mode_name_ru;
+        const description = lang === "es"
+          ? (mode.description_es || SPANISH_DESCRIPTIONS[mode.mode_id] || "")
+          : (mode.description || "");
         const isSelected = selectedId === mode.id;
         return (
           <button
@@ -26,8 +36,8 @@ export default function ModeSelectStep({ modes, loading, selectedId, onSelect, l
             }`}
           >
             <p className="font-serif text-lg font-semibold mb-1">{name}</p>
-            {mode.description && (
-              <p className="text-sm text-muted-foreground leading-relaxed">{mode.description}</p>
+            {description && (
+              <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
             )}
           </button>
         );
