@@ -1821,7 +1821,11 @@ ${langInstruction} Будь конкретным, опирайся на реал
 Режим: ${session.mode_id || session.mode}
 
 Сессия:
-${conversation}`,
+${conversation}`;
+
+  const summaryPrompt = lang === "es" ? spanishSummaryPrompt : russianSummaryPrompt;
+  const llmPromise = base44.functions.invoke("invokeAI", {
+    prompt: summaryPrompt,
     response_json_schema: {
       type: "object",
       properties: {
