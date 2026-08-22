@@ -76,12 +76,6 @@ Deno.serve(async (req) => {
           text,
           model_id: 'eleven_v3',
           language_code: lang,
-          voice_settings: {
-            stability: 0.35,
-            similarity_boost: 0.85,
-            style: 0.45,
-            use_speaker_boost: true,
-          },
         }),
       });
     } finally {
