@@ -794,7 +794,7 @@ const RESISTANCE_SIGNALS = [
   "estás repitiendo", "ya respondí", "ya lo dije", "tengo que repetirme", "nada",
 ];
 
-function detectResistanceCount(messages) {
+export function detectResistanceCount(messages) {
   const recentUser = messages.filter((m) => m.role === "user").slice(-6);
   let count = 0;
   for (const msg of recentUser) {
