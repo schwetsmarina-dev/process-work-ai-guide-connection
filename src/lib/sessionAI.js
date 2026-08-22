@@ -875,7 +875,7 @@ function buildLanguageOverride(language) {
     `Никогда не смешивай языки. Никогда не отвечай на испанском или английском (если пользователь явно не попросит).`;
 }
 
-export async function getAIResponse(session, step, messages, userMessage, language = "ru", memoriesBlock = "") {
+export async function getAIResponse(session, step, messages, userMessage, language = "es", memoriesBlock = "") {
   const currentMode = session.mode_id || session.mode;
   const languageOverride = buildLanguageOverride(language);
 
@@ -1511,7 +1511,7 @@ const FALLBACK_SUMMARY = {
   memories: [],
 };
 
-export async function generateSessionSummary(session, messages, language = "ru") {
+export async function generateSessionSummary(session, messages, language = "es") {
   const lang = language === "es" ? "es" : "ru";
   const conversation = messages
     .filter((m) => m.role === "user" || m.role === "assistant")

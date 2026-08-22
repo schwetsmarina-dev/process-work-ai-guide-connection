@@ -6,7 +6,7 @@ const LANG_MAP = { ru: "ru-RU", es: "es-ES" };
 
 // Speaks assistant text via the browser SpeechSynthesis API.
 // Hidden entirely if the browser has no speechSynthesis support.
-export default function SpeakButton({ text, language = "ru" }) {
+export default function SpeakButton({ text, language = "es" }) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const supported = typeof window !== "undefined" && "speechSynthesis" in window;
 

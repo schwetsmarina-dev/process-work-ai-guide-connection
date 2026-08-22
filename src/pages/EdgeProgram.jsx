@@ -160,7 +160,7 @@ export default function EdgeProgram() {
     enabled: !!authUser?.email,
   });
   const lang = normalizeLang(appUsers[0]?.language);
-  const c = COPY[lang] || COPY.ru;
+  const c = COPY[lang] || COPY.es;
 
   const { data: programs = [], isLoading } = useQuery({
     queryKey: ["edge-programs", authUser?.id],

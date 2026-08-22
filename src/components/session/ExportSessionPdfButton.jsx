@@ -9,7 +9,7 @@ import { t } from "@/lib/i18n";
 const escapeHtml = (str) =>
   String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-export default function ExportSessionPdfButton({ session, messages = [], language = "ru" }) {
+export default function ExportSessionPdfButton({ session, messages = [], language = "es" }) {
   const downloadPDF = () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;

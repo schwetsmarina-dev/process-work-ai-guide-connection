@@ -706,7 +706,7 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
   return { isValid: true, reason: "", correctedInstruction: "" };
 }
 
-export function getSafeFallback(currentMode, forcedNextLayer, integrationLock, mappingStage, isMismatch, isDreamAlreadyTold, language = "ru") {
+export function getSafeFallback(currentMode, forcedNextLayer, integrationLock, mappingStage, isMismatch, isDreamAlreadyTold, language = "es") {
   const F = fallbacksFor(language);
   const modeKey = (currentMode || "").toLowerCase();
   if (integrationLock) {

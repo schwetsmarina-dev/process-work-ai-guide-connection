@@ -9,7 +9,7 @@ import { isSummaryUnavailable } from "@/lib/summaryFallback";
 import useEntitlement from "@/hooks/useEntitlement";
 import { FEATURES } from "@/lib/entitlement";
 
-export default function SummaryActions({ session, onUpdated, language = "ru" }) {
+export default function SummaryActions({ session, onUpdated, language = "es" }) {
   const { can } = useEntitlement();
   const [generating, setGenerating] = useState(false);
   const [savedToDiary, setSavedToDiary] = useState(false);

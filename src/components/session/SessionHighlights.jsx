@@ -6,7 +6,7 @@ import { t } from "@/lib/i18n";
 
 // Compact, scannable overview of the key themes and signals the AI found.
 // Shown at the top of the session report so they're easy to glance at.
-export default function SessionHighlights({ themes = [], signals = [], language = "ru" }) {
+export default function SessionHighlights({ themes = [], signals = [], language = "es" }) {
   const hasThemes = themes.length > 0;
   const hasSignals = signals.length > 0;
   if (!hasThemes && !hasSignals) return null;

@@ -222,7 +222,7 @@ function nextPrimaryQuestion(dimensions, language) {
     : "Что ещё входит в твой привычный способ проживать этот телесный сигнал?";
 }
 
-export function buildBodyStageInstruction(stage, language = "ru") {
+export function buildBodyStageInstruction(stage, language = "es") {
   const es = language === "es";
   const boundary = es
     ? "\nLÍMITE MÉDICO: no diagnostiques, no propongas causas médicas, no confirmes ni refutes explicaciones médicas y no des recomendaciones médicas. Explora únicamente la experiencia subjetiva y patrones observables."

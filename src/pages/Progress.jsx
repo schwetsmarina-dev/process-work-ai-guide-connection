@@ -121,7 +121,7 @@ export default function Progress() {
   const [currentUser, setCurrentUser] = useState(null);
   const [appUser, setAppUser] = useState(null);
   const lang = normalizeLang(appUser?.language);
-  const tx = L[lang] || L.ru;
+  const tx = L[lang] || L.es;
 
   useEffect(() => {
     (async () => {
