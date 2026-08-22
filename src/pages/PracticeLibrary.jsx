@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Search, ShieldCheck, UserRound } from "lucide-react";
+import { BookOpen, Search, ShieldCheck, UserRound, Volume2, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ const COPY = {
     subtitle: "Готовые процессуальные упражнения с указанным автором или учебным источником. Здесь нет техник, которые требуют живого специалиста или относятся к высокой интенсивности.",
     search: "Найти по теме, автору или названию…",
     author: "Автор",
-    source: "Источник",
     purpose: "Для чего",
     steps: "Как пройти практику",
     open: "Открыть",
@@ -37,7 +36,6 @@ const COPY = {
     subtitle: "Ejercicios procesuales preparados con autor o fuente formativa identificados. No se muestran técnicas de alta intensidad ni las que requieren un profesional en vivo.",
     search: "Buscar por tema, autor o título…",
     author: "Autor",
-    source: "Fuente",
     purpose: "Para qué sirve",
     steps: "Cómo hacer la práctica",
     open: "Abrir",
@@ -53,7 +51,6 @@ const COPY = {
     subtitle: "Ready-to-use process exercises with an identified author or training source. High-intensity and live-facilitator techniques are not shown here.",
     search: "Search by topic, author, or title…",
     author: "Author",
-    source: "Source",
     purpose: "Purpose",
     steps: "How to do the practice",
     open: "Open",
@@ -74,6 +71,9 @@ export default function PracticeLibrary() {
   const [openId, setOpenId] = useState("");
   const [localizing, setLocalizing] = useState(false);
   const [localizationAttempted, setLocalizationAttempted] = useState(false);
+  const [audioWorkingId, setAudioWorkingId] = useState("");
+  const [audioById, setAudioById] = useState({});
+  const [audioErrorById, setAudioErrorById] = useState({});
 
   const { data: me = null } = useQuery({ queryKey: ["practice-library-user"], queryFn: () => base44.auth.me() });
   const { data: appUsers = [] } = useQuery({
@@ -119,6 +119,24 @@ export default function PracticeLibrary() {
     });
   }, [visibleRows, query, lang]);
 
+  const playExercise = async (exercise) => {
+    if (!exercise?.exercise_id) return;
+    setAudioWorkingId(exercise.exercise_id);
+    setAudioErrorById((prev) => ({ ...prev, [exercise.exercise_id]: "" }));
+    try {
+      const res = await base44.functions.invoke("generateExerciseAudio", { exercise_id: exercise.exercise_id });
+      if (res?.data?.ok && res.data.audio_url) {
+        setAudioById((prev) => ({ ...prev, [exercise.exercise_id]: res.data.audio_url }));
+      } else {
+        setAudioErrorById((prev) => ({ ...prev, [exercise.exercise_id]: res?.data?.reason || "audio_failed" }));
+      }
+    } catch (e) {
+      setAudioErrorById((prev) => ({ ...prev, [exercise.exercise_id]: e?.message || "audio_failed" }));
+    } finally {
+      setAudioWorkingId("");
+    }
+  };
+
   if (hasAccess === false) {
     return <div className="max-w-4xl mx-auto px-4 py-10"><Card className="p-6"><p className="text-sm text-muted-foreground">{c.locked}</p></Card></div>;
   }
@@ -147,7 +165,6 @@ export default function PracticeLibrary() {
                     <h2 className="font-serif text-xl font-semibold">{lang === "es" ? exercise.title_es : exercise.title_ru}</h2>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
                       <span className="inline-flex items-center gap-1"><UserRound className="w-3.5 h-3.5" />{c.author}: {exercise.author}</span>
-                      {exercise.source && <span>{c.source}: {exercise.source}</span>}
                     </div>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => setOpenId(expanded ? "" : exercise.id)}>{expanded ? c.close : c.open}</Button>
@@ -158,6 +175,17 @@ export default function PracticeLibrary() {
                     {(lang === "es" ? exercise.purpose_es : exercise.purpose) && <div><p className="text-sm font-medium mb-1">{c.purpose}</p><p className="text-sm text-muted-foreground leading-relaxed">{lang === "es" ? exercise.purpose_es : exercise.purpose}</p></div>}
                     {exercise.delivery_level === "conditional" && <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900 space-y-2"><div className="flex gap-2"><ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" /><span>{c.conditional}</span></div>{lang !== "es" && (exercise.delivery_conditions || []).length > 0 && <p><strong>{c.conditions}:</strong> {exercise.delivery_conditions.join(" · ")}</p>}{lang !== "es" && [...(exercise.exclude_if || []), ...(exercise.contraindications || [])].length > 0 && <p><strong>{c.avoidIf}:</strong> {[...(exercise.exclude_if || []), ...(exercise.contraindications || [])].join(" · ")}</p>}</div>}
                     <div><p className="text-sm font-medium mb-2">{c.steps}</p><ol className="space-y-2 list-decimal pl-5 text-sm leading-relaxed">{(lang === "es" ? exercise.steps_es : (exercise.steps || [])).map((step, i) => <li key={i}>{step}</li>)}</ol></div>
+                    <div className="pt-2">
+                      {audioById[exercise.exercise_id] ? (
+                        <audio controls preload="none" className="w-full" src={audioById[exercise.exercise_id]} />
+                      ) : (
+                        <Button variant="outline" size="sm" onClick={() => playExercise(exercise)} disabled={audioWorkingId === exercise.exercise_id}>
+                          {audioWorkingId === exercise.exercise_id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Volume2 className="w-4 h-4 mr-2" />}
+                          {lang === "es" ? "Escuchar práctica" : "Озвучить практику"}
+                        </Button>
+                      )}
+                      {audioErrorById[exercise.exercise_id] && <p className="text-xs text-red-700 mt-2">{lang === "es" ? "No se pudo crear el audio. El texto sigue disponible." : "Не удалось создать аудио. Текст остаётся доступен."}</p>}
+                    </div>
                   </div>
                 )}
               </Card>
