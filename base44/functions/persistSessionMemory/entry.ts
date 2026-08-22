@@ -1,7 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-const MEMORY_LIMIT = 40;
-
 // Analyze the session transcript via Claude → structured memory items.
 // Silent: any failure returns [] and logs, never throws.
 async function extractMemories(base44, messages) {
@@ -34,6 +32,9 @@ async function extractMemories(base44, messages) {
 - themes: темы, которые поднимал пользователь (всегда заполняй, если есть содержание)
 - body_signals: телесные сигналы, если упоминались
 - edge: описание края/сопротивления ИЛИ краевой фигуры. Внутренний критик, внутренний запрещающий/контролирующий голос или часть, которая «не разрешает», «мешает», «останавливает», «критикует», — это значимый edge и должен быть сохранён здесь.
+- primary_process: знакомые, идентично-согласованные способы/качества, если проявились
+- secondary_process: новые, непривычные или возникающие качества/движения, если проявились
+- resources: ресурсы, поддерживающие образы, фигуры, качества или действия, если проявились
 - progress: одной фразой — в чём продвинулся пользователь (всегда заполняй, если была беседа)
 
 Сессия:
@@ -46,6 +47,9 @@ ${conversation}`,
           themes: { type: 'array', items: { type: 'string' } },
           body_signals: { type: 'array', items: { type: 'string' } },
           edge: { type: 'string' },
+          primary_process: { type: 'array', items: { type: 'string' } },
+          secondary_process: { type: 'array', items: { type: 'string' } },
+          resources: { type: 'array', items: { type: 'string' } },
           progress: { type: 'string' },
         },
       },
@@ -66,6 +70,9 @@ ${conversation}`,
     themes: (result.themes || []).length,
     body_signals: (result.body_signals || []).length,
     edge: !!result.edge,
+    primary_process: (result.primary_process || []).length,
+    secondary_process: (result.secondary_process || []).length,
+    resources: (result.resources || []).length,
     progress: !!result.progress,
   });
 
@@ -81,12 +88,18 @@ ${conversation}`,
   const patterns = join(result.patterns);
   const themes = join(result.themes);
   const bodySignals = join(result.body_signals);
+  const primaryProcess = join(result.primary_process);
+  const secondaryProcess = join(result.secondary_process);
+  const resources = join(result.resources);
 
   if (insights) items.push({ memory_type: 'insight', memory_key: 'insights', memory_value: insights });
   if (patterns) items.push({ memory_type: 'pattern', memory_key: 'patterns', memory_value: patterns });
   if (themes) items.push({ memory_type: 'theme', memory_key: 'themes', memory_value: themes });
   if (bodySignals) items.push({ memory_type: 'body_signal', memory_key: 'body_signals', memory_value: bodySignals });
   if (result.edge && result.edge !== 'null') items.push({ memory_type: 'edge', memory_key: 'edge', memory_value: stripSubject(result.edge) });
+  if (primaryProcess) items.push({ memory_type: 'primary_process', memory_key: 'primary_process', memory_value: primaryProcess });
+  if (secondaryProcess) items.push({ memory_type: 'secondary_process', memory_key: 'secondary_process', memory_value: secondaryProcess });
+  if (resources) items.push({ memory_type: 'resource', memory_key: 'resources', memory_value: resources });
   if (result.progress) items.push({ memory_type: 'progress', memory_key: 'progress', memory_value: stripSubject(result.progress) });
 
   return items;
@@ -120,6 +133,11 @@ Deno.serve(async (req) => {
     if (!session) {
       console.warn('[persistSessionMemory] session not found');
       return Response.json({ error: 'Session not found' }, { status: 404 });
+    }
+
+    if (session.memory_excluded === true) {
+      console.log('[persistSessionMemory] session explicitly excluded from memory — skipping');
+      return Response.json({ skipped: true, reason: 'session_excluded' });
     }
 
     if (session.status !== 'completed') {
@@ -169,12 +187,20 @@ Deno.serve(async (req) => {
       try {
         await base44.asServiceRole.entities.UserMemory.create({
           user_id: userId,
+          memory_level: 'episodic',
           memory_type: item.memory_type || item.memory_key,
           memory_key: item.memory_key,
           memory_value: item.memory_value,
           source_session_id: sessionId,
           source_mode_id: session.mode_id || session.mode || null,
           importance: item.memory_key === 'edge' ? 'high' : 'medium',
+          evidence_session_ids: [sessionId],
+          evidence_count: 1,
+          confidence: 0.65,
+          first_seen_at: now,
+          last_seen_at: now,
+          user_status: 'unreviewed',
+          excluded_from_ai: false,
           is_active: true,
           created_at: now,
           updated_at: now,
@@ -186,16 +212,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    const active = await base44.asServiceRole.entities.UserMemory.filter(
-      { user_id: userId, is_active: true },
-      '-updated_at',
-      200
-    );
-    if (active.length > MEMORY_LIMIT) {
-      for (const row of active.slice(MEMORY_LIMIT)) {
-        await base44.asServiceRole.entities.UserMemory.update(row.id, { is_active: false }).catch(() => {});
-      }
-    }
+    // Episodic memory is longitudinal history: do not deactivate old rows merely
+    // because they are old. Prompt-size control happens at retrieval time.
 
     console.log('[persistSessionMemory] completed', { saved: savedCount });
     return Response.json({ saved: savedCount });
