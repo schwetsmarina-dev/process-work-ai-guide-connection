@@ -1,6 +1,6 @@
 import { base44 } from "@/api/base44Client";
 import { detectCompletionState } from "@/lib/sessionSignals";
-import { SYSTEM_PROMPT } from "@/lib/systemPrompt";
+import { SYSTEM_PROMPT, SYSTEM_PROMPT_ES } from "@/lib/systemPrompt";
 import { detectBodyProcessStage, buildBodyStageInstruction } from "@/lib/bodyProcess";
 import {
   extractStageAnswersFromUserMessages,
@@ -933,14 +933,16 @@ function buildLanguageOverride(language) {
 
 export async function getAIResponse(session, step, messages, userMessage, language = "es", memoriesBlock = "") {
   const currentMode = session.mode_id || session.mode;
-  const languageOverride = buildLanguageOverride(language);
+  const isEsRuntime = language === "es";
+  const systemPrompt = isEsRuntime ? SYSTEM_PROMPT_ES : SYSTEM_PROMPT;
+  const languageOverride = isEsRuntime ? "" : buildLanguageOverride(language);
 
   const recent = messages.slice(-8).map((m) => ({
     ...m,
     content: m.content.length > 800 ? m.content.slice(0, 800) + "…" : m.content,
   }));
   const history = recent
-    .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
+    .map((m) => `${m.role === "user" ? (isEsRuntime ? "Persona" : "Пользователь") : (isEsRuntime ? "Talvira" : "Ассистент")}: ${m.content}`)
     .join("\n");
 
   const hasValidStep = !!(step && step.question);
