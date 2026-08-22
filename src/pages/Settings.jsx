@@ -76,7 +76,7 @@ export default function Settings() {
 
         <PrivacyControls user={user} appUser={appUser} lang={lang} />
 
-        {user?.email && <ShareWithTherapist clientEmail={user.email} />}
+        {user?.email && <ShareWithTherapist clientEmail={user.email} lang={lang} />}
 
         {hasAdminRole(user) && (
           <Link
