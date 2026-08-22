@@ -75,7 +75,7 @@ export default function Dashboard() {
   const [pendingMode, setPendingMode] = useState(null);
   const [existingActive, setExistingActive] = useState(null);
   const [lastCompletedForMode, setLastCompletedForMode] = useState(null);
-  const lang = normalizeLang(appUser?.language || "ru");
+  const lang = normalizeLang(appUser?.language);
   const [quotaBlockedMode, setQuotaBlockedMode] = useState(null);
   const [freeText, setFreeText] = useState("");
   const [routingSuggestion, setRoutingSuggestion] = useState(null);

@@ -12,7 +12,7 @@ import ConsentStep from "./ConsentStep";
 
 export default function Onboarding({ appUser, currentUser, onComplete }) {
   const navigate = useNavigate();
-  const lang = normalizeLang(appUser?.language || "ru");
+  const lang = normalizeLang(appUser?.language);
 
   const [step, setStep] = useState(0);
   const [selectedMode, setSelectedMode] = useState(null);

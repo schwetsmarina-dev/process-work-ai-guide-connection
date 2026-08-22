@@ -120,7 +120,7 @@ export default function Progress() {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [appUser, setAppUser] = useState(null);
-  const lang = normalizeLang(appUser?.language || "ru");
+  const lang = normalizeLang(appUser?.language);
   const tx = L[lang] || L.ru;
 
   useEffect(() => {

@@ -113,7 +113,7 @@ export default function SessionChat() {
   const [currentUser, setCurrentUser] = useState(null);
   const [appUser, setAppUser] = useState(null);
   const [userLoading, setUserLoading] = useState(true);
-  const language = normalizeLang(appUser?.language || "ru");
+  const language = normalizeLang(appUser?.language);
   const [accessDenied, setAccessDenied] = useState(false);
   const [isAdminView, setIsAdminView] = useState(false);
   // Optimistic messages shown while backend confirms

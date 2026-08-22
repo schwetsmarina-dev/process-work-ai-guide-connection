@@ -70,7 +70,7 @@ export default function SessionSummary() {
   const [currentUser, setCurrentUser] = useState(null);
   const [appUser, setAppUser] = useState(null);
   const [accessDenied, setAccessDenied] = useState(false);
-  const language = normalizeLang(appUser?.language || "ru");
+  const language = normalizeLang(appUser?.language);
 
   useEffect(() => {
     (async () => {

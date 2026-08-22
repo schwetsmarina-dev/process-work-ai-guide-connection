@@ -16,7 +16,7 @@ export default function Settings() {
   const [user, setUser] = useState(null);
   const [appUser, setAppUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [lang, setLang] = useState("ru");
+  const [lang, setLang] = useState(() => normalizeLang());
 
   useEffect(() => {
     (async () => {
@@ -25,7 +25,7 @@ export default function Settings() {
       const rows = await base44.entities.AppUser.filter({ email: u?.email });
       const au = rows[0] || null;
       setAppUser(au);
-      setLang(normalizeLang(au?.language || "ru"));
+      setLang(normalizeLang(au?.language));
       setLoading(false);
     })();
   }, []);

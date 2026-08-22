@@ -8,7 +8,7 @@ import { Star, MessageSquare, CheckCircle2, Loader2, Send } from "lucide-react";
 import { normalizeLang, t } from "@/lib/i18n";
 
 export default function SessionFeedbackForm({ session, user, language }) {
-  const lang = normalizeLang(language || "ru");
+  const lang = normalizeLang(language);
   const [checking, setChecking] = useState(true);
   const [alreadySent, setAlreadySent] = useState(false);
   const [submitted, setSubmitted] = useState(false);

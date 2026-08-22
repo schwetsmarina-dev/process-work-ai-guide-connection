@@ -159,7 +159,7 @@ export default function EdgeProgram() {
     queryFn: () => base44.entities.AppUser.filter({ email: authUser.email }),
     enabled: !!authUser?.email,
   });
-  const lang = normalizeLang(appUsers[0]?.language || "ru");
+  const lang = normalizeLang(appUsers[0]?.language);
   const c = COPY[lang] || COPY.ru;
 
   const { data: programs = [], isLoading } = useQuery({

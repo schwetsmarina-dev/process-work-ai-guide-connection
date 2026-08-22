@@ -17,7 +17,7 @@ export default function Journal() {
   const [currentUser, setCurrentUser] = useState(null);
   const [appUser, setAppUser] = useState(null);
   const [favUpdatingId, setFavUpdatingId] = useState(null);
-  const lang = normalizeLang(appUser?.language || "ru");
+  const lang = normalizeLang(appUser?.language);
 
   useEffect(() => {
     (async () => {

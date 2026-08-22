@@ -35,7 +35,7 @@ export default function SuggestedPractices({ clientEmail }) {
     enabled: !!clientEmail,
     staleTime: 5 * 60_000,
   });
-  const lang = normalizeLang(appUsers[0]?.language || "ru");
+  const lang = normalizeLang(appUsers[0]?.language);
   const { can } = useEntitlement();
   const canUsePersonalPractice = can(FEATURES.PRACTICE);
 

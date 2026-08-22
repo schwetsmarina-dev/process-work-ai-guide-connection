@@ -81,7 +81,7 @@ export default function PracticeLibrary() {
     queryFn: () => base44.entities.AppUser.filter({ email: me.email }),
     enabled: !!me?.email,
   });
-  const lang = normalizeLang(appUsers[0]?.language || "ru");
+  const lang = normalizeLang(appUsers[0]?.language);
   const c = COPY[lang] || COPY.ru;
 
   const { data: rows = [], isLoading } = useQuery({
