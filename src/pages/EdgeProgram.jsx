@@ -401,7 +401,7 @@ export default function EdgeProgram() {
         <Card className="p-5 md:p-6 space-y-5">
           <div><p className="text-xs uppercase tracking-wide text-primary">{c.day} {generated.day_number}</p><h2 className="font-serif text-2xl font-semibold mt-1">{content.title}</h2></div>
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{content.intro}</p>
-          {usedExercises.length > 0 && <p className="text-xs text-muted-foreground">{c.basedOn}: {usedExercises.map((x) => x.author || x.title_ru).filter(Boolean).join(" · ")}</p>}
+          {usedExercises.length > 0 && <p className="text-xs text-muted-foreground">{c.basedOn}: {usedExercises.map((x) => x.author || (lang === "es" ? x.title_es : x.title_ru)).filter(Boolean).join(" · ")}</p>}
           <div className="space-y-4">{(content.steps || []).map((s, i) => <div key={i}><p className="font-medium text-sm mb-1">{s.title}</p><p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">{s.text}</p></div>)}</div>
           {(content.journal_questions || []).length > 0 && <div className="border-t pt-4"><p className="font-medium text-sm mb-2">{c.journal}</p><ul className="space-y-1.5 text-sm text-muted-foreground list-disc pl-5">{content.journal_questions.map((q, i) => <li key={i}>{q}</li>)}</ul></div>}
           <p className="text-sm leading-relaxed border-t pt-4">{content.closing}</p>
