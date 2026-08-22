@@ -14,6 +14,10 @@
       "type": "string",
       "description": "Email of the user giving feedback"
     },
+    "user_name": {
+      "type": "string",
+      "description": "Display name of the user at the time of feedback"
+    },
     "mode_id": {
       "type": "string",
       "description": "Mode of the session"
@@ -44,6 +48,10 @@
     "confusing": {
       "type": "string",
       "description": "What was confusing or uncomfortable"
+    },
+    "insight": {
+      "type": "string",
+      "description": "Insight or important experience the user takes away from the session"
     },
     "would_use_again": {
       "type": "boolean",
