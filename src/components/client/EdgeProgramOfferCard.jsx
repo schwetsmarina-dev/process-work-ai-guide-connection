@@ -35,7 +35,7 @@ const COPY = {
   es: {
     eyebrow: "Programa de 28 días",
     title: "Regreso seguro a ti",
-    body: "Cuando una práctica personal ya se apoya en material recurrente, Talvira puede ofrecer un ciclo más largo para explorar el borde y la autorregulación. Antes de empezar hay un breve screening.",
+    body: "Cuando una práctica personal ya se apoya en material recurrente, Talvira puede ofrecer un ciclo más largo para explorar lo que se repite y apoyar la autorregulación. Antes de empezar hay una breve comprobación de preparación.",
     start: "Comprobar preparación",
     screeningTitle: "Antes de empezar",
     screeningBody: "No es una evaluación clínica. Estas preguntas ayudan a evitar iniciar una práctica profunda autoguiada en un momento poco adecuado.",
@@ -45,7 +45,7 @@ const COPY = {
     q4: "Tengo una persona o profesional a quien puedo recurrir para apoyo humano si lo necesito.",
     q5: "Entiendo que puedo detener el programa, pausarlo o volver a un paso más sencillo en cualquier momento.",
     submit: "Continuar",
-    proceed: "Screening completado. El programa puede empezar con un primer día suave.",
+    proceed: "Comprobación completada. El programa puede empezar con un primer día suave.",
     caution: "Talvira recomienda no iniciar el ciclo automáticamente todavía. Conviene asegurar apoyo humano y volver al programa más adelante.",
     stop: "Ahora es mejor no iniciar el programa. Puedes continuar con las sesiones habituales de Talvira y volver a este formato más adelante.",
     continueProgram: "Continuar programa",
@@ -58,7 +58,7 @@ const COPY = {
 };
 
 export default function EdgeProgramOfferCard({ lang = "es", enabled = true }) {
-  const c = COPY[lang] || COPY.ru;
+  const c = COPY[lang] || COPY.es;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
