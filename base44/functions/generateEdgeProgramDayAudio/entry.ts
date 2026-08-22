@@ -1,6 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
 
-const MAX_CHARS_PER_CHUNK = 3400;
+// Conservative ceiling: current ElevenLabs pages disagree between 3k and 5k
+// for eleven_v3. Stay safely below both published limits.
+const MAX_CHARS_PER_CHUNK = 2800;
 const MAX_TOTAL_CHARS = 10000;
 const TTS_TIMEOUT_MS = 45_000;
 
