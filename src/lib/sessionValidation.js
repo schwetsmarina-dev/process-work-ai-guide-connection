@@ -458,6 +458,9 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
     "какое послание", "что бы оно сказало", "голос этого",
     "что пытается сказать", "что говорит этот образ", "что он хочет тебе сказать",
     "что она хочет тебе сказать", "что хочет этот образ сказать",
+    "qué diría", "si tuviera voz", "cuál es su mensaje", "qué quiere decirte",
+    "qué quiere decir", "qué mensaje", "la voz de", "qué intenta decir",
+    "qué dice esta imagen", "qué quiere decir esta imagen",
   ];
   const immersionCoveredCheck = coveredLayers ? coveredLayers.has("immersion") : false;
 
@@ -529,6 +532,9 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
       "где ты ощущаешь", "в теле", "что хочет двигаться", "если бы это стало образом",
       "что за движение", "что ты чувствуешь", "голос", "послание",
       "давай исследуем", "тогда давай", "остановимся на", "посмотрим на",
+      "dónde lo notas", "en el cuerpo", "qué quiere moverse", "si se convirtiera en una imagen",
+      "qué movimiento", "qué sientes", "voz", "mensaje", "vamos a explorar",
+      "exploremos", "quedémonos con", "miremos",
     ];
     for (const phrase of deepeningPhrases) {
       if (lower.includes(phrase)) {
@@ -548,6 +554,9 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
       "как это связано с реальной жизнью", "как могла бы измениться",
       "что стало бы по-другому", "в реальной жизни", "в твоей жизни",
       "где в жизни это", "как это откликается в жизни",
+      "hasta qué punto está en tu vida", "dónde te falta", "dónde falta ahora",
+      "cómo se relaciona con tu vida real", "cómo podría cambiar tu vida",
+      "qué sería diferente", "en la vida real", "en tu vida", "dónde aparece en tu vida",
     ];
     for (const phrase of integrationIntrusionPhrases) {
       if (lower.includes(phrase)) {
@@ -571,11 +580,15 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
       "если ты остаёшься в этом ощущении", "если оставаться в этом состоянии",
       "если оставаться в этом ощущении", "если ты остаёшься в этом состоянии",
       "давай исследуем", "тогда давай исследуем", "остановимся на", "посмотрим на",
-      "что за движение", "если бы это стало образом",
-      "вернёмся к", "давай вернёмся",
-      "что ты чувствуешь теперь", "что сейчас происходит в теле",
-      "какой образ появляется", "что хочет сказать",
+      "что за движение", "если бы это стало образом", "вернёмся к", "давай вернёмся",
+      "что ты чувствуешь теперь", "что сейчас происходит в теле", "какой образ появляется", "что хочет сказать",
       "что говорит та часть", "что хочет та часть",
+      "qué ocurre después", "qué pasa ahora", "qué más", "qué hay más profundo", "qué hay debajo",
+      "vamos más profundo", "qué empieza a desplegarse", "qué más quiere aparecer", "a dónde lleva",
+      "si te quedas con esta sensación", "si te quedas en este estado", "vamos a explorar",
+      "quedémonos con", "miremos", "qué movimiento", "si se convirtiera en una imagen",
+      "volvamos a", "qué sientes ahora", "qué ocurre ahora en el cuerpo", "qué imagen aparece",
+      "qué quiere decir", "qué dice esa parte", "qué quiere esa parte",
     ];
     for (const phrase of deepeningAfterClosure) {
       if (lower.includes(phrase)) {
@@ -590,7 +603,7 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
   }
 
   // 4b. Invented emotion check
-  const INVENTED_EMOTIONS = ["тревожит", "пугает", "вдохновляет", "беспокоит тебя", "радует тебя", "злит тебя", "пугает тебя"];
+  const INVENTED_EMOTIONS = ["тревожит", "пугает", "вдохновляет", "беспокоит тебя", "радует тебя", "злит тебя", "пугает тебя", "te preocupa", "te asusta", "te inspira", "te alegra", "te enfada", "te irrita"];
   for (const emo of INVENTED_EMOTIONS) {
     if (lower.includes(emo)) {
       const userMentioned = conversationHistory
