@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { paymentsService } from "@/services/payments";
 import { canUseFeature } from "@/lib/entitlement";
 
 /**
@@ -15,18 +15,12 @@ import { canUseFeature } from "@/lib/entitlement";
 export const ENTITLEMENT_QUERY_KEY = ["entitlement"];
 
 async function fetchEntitlementRaw() {
-  const res = await base44.functions.invoke("getEntitlement", {});
-  return res?.data ?? res;
+  return paymentsService.getEntitlement();
 }
 
 /**
  * Resolve the entitlement inside an async handler, awaiting the request if it
  * has not landed yet and reusing the cached value if it has.
- *
- * Needed because the hook reports `hasAccess: undefined` while loading, and a
- * handler that treats "undefined" as "no access" silently switches paid
- * features off for paying users during the first seconds of a page. That is
- * exactly how cross-session memory got disabled for everyone.
  */
 export async function fetchEntitlement(queryClient) {
   return queryClient.fetchQuery({
@@ -64,7 +58,6 @@ export default function useEntitlement() {
     isLifetime: Boolean(data?.isLifetime),
     isGranted: data?.plan === "beta",
     expiresAt: data?.expiresAt || null,
-    /** Gate a screen: can(FEATURES.SUMMARY). Undefined while loading. */
     can: (feature) =>
       isLoading ? undefined : canUseFeature(entitlement, feature),
   };

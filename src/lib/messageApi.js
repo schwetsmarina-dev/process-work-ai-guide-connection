@@ -1,35 +1,23 @@
-import { base44 } from "@/api/base44Client";
+import { messagesService } from "@/services/messages";
 
 /**
- * Creates a Message record via backend function (bypasses frontend RLS).
+ * Compatibility facade for existing session code.
+ * Infrastructure access now lives behind the provider-neutral services layer.
  * @param {{ session_id: any, mode_id?: any, step_number?: any, role: any, content: any }} msg
  */
 export async function createMessage({ session_id, mode_id, step_number, role, content }) {
-  const res = await base44.functions.invoke("createSessionMessage", {
-    session_id,
-    mode_id: mode_id || null,
-    step_number: step_number || null,
-    role,
-    content,
-    created_at: new Date().toISOString(),
-  });
-  return res.data?.message;
+  return messagesService.create({ session_id, mode_id, step_number, role, content });
 }
 
-/**
- * Lists all messages for a session via backend function (bypasses frontend RLS).
- */
+/** Lists all messages for a session. */
 export async function listMessages(session_id) {
-  const res = await base44.functions.invoke("listSessionMessages", { session_id });
-  return res.data?.messages || [];
+  return messagesService.list(session_id);
 }
 
 /**
  * Reverts the last exchange (user answer + facilitator reply) and rolls the
  * session one step back. Returns { reverted, removed_user_text, new_current_step }.
- * The removed user text is meant to be placed back into the input for editing.
  */
 export async function revertLastExchange(session_id) {
-  const res = await base44.functions.invoke("revertLastExchange", { session_id });
-  return res.data;
+  return messagesService.revertLastExchange(session_id);
 }
