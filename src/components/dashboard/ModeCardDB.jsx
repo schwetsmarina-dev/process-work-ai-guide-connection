@@ -2,12 +2,20 @@ import React from "react";
 import { Sparkles } from "lucide-react";
 import { MODE_LABELS } from "@/lib/modeSteps";
 
-export default function ModeCardDB({ mode, onClick, lang = "ru" }) {
+export default function ModeCardDB({ mode, onClick, lang = "es" }) {
   const modeId = mode.mode_id || mode.id;
-  const label = MODE_LABELS[modeId]?.[lang] || mode.mode_name_ru || modeId;
+  const spanishFallbacks = {
+    body: "Exploración de sensaciones corporales, tensión, dolor y otras señales del cuerpo.",
+    dream: "Exploración de imágenes, símbolos, atmósferas y figuras que aparecen en tus sueños.",
+    conflict: "Exploración de posiciones, deseos o partes de ti que tiran en direcciones distintas.",
+    journaling: "Exploración guiada y suave de lo que estás viviendo, sintiendo o pensando ahora.",
+  };
+  const label = lang === "es"
+    ? (mode.mode_name_es || MODE_LABELS[modeId]?.es || modeId)
+    : (mode.mode_name_ru || MODE_LABELS[modeId]?.ru || modeId);
   const description = lang === "es"
-    ? (mode.description_es || mode.description)
-    : mode.description;
+    ? (mode.description_es || spanishFallbacks[modeId] || "")
+    : (mode.description || "");
 
   return (
     <button
