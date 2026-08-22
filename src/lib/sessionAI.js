@@ -258,22 +258,24 @@ function detectDreamContent(messages) {
     "во сне","был сон","была во сне","был во сне","я шла","я шёл",
     "стояла","стоял","пришёл","пришла","увидела","увидел",
     "оказалась","оказался","появился","появилась",
+    "soñé", "he soñado", "tuve un sueño", "en el sueño", "en mi sueño",
+    "estaba", "iba", "vi", "apareció", "aparecía", "me encontraba",
   ];
   const CLUSTER = [
     "снятся сны","мне снятся","последнее время снятся","часто снятся",
     "повторяющийся сон","снятся похожие сны","серия снов","несколько снов",
-    "снился сон",
-    "снятся разные сны", "снились сны", "снились разные",
+    "снился сон", "снятся разные сны", "снились сны", "снились разные",
+    "sueño a menudo", "últimamente sueño", "sueños recurrentes", "un sueño recurrente",
+    "sueños parecidos", "varios sueños", "una serie de sueños", "he tenido varios sueños",
   ];
   const THEME = [
     "сон про ", "сон о ", "сны про ", "сны о ",
-    "сны, связанные", "снятся сны, связанные",
-    "сон был про", "сон с ",
-    "сны об ",
+    "сны, связанные", "снятся сны, связанные", "сон был про", "сон с ", "сны об ",
+    "un sueño sobre ", "sueño con ", "sueños sobre ", "sueños relacionados con ", "el sueño iba de ",
   ];
   const EMOTION_IN_DREAM = [
-    "в этих снах", "в этом сне", "из снов", "из этих снов",
-    "во снах", "эти сны",
+    "в этих снах", "в этом сне", "из снов", "из этих снов", "во снах", "эти сны",
+    "en estos sueños", "en este sueño", "en mis sueños", "estos sueños",
   ];
 
   const allGroups = [
@@ -1012,13 +1014,23 @@ export async function getAIResponse(session, step, messages, userMessage, langua
       es: "¿Qué quieres explorar hoy? Puede ser una situación, una emoción, una pregunta, un pensamiento o un tema que ocupa tu atención.",
     },
   };
-  const PRIMARY_QUESTIONS = {
+  const PRIMARY_QUESTIONS = language === "es" ? {
+    dream:      "¿Qué parte de este sueño resuena más con tu vida real, con sentimientos habituales o con situaciones que ya conoces?",
+    body:       "",
+    conflict:   "¿Cuál de estas partes te resulta más habitual o familiar, más cercana a cómo sueles reaccionar?",
+    journaling: "¿Qué parte de esta situación ya te resulta conocida o se parece a tu manera habitual de reaccionar?",
+  } : {
     dream:      "Что из этого сна больше всего откликается с твоей реальной жизнью, привычными чувствами или знакомыми ситуациями?",
     body:       "",
     conflict:   "Какая из этих сторон для тебя более привычная, знакомая или ближе к тому, как ты обычно себя ведёшь?",
     journaling: "Что в этой ситуации для тебя уже понятно, знакомо или похоже на твой обычный способ реагировать?",
   };
-  const SECONDARY_QUESTIONS = {
+  const SECONDARY_QUESTIONS = language === "es" ? {
+    dream:      "¿Y qué parte de este sueño te parece más extraña, nueva, poco habitual, cargada o menos parecida a ti?",
+    body:       "",
+    conflict:   "¿Qué parte te resulta más nueva o poco habitual, más difícil de aceptar o te genera más tensión?",
+    journaling: "¿Y qué aparece aquí como algo nuevo, extraño, vivo, inquietante, poco habitual o que todavía no entiendes del todo?",
+  } : {
     dream:      "А что в этом сне кажется тебе самым странным, новым, непривычным, заряженным или совсем не похожим на тебя?",
     body:       "",
     conflict:   "Какая сторона более новая, непривычная, труднее принимается или вызывает больше напряжения?",
