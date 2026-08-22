@@ -1014,8 +1014,17 @@ export function getStoredLanguage() {
       // Empty or non-URL referrer — continue with the browser language.
     }
   }
-  if (typeof navigator !== "undefined" && navigator.language?.startsWith("es")) return "es";
-  return DEFAULT_LANGUAGE;
+  if (typeof navigator !== "undefined") {
+    const browserLang = navigator.language?.toLowerCase() || "";
+    if (browserLang.startsWith("ru")) return "ru";
+    if (browserLang.startsWith("es")) return "es";
+  }
+
+  // Talvira's public/default locale is Spanish. Russian remains available
+  // explicitly (stored choice, ?lang=ru, /ru/ referrer, or Russian browser).
+  // This prevents first-time visitors opening /register directly from seeing
+  // Russian merely because their browser language is neither ES nor RU.
+  return "es";
 }
 
 export function setStoredLanguage(lang) {
