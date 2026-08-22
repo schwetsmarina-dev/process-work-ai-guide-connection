@@ -5,7 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listMessages } from "@/lib/messageApi";
 import { startSession } from "@/lib/sessionApi";
-import { Heart, Moon, GitBranch, PenLine, ArrowLeft, Sparkles, Tag, Zap, ArrowRight, Loader2 } from "lucide-react";
+import { Heart, Moon, GitBranch, PenLine, ArrowLeft, Sparkles, Tag, Zap, ArrowRight, Loader2, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -129,6 +129,32 @@ export default function SessionSummary() {
   });
 
   const queryClient = useQueryClient();
+  const [memoryPolicySaving, setMemoryPolicySaving] = useState(false);
+
+  const toggleSessionMemory = async () => {
+    if (!session?.id || isAdminViewing || memoryPolicySaving) return;
+    setMemoryPolicySaving(true);
+    try {
+      const excluded = session.memory_excluded === true;
+      await base44.entities.Session.update(session.id, {
+        memory_excluded: !excluded,
+        memory_excluded_at: !excluded ? new Date().toISOString() : null,
+        memory_exclusion_reason: !excluded ? "user_excluded" : "",
+      });
+      const memories = await base44.entities.UserMemory.filter({ source_session_id: session.id }).catch(() => []);
+      for (const row of memories) {
+        await base44.entities.UserMemory.update(row.id, {
+          excluded_from_ai: !excluded,
+          is_active: excluded,
+          updated_at: new Date().toISOString(),
+        }).catch(() => {});
+      }
+      await queryClient.invalidateQueries({ queryKey: ["session", sessionId, currentUser?.email] });
+      await base44.functions.invoke("rebuildMemoryProfile", {}).catch(() => {});
+    } finally {
+      setMemoryPolicySaving(false);
+    }
+  };
 
   const { data: messages = [], isError: messagesError, refetch: refetchMessages } = useQuery({
     queryKey: ["messages", sessionId],
@@ -292,6 +318,19 @@ export default function SessionSummary() {
                 <p className="text-xs text-muted-foreground mt-2">
                   {t("continue_this_work_hint", language)}
                 </p>
+                <div className="mt-4 pt-3 border-t border-border">
+                  <Button variant="ghost" size="sm" onClick={toggleSessionMemory} disabled={memoryPolicySaving} className="px-0 text-muted-foreground">
+                    {memoryPolicySaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Brain className="w-4 h-4 mr-2" />}
+                    {session.memory_excluded
+                      ? (language === "es" ? "Volver a usar esta sesión en mi memoria" : "Снова использовать эту сессию в памяти")
+                      : (language === "es" ? "No usar esta sesión en mi memoria" : "Не использовать эту сессию в памяти")}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {session.memory_excluded
+                      ? (language === "es" ? "Esta sesión está excluida del perfil longitudinal." : "Эта сессия исключена из долгосрочного профиля.")
+                      : (language === "es" ? "Puedes excluir esta sesión sin eliminarla de tu historial." : "Можно исключить эту сессию из памяти, не удаляя её из истории.")}
+                  </p>
+                </div>
               </div>
             )}
           </Card>
