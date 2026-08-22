@@ -87,7 +87,11 @@ export default function RequireAuth() {
     );
   }
 
-  if (appUser && !appUser.birth_year) {
+  // Legacy accounts that already completed onboarding before the age gate was
+  // introduced still need a one-time age check. Brand-new accounts must NOT be
+  // intercepted here: onboarding already contains the age + consent step, and
+  // showing this gate first would make them enter their birth year twice.
+  if (appUser && appUser.onboarding_completed === true && !appUser.birth_year) {
     return (
       <AgeVerificationGate
         appUser={appUser}
