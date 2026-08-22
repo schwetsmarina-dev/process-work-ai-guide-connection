@@ -26,18 +26,17 @@ export async function generateWeeklyRecap({ weekStartKey, sessions, lang = "es" 
     /* localStorage unavailable — just skip caching */
   }
 
+  const isEs = lang === "es";
   const ctx = sessions
     .map((s, i) => {
       const mode = s.mode_id || s.mode || "";
       const themes = Array.isArray(s.themes) ? s.themes.join(", ") : "";
       const summary = (s.summary || "").slice(0, 400);
-      return `Сессия ${i + 1} — режим: ${mode}${themes ? `; темы: ${themes}` : ""}${
-        summary ? `; суть: ${summary}` : ""
-      }`;
+      return isEs
+        ? `Sesión ${i + 1} — modo: ${mode}${themes ? `; temas: ${themes}` : ""}${summary ? `; resumen: ${summary}` : ""}`
+        : `Сессия ${i + 1} — режим: ${mode}${themes ? `; темы: ${themes}` : ""}${summary ? `; суть: ${summary}` : ""}`;
     })
     .join("\n");
-
-  const isEs = lang === "es";
   const prompt = isEs
     ? `Eres un facilitador de Process Work. Basándote SOLO en las sesiones de esta semana del usuario, escribe un resumen cálido y breve (1-2 frases) de su proceso de esta semana.
 Reglas:
