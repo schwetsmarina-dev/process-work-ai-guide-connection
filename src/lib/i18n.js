@@ -991,7 +991,7 @@ export function t(key, lang) {
   return translations[l][key] ?? translations[DEFAULT_LANGUAGE][key] ?? key;
 }
 
-const STORAGE_KEY = "pw_language";
+const STORAGE_KEY = "talvira_language_v2";
 
 export function getStoredLanguage() {
   if (typeof localStorage !== "undefined") {
