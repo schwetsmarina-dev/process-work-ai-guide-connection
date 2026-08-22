@@ -57,7 +57,7 @@ export default function RequireAuth() {
 
   // Accounts created before the age gate existed have no birth_year, so their
   // age is unknown. Unknown is not an acceptable answer for a service that
-  // must not be used under 16 — ask once, then never again.
+  // must not be used under 18 — ask once, then never again.
   const { data: appUser, refetch: refetchAppUser } = useQuery({
     queryKey: ["appUser", user?.email],
     enabled: Boolean(isAuthenticated && user?.email && appUserReady),
