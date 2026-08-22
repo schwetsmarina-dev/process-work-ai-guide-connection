@@ -5,7 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listMessages } from "@/lib/messageApi";
 import { startSession } from "@/lib/sessionApi";
-import { Heart, Moon, GitBranch, PenLine, ArrowLeft, Sparkles, Tag, Zap, ArrowRight, Loader2, Brain } from "lucide-react";
+import { Heart, Moon, GitBranch, PenLine, ArrowLeft, Sparkles, Tag, Zap, ArrowRight, Loader2, Brain, ChevronDown, MessageSquareText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -276,6 +276,17 @@ export default function SessionSummary() {
       </motion.div>
 
       <div className="space-y-6 mt-8">
+        {session.status === "completed" && currentUser && session.user_id === currentUser.id && (
+          <button
+            type="button"
+            onClick={() => document.getElementById("session-feedback")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className="w-full rounded-xl border border-primary/25 bg-primary/5 px-4 py-3 flex items-center justify-center gap-2 text-sm font-medium text-primary"
+          >
+            <MessageSquareText className="w-4 h-4" />
+            {language === "es" ? "Cuéntanos cómo fue esta sesión" : "Расскажи, как прошла эта сессия"}
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        )}
         {/* Summary */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
@@ -469,7 +480,9 @@ export default function SessionSummary() {
 
       {/* Feedback (beta) — only for completed sessions owned by the user */}
       {session.status === "completed" && currentUser && session.user_id === currentUser.id && (
-        <SessionFeedbackForm session={session} user={currentUser} language={language} />
+        <div id="session-feedback" className="scroll-mt-6">
+          <SessionFeedbackForm session={session} user={currentUser} language={language} />
+        </div>
       )}
 
       {/* Insight suggestions */}
