@@ -623,33 +623,33 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
   const SENSORY_CHANNELS = [
     {
       name: "taste",
-      responsePhrases: ["вкус", "какой вкус", "попробуй", "пробуешь", "пробовать"],
-      userSignals: ["вкус", "пробу", "съел", "ем ", "попробова", "ест ", "пробовала", "пробовал", "попробовала"],
+      responsePhrases: ["вкус", "какой вкус", "попробуй", "пробуешь", "пробовать", "sabor", "qué sabor", "prueba", "probar", "lo saboreas"],
+      userSignals: ["вкус", "пробу", "съел", "ем ", "попробова", "ест ", "пробовала", "пробовал", "попробовала", "sabor", "pruebo", "probé", "comí", "como ", "saboreo"],
     },
     {
       name: "smell",
-      responsePhrases: ["запах", "нюха", "аромат"],
-      userSignals: ["запах", "нюха", "пахнет", "аромат"],
+      responsePhrases: ["запах", "нюха", "аромат", "olor", "huele", "aroma"],
+      userSignals: ["запах", "нюха", "пахнет", "аромат", "olor", "huelo", "huele", "aroma"],
     },
     {
       name: "texture",
-      responsePhrases: ["текстур", "на ощупь", "шершав", "гладк"],
-      userSignals: ["текстур", "на ощупь", "шершав", "гладк"],
+      responsePhrases: ["текстур", "на ощупь", "шершав", "гладк", "textura", "al tacto", "áspero", "rugoso", "liso"],
+      userSignals: ["текстур", "на ощупь", "шершав", "гладк", "textura", "al tacto", "áspero", "rugoso", "liso"],
     },
     {
       name: "temperature",
-      responsePhrases: ["температур", "горяч", "прохладн", "холодн"],
-      userSignals: ["температур", "тепло", "холодн", "горяч", "прохладн"],
+      responsePhrases: ["температур", "горяч", "прохладн", "холодн", "temperatura", "caliente", "frío", "fría", "fresco"],
+      userSignals: ["температур", "тепло", "холодн", "горяч", "прохладн", "temperatura", "calor", "frío", "fría", "caliente", "fresco"],
     },
     {
       name: "contact",
-      responsePhrases: ["в контакт", "при контакт", "момент контакт", "при касани", "прикосновени"],
-      userSignals: ["контакт", "дотронул", "касани", "прикосновени", "трогаю", "касаюсь", "дотронулась", "дотронулся"],
+      responsePhrases: ["в контакт", "при контакт", "момент контакт", "при касани", "прикосновени", "contacto", "al tocar", "cuando lo tocas", "tocar"],
+      userSignals: ["контакт", "дотронул", "касани", "прикосновени", "трогаю", "касаюсь", "дотронулась", "дотронулся", "contacto", "toco", "toqué", "tocar", "rozo"],
     },
     {
       name: "color",
-      responsePhrases: ["что за цвет", "какой цвет", "цвет появля"],
-      userSignals: ["цвет", "краска", "оттенок"],
+      responsePhrases: ["что за цвет", "какой цвет", "цвет появля", "qué color", "aparece un color", "de qué color"],
+      userSignals: ["цвет", "краска", "оттенок", "color", "tono", "matiz"],
     },
   ];
 
