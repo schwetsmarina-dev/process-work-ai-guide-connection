@@ -10,6 +10,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 //   ELEVENLABS_VOICE_ID
 
 const MAX_TTS_CHARS = 4500;
+const MAX_CHARS_PER_CHUNK = 2800;
 const TTS_TIMEOUT_MS = 45_000;
 
 async function markFailed(base44, practiceId, error) {
@@ -17,6 +18,47 @@ async function markFailed(base44, practiceId, error) {
     audio_status: 'failed',
     audio_error: String(error).slice(0, 500),
   }).catch(() => null);
+}
+
+function splitText(text) {
+  const sentences = String(text || '').trim().split(/(?<=[.!?…])\s+/).filter(Boolean);
+  const chunks = [];
+  let current = '';
+  for (const sentence of sentences) {
+    if ((current + ' ' + sentence).trim().length > MAX_CHARS_PER_CHUNK && current) {
+      chunks.push(current.trim());
+      current = '';
+    }
+    if (sentence.length > MAX_CHARS_PER_CHUNK) {
+      if (current) { chunks.push(current.trim()); current = ''; }
+      for (let i = 0; i < sentence.length; i += MAX_CHARS_PER_CHUNK) chunks.push(sentence.slice(i, i + MAX_CHARS_PER_CHUNK));
+    } else {
+      current = `${current} ${sentence}`.trim();
+    }
+  }
+  if (current) chunks.push(current.trim());
+  return chunks;
+}
+
+async function synthesize(apiKey, voiceId, text, languageCode) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TTS_TIMEOUT_MS);
+  try {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
+      body: JSON.stringify({ text, model_id: 'eleven_v3', language_code: languageCode }),
+    });
+    if (!res.ok) throw new Error(`ElevenLabs ${res.status}: ${(await res.text().catch(() => '')).slice(0, 300)}`);
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.toLowerCase().includes('audio')) throw new Error(`ElevenLabs returned unexpected content-type: ${contentType || 'missing'}`);
+    const buffer = new Uint8Array(await res.arrayBuffer());
+    if (!buffer.byteLength) throw new Error('ElevenLabs returned empty audio');
+    return buffer;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -84,40 +126,15 @@ Deno.serve(async (req) => {
 
     let audioBuffer;
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), TTS_TIMEOUT_MS);
-      let ttsRes;
-      try {
-        ttsRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`, {
-          method: 'POST',
-          signal: controller.signal,
-          headers: {
-            'xi-api-key': apiKey,
-            'Content-Type': 'application/json',
-            Accept: 'audio/mpeg',
-          },
-          body: JSON.stringify({
-            text,
-            model_id: 'eleven_v3',
-            language_code: ['ru', 'es'].includes(practice.language) ? practice.language : 'es',
-          }),
-        });
-      } finally {
-        clearTimeout(timeout);
-      }
-
-      if (!ttsRes.ok) {
-        const errText = await ttsRes.text().catch(() => '');
-        throw new Error(`ElevenLabs ${ttsRes.status}: ${errText.slice(0, 300)}`);
-      }
-
-      const contentType = ttsRes.headers.get('content-type') || '';
-      if (!contentType.toLowerCase().includes('audio')) {
-        throw new Error(`ElevenLabs returned unexpected content-type: ${contentType || 'missing'}`);
-      }
-
-      audioBuffer = await ttsRes.arrayBuffer();
-      if (!audioBuffer.byteLength) throw new Error('ElevenLabs returned empty audio');
+      const languageCode = ['ru', 'es'].includes(practice.language) ? practice.language : 'es';
+      const chunks = splitText(text);
+      const buffers = [];
+      for (const chunk of chunks) buffers.push(await synthesize(apiKey, voiceId, chunk, languageCode));
+      const total = buffers.reduce((sum, buffer) => sum + buffer.byteLength, 0);
+      const merged = new Uint8Array(total);
+      let offset = 0;
+      for (const buffer of buffers) { merged.set(buffer, offset); offset += buffer.byteLength; }
+      audioBuffer = merged;
     } catch (e) {
       const message = e?.name === 'AbortError'
         ? `ElevenLabs request timed out after ${TTS_TIMEOUT_MS}ms`
