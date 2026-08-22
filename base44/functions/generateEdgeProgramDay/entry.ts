@@ -1,6 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { RETURN_TO_SELF_DAYS, RETURN_TO_SELF_ENGINE_RULES } from './methodology.ts';
-// Server copy is guarded against drift by the frontend methodology sync test.
+import { RETURN_TO_SELF_DAYS_ES, RETURN_TO_SELF_ENGINE_RULES_ES } from './methodology.es.ts';
+// Server copies are guarded against structural drift by tests; Spanish uses a
+// static localized methodology rather than asking the generation model to
+// translate the Russian/English source on the fly.
 
 type GenerationMode = 'standard' | 'soft_version' | 'resource_day' | 'rest_day' | 'repeat_previous';
 
@@ -17,7 +20,13 @@ function languageRule(lang: string) {
   return 'Пиши ВЕСЬ видимый пользователю текст естественно по-русски.';
 }
 function weekFor(day: number) { return Math.ceil(day / 7); }
-function daySpec(day: number) { return RETURN_TO_SELF_DAYS.find((x: any) => Number(x.day) === day) || null; }
+function daySpec(day: number, lang = 'ru') {
+  const source = lang === 'es' ? RETURN_TO_SELF_DAYS_ES : RETURN_TO_SELF_DAYS;
+  return source.find((x: any) => Number(x.day) === day) || null;
+}
+function engineRules(lang = 'ru') {
+  return lang === 'es' ? RETURN_TO_SELF_ENGINE_RULES_ES : RETURN_TO_SELF_ENGINE_RULES;
+}
 
 // Canonical Term.latin_key concepts that are methodologically relevant to each day.
 // These are retrieval hints only: a matching exercise is optional and must still fit the user's material.
@@ -167,7 +176,8 @@ Deno.serve(async (req) => {
     const previousDays = completedDays.map(compactDay);
     const currentDay = Math.min(28, Math.max(1, Number(program.current_day || 1)));
     const requestedDay = mode === 'repeat_previous' ? Math.max(1, currentDay - 1) : currentDay;
-    const spec = daySpec(requestedDay);
+    const spec = daySpec(requestedDay, lang);
+    const rules: any = engineRules(lang);
     if (!spec) return Response.json({ error: 'methodology_day_not_found' }, { status: 500 });
 
     if (mode === 'rest_day') {
@@ -239,10 +249,10 @@ GENERATION MODE: ${mode}
 ${resourceModeRule}
 
 GLOBAL RULES (mandatory):
-${[...RETURN_TO_SELF_ENGINE_RULES.language, ...RETURN_TO_SELF_ENGINE_RULES.safety, ...RETURN_TO_SELF_ENGINE_RULES.support, ...RETURN_TO_SELF_ENGINE_RULES.weekly].map((x) => `- ${x}`).join('\n')}
+${[...rules.language, ...rules.safety, ...rules.support, ...rules.weekly].map((x: string) => `- ${x}`).join('\n')}
 
 RESOURCE STARTER LIBRARY (only choices, never prescriptions):
-${RETURN_TO_SELF_ENGINE_RULES.resourceProtocol.starterExercises.map((x) => `- ${x}`).join('\n')}
+${rules.resourceProtocol.starterExercises.map((x: string) => `- ${x}`).join('\n')}
 
 USER/PROGRAM CONTEXT:
 Theme label from source practice: ${clean(program.theme_label, 300) || '—'}
