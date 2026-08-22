@@ -20,7 +20,14 @@ const COPY = {
     saved: "Спасибо. Отзыв сохранён.",
     already: "Отзыв уже сохранён.",
   },
-export default function ExperienceFeedbackForm({ user, lang = "es", experienceType, referenceId, programId = "", programName = "", experienceLabel = "", dayNumber = null, weekNumber = null }) {
+  es: {
+    title: "Dejar feedback",
+    subtitle: "Cuéntanos cómo fue para ti. Este feedback nos ayuda a mejorar Talvira.",
+    rating: "¿Hasta qué punto te resultó útil?",
+    helpful: "¿Qué fue lo más útil para ti?",
+    difficult: "¿Qué fue confuso, incómodo o no te encajó?",
+    insight: "¿Qué insight o experiencia importante te llevas contigo?",
+    comment: "¿Hay algo más que quieras contarnos?",
     continue: "¿Te gustaría continuar?",
     yes: "Sí",
     no: "No",
@@ -30,7 +37,7 @@ export default function ExperienceFeedbackForm({ user, lang = "es", experienceTy
   },
 };
 
-export default function ExperienceFeedbackForm({ user, lang = "es", experienceType, referenceId, programId = "", dayNumber = null, weekNumber = null }) {
+export default function ExperienceFeedbackForm({ user, lang = "es", experienceType, referenceId, programId = "", programName = "", experienceLabel = "", dayNumber = null, weekNumber = null }) {
   const c = COPY[lang] || COPY.es;
   const [rating, setRating] = useState(0);
   const [helpful, setHelpful] = useState("");
