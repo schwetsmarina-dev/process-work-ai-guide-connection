@@ -800,8 +800,13 @@ function detectResistanceCount(messages) {
   for (const msg of recentUser) {
     const lower = msg.content.toLowerCase().trim();
     const hasSignal = RESISTANCE_SIGNALS.some((sig) => lower.includes(sig));
-    // Short stuck answers (<=15 chars, no question mark) also count
-    const isShortStuck = lower.length <= 15 && !lower.includes("?");
+    // Short answers are NOT resistance by themselves: "sí", "vale", "en casa",
+    // "в груди" etc. can be perfectly valid process material. Count only an
+    // explicit stuck/uncertainty answer here; broader refusals are handled above.
+    const isShortStuck = [
+      "не знаю", "непонятно", "ничего", "затрудняюсь",
+      "no sé", "no lo sé", "no entiendo", "nada",
+    ].includes(lower);
     if (hasSignal || isShortStuck) count++;
   }
   return count;
