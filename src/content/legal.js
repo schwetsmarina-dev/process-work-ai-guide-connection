@@ -62,7 +62,7 @@ const privacyEs = () => {
 
 **Datos fisiológicos (opcional):** solo si decides introducirlos manualmente.
 
-**Eventos de seguridad:** si el sistema detecta indicios de riesgo grave, se registra el hecho y el fragmento de texto que lo activó.
+**Eventos de seguridad:** si el sistema detecta indicios de riesgo grave, se registra el hecho y el fragmento de texto que lo activó. Si tu cuenta está vinculada a un terapeuta, Talvira podrá comunicarle que se ha producido un evento de seguridad. Sin tu consentimiento específico no se compartirán con el terapeuta el contenido de la sesión, el tipo de riesgo, el nivel de gravedad ni otros detalles del evento.
 
 **Datos técnicos:** estadísticas de uso anónimas y sin cookies, y registros de errores sin contenido de sesiones.
 
@@ -208,7 +208,7 @@ const privacyRu = () => {
 
 **Физиологические данные (по желанию):** только если ты вводишь их вручную.
 
-**События безопасности:** при признаках серьёзного риска фиксируется сам факт и фрагмент текста, который его вызвал.
+**События безопасности:** при признаках серьёзного риска фиксируется сам факт и фрагмент текста, который его вызвал. Если ваш аккаунт связан с терапевтом, Talvira может сообщить ему о самом факте события безопасности. Без вашего отдельного согласия терапевту не передаются содержание сессии, тип риска, уровень серьёзности и другие подробности события.
 
 **Технические данные:** обезличенная статистика использования без cookies и журналы ошибок без содержания сессий.
 
