@@ -126,7 +126,7 @@ export default function Landing() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.45 }}
-            className="mt-10"
+            className="mt-10 flex flex-col items-center gap-3"
           >
             <Button
               size="lg"
@@ -136,6 +136,16 @@ export default function Landing() {
               {t("start_session", lang)}
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
+            <p className="text-sm text-muted-foreground">
+              {lang === "es" ? "¿Ya tienes una cuenta?" : "Уже есть аккаунт?"}{" "}
+              <Link
+                to="/login"
+                onClick={() => setStoredLanguage(lang)}
+                className="font-medium text-primary underline underline-offset-4 hover:text-primary/80"
+              >
+                {lang === "es" ? "Iniciar sesión" : "Войти"}
+              </Link>
+            </p>
           </motion.div>
         </div>
 
