@@ -245,19 +245,21 @@ Deno.serve(async (req) => {
     const memoryBlock = memories
       .map((memory) => `${normalizeText(memory.memory_key)}: ${normalizeText(memory.memory_value)}`)
       .filter(Boolean)
-      .join('\n') || '(нет сохранённой памяти — тестовый прогон)';
+      .join('\n') || (language === 'es' ? '(no hay memoria guardada; ejecución de prueba)' : '(нет сохранённой памяти — тестовый прогон)');
 
     const sessionsBlock = sessions
       .map((session, index) => {
-        const summary = normalizeText(session.summary) || '(без summary)';
+        const summary = normalizeText(session.summary) || (language === 'es' ? '(sin resumen)' : '(без summary)');
         const themes = (session.themes || []).map(normalizeText).filter(Boolean).join(', ');
         const signals = (session.signals || []).map(normalizeText).filter(Boolean).join(', ');
         const edgeSignals = (session.edge_signals || []).map(normalizeText).filter(Boolean).join(', ');
         const primary = (session.primary_process || []).map(normalizeText).filter(Boolean).join(', ');
         const secondary = (session.secondary_process || []).map(normalizeText).filter(Boolean).join(', ');
-        return `Сессия ${index + 1} [${normalizeText(session.mode_id || session.mode)}]: ${summary} | темы: ${themes || '—'} | сигналы: ${signals || '—'} | край: ${edgeSignals || '—'} | первичный процесс: ${primary || '—'} | вторичный процесс: ${secondary || '—'}`;
+        return language === 'es'
+          ? `Sesión ${index + 1} [${normalizeText(session.mode_id || session.mode)}]: ${summary} | temas: ${themes || '—'} | señales: ${signals || '—'} | señales de límite internas: ${edgeSignals || '—'} | proceso primario interno: ${primary || '—'} | proceso secundario interno: ${secondary || '—'}`
+          : `Сессия ${index + 1} [${normalizeText(session.mode_id || session.mode)}]: ${summary} | темы: ${themes || '—'} | сигналы: ${signals || '—'} | край: ${edgeSignals || '—'} | первичный процесс: ${primary || '—'} | вторичный процесс: ${secondary || '—'}`;
       })
-      .join('\n') || '(нет завершённых сессий — тестовый прогон)';
+      .join('\n') || (language === 'es' ? '(no hay sesiones completadas; ejecución de prueba)' : '(нет завершённых сессий — тестовый прогон)');
 
     let terms = [];
     try {
