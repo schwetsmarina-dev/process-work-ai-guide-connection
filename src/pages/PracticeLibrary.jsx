@@ -95,7 +95,17 @@ export default function PracticeLibrary() {
     .filter((x) => hasNamedAuthor(x.author))
     .filter((x) => x.requires_live_facilitator !== true && ["ai_self_guided", "conditional"].includes(x.delivery_level) && x.intensity !== "high"), [rows]);
 
-  const spanishMissing = useMemo(() => visibleRows.filter((x) => !String(x.title_es || "").trim() || !String(x.purpose_es || "").trim() || !Array.isArray(x.steps_es) || x.steps_es.length !== (x.steps || []).length), [visibleRows]);
+  const spanishMissing = useMemo(() => visibleRows.filter((x) => {
+    const arrayMissing = (source, translated) => Array.isArray(source) && source.length > 0 && (!Array.isArray(translated) || translated.length !== source.length);
+    return !String(x.title_es || "").trim()
+      || !String(x.purpose_es || "").trim()
+      || !Array.isArray(x.steps_es)
+      || x.steps_es.length !== (x.steps || []).length
+      || arrayMissing(x.search_tags, x.search_tags_es)
+      || arrayMissing(x.delivery_conditions, x.delivery_conditions_es)
+      || arrayMissing(x.exclude_if, x.exclude_if_es)
+      || arrayMissing(x.contraindications, x.contraindications_es);
+  }), [visibleRows]);
 
   useEffect(() => {
     if (lang !== "es" || hasAccess !== true || isLoading || localizing || localizationAttempted || spanishMissing.length === 0) return;
@@ -114,7 +124,9 @@ export default function PracticeLibrary() {
       : visibleRows;
     return localizedRows.filter((x) => {
       if (!q) return true;
-      const haystack = [x.title_ru, x.title_es, x.author, x.source, x.purpose, x.purpose_es, ...(x.steps_es || []), ...(x.search_tags || []), ...(x.term_keys || [])].join(" ").toLocaleLowerCase();
+      const haystack = lang === "es"
+        ? [x.title_es, x.author, x.purpose_es, ...(x.steps_es || []), ...(x.search_tags_es || []), ...(x.term_keys || [])].join(" ").toLocaleLowerCase()
+        : [x.title_ru, x.author, x.purpose, ...(x.steps || []), ...(x.search_tags || []), ...(x.term_keys || [])].join(" ").toLocaleLowerCase();
       return haystack.includes(q);
     });
   }, [visibleRows, query, lang]);
@@ -173,7 +185,7 @@ export default function PracticeLibrary() {
                 {expanded && (
                   <div className="mt-5 space-y-4 border-t pt-4">
                     {(lang === "es" ? exercise.purpose_es : exercise.purpose) && <div><p className="text-sm font-medium mb-1">{c.purpose}</p><p className="text-sm text-muted-foreground leading-relaxed">{lang === "es" ? exercise.purpose_es : exercise.purpose}</p></div>}
-                    {exercise.delivery_level === "conditional" && <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900 space-y-2"><div className="flex gap-2"><ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" /><span>{c.conditional}</span></div>{lang !== "es" && (exercise.delivery_conditions || []).length > 0 && <p><strong>{c.conditions}:</strong> {exercise.delivery_conditions.join(" · ")}</p>}{lang !== "es" && [...(exercise.exclude_if || []), ...(exercise.contraindications || [])].length > 0 && <p><strong>{c.avoidIf}:</strong> {[...(exercise.exclude_if || []), ...(exercise.contraindications || [])].join(" · ")}</p>}</div>}
+                    {exercise.delivery_level === "conditional" && <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900 space-y-2"><div className="flex gap-2"><ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" /><span>{c.conditional}</span></div>{(lang === "es" ? (exercise.delivery_conditions_es || []) : (exercise.delivery_conditions || [])).length > 0 && <p><strong>{c.conditions}:</strong> {(lang === "es" ? exercise.delivery_conditions_es : exercise.delivery_conditions).join(" · ")}</p>}{(lang === "es" ? [...(exercise.exclude_if_es || []), ...(exercise.contraindications_es || [])] : [...(exercise.exclude_if || []), ...(exercise.contraindications || [])]).length > 0 && <p><strong>{c.avoidIf}:</strong> {(lang === "es" ? [...(exercise.exclude_if_es || []), ...(exercise.contraindications_es || [])] : [...(exercise.exclude_if || []), ...(exercise.contraindications || [])]).join(" · ")}</p>}</div>}
                     <div><p className="text-sm font-medium mb-2">{c.steps}</p><ol className="space-y-2 list-decimal pl-5 text-sm leading-relaxed">{(lang === "es" ? exercise.steps_es : (exercise.steps || [])).map((step, i) => <li key={i}>{step}</li>)}</ol></div>
                     <div className="pt-2">
                       {audioById[exercise.exercise_id] ? (
