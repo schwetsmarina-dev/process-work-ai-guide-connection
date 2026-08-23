@@ -996,14 +996,19 @@ export function t(key, lang) {
 const STORAGE_KEY = "talvira_language_v2";
 
 export function getStoredLanguage() {
+  // An explicit ?lang= value in the current URL is the strongest signal.
+  // Keeping URL and UI aligned also makes shared/deep links deterministic.
+  if (typeof window !== "undefined") {
+    const requested = new URLSearchParams(window.location.search).get("lang");
+    if (SUPPORTED_LANGUAGES.includes(requested)) return requested;
+  }
+
   if (typeof localStorage !== "undefined") {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (SUPPORTED_LANGUAGES.includes(stored)) return stored;
   }
 
   if (typeof window !== "undefined") {
-    const requested = new URLSearchParams(window.location.search).get("lang");
-    if (SUPPORTED_LANGUAGES.includes(requested)) return requested;
 
     // Preserve the language of the marketing page that sent the visitor.
     // talvira.es is Spanish by default; /ru/ is the explicit Russian version.
@@ -1035,6 +1040,9 @@ export function setStoredLanguage(lang) {
     localStorage.setItem(STORAGE_KEY, normalized);
   }
   if (typeof window !== "undefined") {
+    const url = new URL(window.location.href);
+    url.searchParams.set("lang", normalized);
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
     window.dispatchEvent(new CustomEvent("talvira-language-change", { detail: normalized }));
   }
 }
