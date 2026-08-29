@@ -1570,7 +1570,7 @@ ${userMessage}
 2. Usa palabras concretas de la persona en una reflexión breve.
 3. Haz exactamente UNA pregunta que corresponda al siguiente movimiento permitido.
 4. Responde en 2–3 frases, sin repetir, sin plantillas y sin mezclar idiomas.`
-    : `${systemPrompt}${languageOverride}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${alreadyAnsweredInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${focusContinuity}${edgeLimitInstruction}${beginnerChoicesInstruction}${extraInstruction}
+    : `${systemPrompt}${languageOverride}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${nonResonanceInstruction}${alreadyAnsweredInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${focusContinuity}${edgeLimitInstruction}${beginnerChoicesInstruction}${extraInstruction}
 
 Режим: ${currentMode}
 
@@ -1648,7 +1648,7 @@ ${trimmedHistory}
 ${userMessage}
 
 Respeta la etapa actual. Escribe una reflexión breve usando palabras concretas de la persona y exactamente UNA pregunta que haga avanzar el proceso. 2–3 frases, solo en español.`
-      : `${systemPrompt}${languageOverride}${carryOverBlock}${memoriesBlock}${stepContext}${layerStatus}${alreadyAnsweredInstruction}${integrationLock}${forcedInstruction}${loopWarning}
+      : `${systemPrompt}${languageOverride}${carryOverBlock}${memoriesBlock}${stepContext}${layerStatus}${nonResonanceInstruction}${alreadyAnsweredInstruction}${integrationLock}${forcedInstruction}${loopWarning}
 
 Режим: ${currentMode}
 
