@@ -115,7 +115,7 @@ function fallbacksFor(language) {
   return SAFE_FALLBACKS_BY_LANG[language] || SAFE_FALLBACKS_BY_LANG.ru;
 }
 
-export function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue, userSelectedFocus, completionDetected, coveredLayers, resistanceCount, step, hasValidStep, sessionId, userAlreadyAnswered, mappingStageObj, sessionState, userChangedFocus }, validationContext) {
+export function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue, userSelectedFocus, completionDetected, coveredLayers, resistanceCount, step, hasValidStep, sessionId, userAlreadyAnswered, nonResonanceDetected, mappingStageObj, sessionState, userChangedFocus }, validationContext) {
   if (!validationContext) validationContext = { completionDetected };
   const lower = responseText.toLowerCase();
 
@@ -323,6 +323,28 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
         "'если не отталкивать это чувство...' / " +
         "'если позволить этому происходить...'",
     };
+  }
+
+  // 0nr. USER CORRECTION / NON-RESONANCE — do not keep selling the rejected hypothesis.
+  if (nonResonanceDetected) {
+    const REJECTED_DIRECTION_PHRASES = [
+      "в твоей жизни", "в реальной жизни", "с твоей жизнью", "где в жизни", "как это связано",
+      "говорить «нет»", "говорить \"нет\"", "говорить нет", "проявлять твёрдость", "проявлять твердость",
+      "en tu vida", "en la vida real", "con tu vida", "dónde en tu vida", "cómo se relaciona",
+      "decir que no", "decir no", "mostrar firmeza",
+    ];
+    const hit = REJECTED_DIRECTION_PHRASES.find((p) => lower.includes(p));
+    if (hit) {
+      console.warn("[NON_RESONANCE_HYPOTHESIS_REPEAT_BLOCKED]", { mode: currentMode, triggeredPhrase: hit });
+      return {
+        isValid: false,
+        reason: `User rejected the proposed direction; assistant tried to continue it ("${hit}")`,
+        correctedInstruction:
+          (String(currentMode || "").toLowerCase().includes("dream")
+            ? "The user's correction has priority. Acknowledge that the previous life-link hypothesis does not fit. Return to the exact dream focus and ask ONE phenomenological question about the dream-self's state/position/agency inside the scene. Explore choice vs imposed action only as an open question. Do not diagnose trauma, inner child, victimhood or people-pleasing."
+            : "The user's correction has priority. Drop the rejected hypothesis completely. Return to the last user-confirmed material and choose a different process direction. Do not force a life connection in this turn."),
+      };
+    }
   }
 
   // 0. EDGE LIMIT check — must run before all other checks
