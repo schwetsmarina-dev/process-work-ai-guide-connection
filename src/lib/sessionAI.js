@@ -1078,7 +1078,7 @@ export async function getAIResponse(session, step, messages, userMessage, langua
   const isMismatch = detectMismatch(userMessage);
   const hypothesisRejected = detectHypothesisRejection(userMessage) || detectNonResonance(userMessage);
   const questionConfused = detectQuestionConfusion(userMessage);
-  const nonResonanceDetected = detectNonResonance(userMessage);
+  const nonResonanceDetected = hypothesisRejected;
   const isDreamAlreadyTold = isDreamMode && detectDreamAlreadyTold(userMessage);
   const isMapStatusQuery = detectMapStatusQuery(userMessage);
   const userAlreadyAnswered = detectUserAlreadyAnswered(userMessage);
