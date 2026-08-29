@@ -3,7 +3,7 @@
 // ever returns an empty string, a validation failure would show the user a
 // blank chat bubble instead of a safe recovery question.
 import { describe, it, expect } from "vitest";
-import { getSafeFallback } from "./sessionValidation";
+import { getSafeFallback, validateAssistantResponse } from "./sessionValidation";
 
 describe("getSafeFallback", () => {
   it("always returns a non-empty question, for every stage x language combination", () => {
@@ -38,5 +38,38 @@ describe("getSafeFallback", () => {
     const ru = getSafeFallback("dream", null, false, { stage: "awaiting_primary" }, false, false, "ru");
     const es = getSafeFallback("dream", null, false, { stage: "awaiting_primary" }, false, false, "es");
     expect(ru).not.toBe(es);
+  });
+});
+
+describe("non-resonance guard", () => {
+  it("blocks repeating a rejected real-life hypothesis in Dream", () => {
+    const result = validateAssistantResponse({
+      responseText: "Есть ли в этом отказе качество, которое можно добавить в твои способы говорить нет в реальной жизни?",
+      currentMode: "dream",
+      conversationHistory: [],
+      lastUserMessage: "Я и так говорю нет. Не вижу такой связи.",
+      resistanceCount: 0,
+      nonResonanceDetected: true,
+      hasValidStep: false,
+      userAlreadyAnswered: false,
+      userChangedFocus: false,
+    });
+    expect(result.isValid).toBe(false);
+    expect(result.reason).toContain("User rejected");
+  });
+
+  it("allows returning to the dream-self after a rejected hypothesis", () => {
+    const result = validateAssistantResponse({
+      responseText: "Да, эта связь не подходит. Какая ты там, в школьном туалете, в тот момент, когда решаешь больше не мыть?",
+      currentMode: "dream",
+      conversationHistory: [],
+      lastUserMessage: "Я не могу найти такие параллели.",
+      resistanceCount: 0,
+      nonResonanceDetected: true,
+      hasValidStep: false,
+      userAlreadyAnswered: false,
+      userChangedFocus: false,
+    });
+    expect(result.isValid).toBe(true);
   });
 });
