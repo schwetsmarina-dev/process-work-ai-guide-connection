@@ -251,6 +251,21 @@ function detectMismatch(userMessage) {
   return MISMATCH_SIGNALS.some((sig) => lower.includes(sig));
 }
 
+const NON_RESONANCE_SIGNALS = [
+  "не вижу связи", "не вижу такой связи", "не могу найти параллель", "не могу найти такие параллели",
+  "это мне не откликается", "мне это не откликается", "это не похоже", "не похоже на меня",
+  "это не про меня", "я и так это делаю", "у меня такого нет", "здесь нет того, что",
+  "не понимаю, как это связано", "непонятно, как это связано", "мне пока не понятно послание",
+  "no veo la relación", "no veo esa relación", "no encuentro el paralelismo", "no me resuena",
+  "no encaja conmigo", "no es sobre mí", "yo ya hago eso", "eso no aparece en mi vida",
+  "no entiendo cómo se relaciona", "no veo cómo se relaciona",
+];
+
+export function detectNonResonance(userMessage) {
+  const lower = (userMessage || "").toLowerCase();
+  return NON_RESONANCE_SIGNALS.some((sig) => lower.includes(sig));
+}
+
 function detectMapStatusQuery(userMessage) {
   const lower = userMessage.toLowerCase();
   return MAP_STATUS_SIGNALS.some((sig) => lower.includes(sig));
