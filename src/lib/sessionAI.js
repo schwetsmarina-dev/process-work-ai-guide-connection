@@ -858,6 +858,10 @@ export function detectResistanceCount(messages) {
   let count = 0;
   for (const msg of recentUser) {
     const lower = msg.content.toLowerCase().trim();
+    // User correction of the facilitator and simple question-confusion are not
+    // process resistance/edge signals. Counting them as resistance made Talvira
+    // pathologize a bad AI hypothesis and could trigger EDGE_LIMIT incorrectly.
+    if (detectHypothesisRejection(msg.content) || detectQuestionConfusion(msg.content)) continue;
     if (detectNonResonance(msg.content) || detectBeginnerConfusion(msg.content)) continue;
     const hasSignal = RESISTANCE_SIGNALS.some((sig) => lower.includes(sig));
     // Uncertainty, confusion and non-resonance are NOT edge/resistance by themselves.
