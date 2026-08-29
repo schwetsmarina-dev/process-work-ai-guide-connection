@@ -1048,7 +1048,7 @@ export async function getAIResponse(session, step, messages, userMessage, langua
         `Не меняй методологическую цель и не считай непонимание сопротивлением. Переформулируй ТОТ ЖЕ вопрос проще и конкретнее, используя уже сказанные пользователем слова. Не подсовывай список эмоций, пока после простой переформулировки пользователь снова не скажет, что не может получить доступ к опыту.`)
     : "";
 
-  const beginnerChoicesInstruction = questionConfused
+  const beginnerChoicesInstruction = questionConfusionDetected
     ? (language === "es"
       ? `\n\n🟠 LA PERSONA NO ENTIENDE LA PREGUNTA\nReformula SOLO la misma pregunta en palabras más simples. No cambies de tema, no introduzcas emociones ni opciones que la persona no haya mencionado, y no profundices todavía.`
       : `\n\n🟠 ПОЛЬЗОВАТЕЛЬ НЕ ПОНЯЛ ВОПРОС\nПереформулируй ТОЛЬКО тот же вопрос простыми словами. Не меняй тему, не подсовывай эмоции/варианты, которых пользователь не называл, и пока не углубляй процесс.`)
