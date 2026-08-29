@@ -245,6 +245,39 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
     }
   }
 
+  // 0hyp. USER CORRECTION / HYPOTHESIS REJECTION — all modes.
+  // A rejected facilitator hypothesis is NOT user resistance. The next response
+  // must abandon the rejected connection rather than restating it in new words.
+  const lastUserLower = String(lastUserMessage || "").toLowerCase();
+  const HYPOTHESIS_REJECTION = [
+    "это не про меня", "это не то", "не похоже", "не вижу связи", "я не вижу связи",
+    "не могу найти такую параллель", "не могу найти параллель", "мне это не откликается",
+    "не откликается", "я и так это делаю", "я и так говорю нет", "там нет того, что",
+    "no me encaja", "no es eso", "no veo la relación", "no veo relación", "no me resuena",
+    "no tiene que ver", "ya lo hago", "no hay nada de eso",
+  ];
+  const hypothesisRejected = HYPOTHESIS_REJECTION.some((p) => lastUserLower.includes(p));
+  if (hypothesisRejected) {
+    const previousAssistant = [...(conversationHistory || [])].reverse().find((m) => m.role === "assistant")?.content || "";
+    const prevWords = previousAssistant.toLowerCase().split(/\s+/).map((w) => w.replace(/[^а-яёa-záéíóúüñ0-9-]/gi, "")).filter((w) => w.length >= 6);
+    const candidateWords = new Set(lower.split(/\s+/).map((w) => w.replace(/[^а-яёa-záéíóúüñ0-9-]/gi, "")).filter((w) => w.length >= 6));
+    const overlap = [...new Set(prevWords)].filter((w) => candidateWords.has(w));
+    const integrationRetry = [
+      "в твоей жизни", "в реальности", "говорить нет", "сказать нет", "твои нет",
+      "en tu vida", "en la realidad", "decir que no", "tus no",
+    ].some((p) => lower.includes(p));
+    if (overlap.length >= 4 || integrationRetry) {
+      return {
+        isValid: false,
+        reason: "User explicitly rejected the facilitator's previous hypothesis, but the response reused the same direction",
+        correctedInstruction:
+          "USER CORRECTION HAS PRIORITY. Explicitly drop the rejected hypothesis. Do not defend, soften, rephrase, or retry it. " +
+          "Return to the last user-confirmed concrete material and choose a different process direction. " +
+          "For Dream, preserve the dream scene/focus but explore the dream-self state, agency, constraint, relationship or support rather than forcing the same real-life analogy.",
+      };
+    }
+  }
+
   // 0rep. ANTI-REPEAT against last 5 assistant questions (ModeStep history)
   const REPEATED_STEMS = [
     "что происходит", "что начинает происходить", "что замечаешь",
