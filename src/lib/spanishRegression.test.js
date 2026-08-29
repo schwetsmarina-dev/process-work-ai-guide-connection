@@ -55,9 +55,9 @@ describe("Spanish customer journey regression guards", () => {
     ])).toBe(0);
   });
 
-  it("does count explicit Spanish stuck/refusal signals as resistance", () => {
+  it("separates uncertainty from explicit Spanish refusal/overload", () => {
     expect(detectResistanceCount([
       user("no sé"), user("no quiero seguir"), user("es demasiado"),
-    ])).toBe(3);
+    ])).toBe(2);
   });
 });
