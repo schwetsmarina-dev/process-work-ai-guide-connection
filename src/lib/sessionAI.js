@@ -1005,11 +1005,20 @@ export async function getAIResponse(session, step, messages, userMessage, langua
         `'Что для тебя было самым важным в этой сессии?' or 'Какой инсайт тебе хочется сохранить?' or 'Что сейчас кажется самым ценным?'`)
     : "";
 
-  const isBeginnerConfused = detectBeginnerConfusion(userMessage);
+  const isQuestionConfusion = detectQuestionConfusion(userMessage);
+  const isBeginnerConfused = detectBeginnerConfusion(userMessage) && !isQuestionConfusion;
   const isBodyModeEarly = (currentMode || "").toLowerCase().includes("body");
   if (isBeginnerConfused) {
     if (import.meta.env.DEV) console.log("[BEGINNER_CHOICES_OFFERED]", { mode: currentMode });
   }
+  const questionConfusionInstruction = isQuestionConfusion
+    ? (language === "es"
+      ? `\n\n🟣 LA PERSONA NO ENTIENDE LA PREGUNTA\n` +
+        `No cambies de objetivo metodológico y no interpretes su confusión como resistencia. Reformula LA MISMA pregunta con palabras más simples y concretas, usando material que la persona ya ha dicho. No ofrezcas una lista de emociones salvo que la persona siga sin poder acceder a la experiencia después de la reformulación.`
+      : `\n\n🟣 ПОЛЬЗОВАТЕЛЬ НЕ ПОНЯЛ ВОПРОС\n` +
+        `Не меняй методологическую цель и не считай непонимание сопротивлением. Переформулируй ТОТ ЖЕ вопрос проще и конкретнее, используя уже сказанные пользователем слова. Не подсовывай список эмоций, пока после простой переформулировки пользователь снова не скажет, что не может получить доступ к опыту.`)
+    : "";
+
   const beginnerChoicesInstruction = isBeginnerConfused
     ? (language === "es"
       ? `\n\n🟢 LA PERSONA TIENE DIFICULTAD PARA RESPONDER — NO PROFUNDICES\n` +
