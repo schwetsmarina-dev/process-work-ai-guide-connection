@@ -1056,6 +1056,16 @@ export async function getAIResponse(session, step, messages, userMessage, langua
         `Не меняй методологическую цель и не считай непонимание сопротивлением. Переформулируй ТОТ ЖЕ вопрос проще и конкретнее, используя уже сказанные пользователем слова. Не подсовывай список эмоций, пока после простой переформулировки пользователь снова не скажет, что не может получить доступ к опыту.`)
     : "";
 
+  const temporalTransitionInstruction = temporalTransition.detected
+    ? (language === "es"
+      ? `\n\n🟤 TRANSICIÓN TEMPORAL / CAMBIO DE POSICIÓN DETECTADO\n` +
+        `La persona ha descrito un "antes → ahora/después" o un cambio de conducta/posición. Trata esa DIFERENCIA como material procesual importante. Antes de integrar o buscar una explicación externa, explora por separado: 1) cómo era la persona en el estado anterior, 2) cómo es en el estado nuevo, 3) qué cambió internamente entre ambos.\n` +
+        `Investiga agencia, capacidad de elegir o rechazar, límites, relación consigo misma y con otros, y apoyo interno SOLO si estas dimensiones encajan con sus palabras. No declares cuál de los estados es "correcto" ni diagnostiques la causa. En sueños, mantente primero dentro del yo-del-sueño y de la escena.`
+      : `\n\n🟤 ОБНАРУЖЕН ВНУТРЕННИЙ ПЕРЕХОД «БЫЛО → СТАЛО»\n` +
+        `Пользователь описал изменение во времени, поведении или позиции. Считай РАЗНИЦУ между двумя состояниями важным процессуальным материалом. До интеграции и внешних объяснений исследуй отдельно: 1) какой человек был в прежнем состоянии, 2) каким становится в новом, 3) что внутренне изменилось между ними.\n` +
+        `Исследуй агентность, возможность выбирать/отказываться, границы, отношение к себе и другим, внутреннюю опору ТОЛЬКО если это соответствует словам пользователя. Не объявляй одно состояние "правильным" и не диагностируй причину. В режиме СОН сначала оставайся внутри dream-self и сцены сна.`)
+    : "";
+
   const beginnerChoicesInstruction = questionConfusionDetected
     ? (language === "es"
       ? `\n\n🟠 LA PERSONA NO ENTIENDE LA PREGUNTA\nReformula SOLO la misma pregunta en palabras más simples. No cambies de tema, no introduzcas emociones ni opciones que la persona no haya mencionado, y no profundices todavía.`
