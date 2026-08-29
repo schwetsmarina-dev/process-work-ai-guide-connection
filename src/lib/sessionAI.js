@@ -1042,6 +1042,7 @@ export async function getAIResponse(session, step, messages, userMessage, langua
     : "";
 
   const isQuestionConfusion = detectQuestionConfusion(userMessage);
+  const temporalTransition = detectTemporalTransition(messages);
   const isBeginnerConfused = detectBeginnerConfusion(userMessage) && !isQuestionConfusion;
   const isBodyModeEarly = (currentMode || "").toLowerCase().includes("body");
   if (isBeginnerConfused) {
