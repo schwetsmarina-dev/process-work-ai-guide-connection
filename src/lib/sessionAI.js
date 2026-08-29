@@ -234,6 +234,24 @@ export function detectQuestionConfusion(userMessage) {
   return QUESTION_CONFUSION_SIGNALS.some((sig) => lower.includes(sig));
 }
 
+const TEMPORAL_TRANSITION_SIGNALS = [
+  "раньше", "теперь", "сейчас уже", "сначала", "потом", "раньше я", "теперь я",
+  "перестала", "перестал", "начала", "начал", "стала", "стал", "больше не",
+  "antes", "ahora", "al principio", "después", "dejé de", "dejado de",
+  "empecé a", "empezó a", "ahora ya", "ya no",
+];
+
+export function detectTemporalTransition(messagesOrText) {
+  const text = Array.isArray(messagesOrText)
+    ? messagesOrText.filter((m) => m?.role === "user").map((m) => m.content || "").join(" ")
+    : String(messagesOrText || "");
+  const lower = text.toLowerCase();
+  const hits = TEMPORAL_TRANSITION_SIGNALS.filter((sig) => lower.includes(sig));
+  const hasBefore = ["раньше", "сначала", "до этого", "antes", "al principio"].some((s) => lower.includes(s));
+  const hasAfter = ["теперь", "сейчас", "потом", "больше не", "перестала", "перестал", "стала", "стал", "ahora", "después", "ya no", "dejé de"].some((s) => lower.includes(s));
+  return { detected: hits.length >= 2 || (hasBefore && hasAfter), hits };
+}
+
 const MISMATCH_SIGNALS = [
   "я ещё не рассказала", "я ещё не рассказал", "я не рассказывала",
   "ты перескочил", "ты перескочила", "откуда это", "это не то",
