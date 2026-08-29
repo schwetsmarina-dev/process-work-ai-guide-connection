@@ -803,17 +803,17 @@ function detectCoveredLayers(messages) {
 // ─── Resistance / Edge detection ────────────────────────────────────────────
 const RESISTANCE_SIGNALS = [
   "не хочу", "не могу", "не знаю", "не готова", "не готов",
-  "не получается", "не могу туда идти", "не хочу туда",
+  "не могу туда идти", "не хочу туда",
   "слишком тяжело", "слишком сложно", "невыносимо",
   "я устала", "устала", "устал", "хватит", "стоп",
   "давай закончим", "не хочу продолжать",
   "я повторяюсь", "ты повторяешь", "я уже ответила", "я уже сказала",
-  "я вынуждена повторять", "ничего", "нет", "не знаю",
+  "я вынуждена повторять",
   "no quiero", "no puedo", "no sé", "no estoy preparada", "no estoy preparado",
-  "no me sale", "no puedo seguir", "no quiero seguir", "no quiero ir ahí",
+  "no puedo seguir", "no quiero seguir", "no quiero ir ahí",
   "es demasiado", "demasiado difícil", "me supera", "me está sobrepasando",
   "estoy cansada", "estoy cansado", "basta", "para", "quiero terminar",
-  "estás repitiendo", "ya respondí", "ya lo dije", "tengo que repetirme", "nada",
+  "estás repitiendo", "ya respondí", "ya lo dije", "tengo que repetirme",
 ];
 
 export function detectResistanceCount(messages) {
@@ -822,14 +822,10 @@ export function detectResistanceCount(messages) {
   for (const msg of recentUser) {
     const lower = msg.content.toLowerCase().trim();
     const hasSignal = RESISTANCE_SIGNALS.some((sig) => lower.includes(sig));
-    // Short answers are NOT resistance by themselves: "sí", "vale", "en casa",
-    // "в груди" etc. can be perfectly valid process material. Count only an
-    // explicit stuck/uncertainty answer here; broader refusals are handled above.
-    const isShortStuck = [
-      "не знаю", "непонятно", "ничего", "затрудняюсь",
-      "no sé", "no lo sé", "no entiendo", "nada",
-    ].includes(lower);
-    if (hasSignal || isShortStuck) count++;
+    // Uncertainty, confusion and non-resonance are NOT edge/resistance by themselves.
+    // They are handled by dedicated recovery paths (rephrase / hypothesis reset).
+    // Count only explicit refusal, overload, stop/fatigue or repeated-loop protest here.
+    if (hasSignal) count++;
   }
   return count;
 }
