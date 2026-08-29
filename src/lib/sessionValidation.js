@@ -269,7 +269,7 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
     if (overlap.length >= 4 || integrationRetry) {
       return {
         isValid: false,
-        reason: "User explicitly rejected the facilitator's previous hypothesis, but the response reused the same direction",
+        reason: "User rejected the facilitator's previous hypothesis, but the response reused the same direction",
         correctedInstruction:
           "USER CORRECTION HAS PRIORITY. Explicitly drop the rejected hypothesis. Do not defend, soften, rephrase, or retry it. " +
           "Return to the last user-confirmed concrete material and choose a different process direction. " +
