@@ -222,6 +222,18 @@ function detectBeginnerConfusion(userMessage) {
   return BEGINNER_CONFUSION_SIGNALS.some((sig) => lower.includes(sig));
 }
 
+const QUESTION_CONFUSION_SIGNALS = [
+  "не понимаю твой вопрос", "не понимаю вопрос", "спроси по-другому", "переформулируй вопрос",
+  "что ты имеешь в виду", "непонятно, что ты спрашиваешь", "я не поняла вопрос", "я не понял вопрос",
+  "no entiendo tu pregunta", "no entiendo la pregunta", "pregúntamelo de otra manera",
+  "reformula la pregunta", "qué quieres decir", "no entiendo qué me preguntas",
+];
+
+export function detectQuestionConfusion(userMessage) {
+  const lower = (userMessage || "").toLowerCase().trim();
+  return QUESTION_CONFUSION_SIGNALS.some((sig) => lower.includes(sig));
+}
+
 const MISMATCH_SIGNALS = [
   "я ещё не рассказала", "я ещё не рассказал", "я не рассказывала",
   "ты перескочил", "ты перескочила", "откуда это", "это не то",
