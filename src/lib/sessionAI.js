@@ -263,6 +263,31 @@ function detectMismatch(userMessage) {
   return MISMATCH_SIGNALS.some((sig) => lower.includes(sig));
 }
 
+const HYPOTHESIS_REJECTION_SIGNALS = [
+  "это не про меня", "это не то", "не похоже", "я не вижу связи", "не вижу связи",
+  "не могу найти такую параллель", "не могу найти параллель", "у меня такого нет",
+  "это не отражает", "мне это не откликается", "не откликается", "ты не туда пошёл", "ты не туда пошла",
+  "я и так это делаю", "я и так говорю нет", "это не связано", "там нет того, что",
+  "no me encaja", "no es eso", "no veo la relación", "no veo relación", "no me resuena",
+  "no tiene que ver", "eso no refleja", "ya lo hago", "no hay nada de eso",
+];
+
+export function detectHypothesisRejection(userMessage) {
+  const lower = (userMessage || "").toLowerCase().trim();
+  return HYPOTHESIS_REJECTION_SIGNALS.some((sig) => lower.includes(sig));
+}
+
+const QUESTION_CONFUSION_SIGNALS = [
+  "не понимаю твой вопрос", "не понял твой вопрос", "спроси по-другому", "переформулируй",
+  "что ты имеешь в виду", "вопрос непонятен", "не понимаю вопрос",
+  "no entiendo tu pregunta", "pregúntamelo de otra manera", "reformula", "qué quieres decir",
+];
+
+export function detectQuestionConfusion(userMessage) {
+  const lower = (userMessage || "").toLowerCase().trim();
+  return QUESTION_CONFUSION_SIGNALS.some((sig) => lower.includes(sig));
+}
+
 const NON_RESONANCE_SIGNALS = [
   "не вижу связи", "не вижу такой связи", "не могу найти параллель", "не могу найти такие параллели",
   "это мне не откликается", "мне это не откликается", "это не похоже", "не похоже на меня",
