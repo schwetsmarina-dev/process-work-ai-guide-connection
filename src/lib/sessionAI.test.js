@@ -6,7 +6,7 @@
 // (process-mapping stage). They are exported here specifically so they can be
 // covered without mocking the AI gateway.
 import { describe, it, expect } from "vitest";
-import { detectProcessMappingStage, detectLoopInLastExchanges, getModeKey, detectResistanceCount, detectNonResonance, detectQuestionConfusion } from "./sessionAI";
+import { detectProcessMappingStage, detectLoopInLastExchanges, getModeKey, detectResistanceCount, detectNonResonance, detectQuestionConfusion, detectTemporalTransition } from "./sessionAI";
 
 function ai(content) {
   return { role: "assistant", content };
@@ -91,6 +91,22 @@ describe("detectProcessMappingStage — dream", () => {
     const result = detectProcessMappingStage(messages, "dream");
     expect(result.stage).not.toBe("awaiting_dream");
     expect(result.dream_shared).toBe(true);
+  });
+});
+
+describe("temporal process transitions", () => {
+  it("detects a before-to-after change in the dream-self", () => {
+    const result = detectTemporalTransition("Раньше я мыла школьные туалеты, а теперь я отказываюсь их мыть.");
+    expect(result.detected).toBe(true);
+  });
+
+  it("detects the same process structure in Spanish", () => {
+    const result = detectTemporalTransition("Antes lo hacía, pero ahora ya no y me niego a hacerlo.");
+    expect(result.detected).toBe(true);
+  });
+
+  it("does not flag an isolated present-state statement as a transition", () => {
+    expect(detectTemporalTransition("Я сейчас стою в школе и чувствую напряжение.").detected).toBe(false);
   });
 });
 
