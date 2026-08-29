@@ -6,7 +6,7 @@
 // (process-mapping stage). They are exported here specifically so they can be
 // covered without mocking the AI gateway.
 import { describe, it, expect } from "vitest";
-import { detectProcessMappingStage, detectLoopInLastExchanges, getModeKey } from "./sessionAI";
+import { detectProcessMappingStage, detectLoopInLastExchanges, getModeKey, detectResistanceCount, detectNonResonance, detectQuestionConfusion } from "./sessionAI";
 
 function ai(content) {
   return { role: "assistant", content };
@@ -91,6 +91,32 @@ describe("detectProcessMappingStage — dream", () => {
     const result = detectProcessMappingStage(messages, "dream");
     expect(result.stage).not.toBe("awaiting_dream");
     expect(result.dream_shared).toBe(true);
+  });
+});
+
+describe("correction / confusion / resistance separation", () => {
+  it("recognizes Irina-style non-resonance as facilitator correction", () => {
+    expect(detectNonResonance("Я и так говорю нет в реальности, и я не могу найти такие параллели.")).toBe(true);
+    expect(detectNonResonance("Мне это не откликается, я не вижу связи.")).toBe(true);
+  });
+
+  it("recognizes request to rephrase a question", () => {
+    expect(detectQuestionConfusion("Спроси по-другому, я не понимаю твой вопрос.")).toBe(true);
+    expect(detectQuestionConfusion("No entiendo tu pregunta, pregúntamelo de otra manera.")).toBe(true);
+  });
+
+  it("does not count confusion or non-resonance as resistance/edge", () => {
+    const messages = [
+      user("Я не понимаю твой вопрос."),
+      user("Я не могу найти такие параллели."),
+      user("Мне пока не понятно послание сна."),
+    ];
+    expect(detectResistanceCount(messages)).toBe(0);
+  });
+
+  it("still counts explicit stop/overload as resistance", () => {
+    const messages = [user("Мне слишком тяжело, я не хочу туда идти."), user("Стоп, давай закончим.")];
+    expect(detectResistanceCount(messages)).toBeGreaterThanOrEqual(2);
   });
 });
 
