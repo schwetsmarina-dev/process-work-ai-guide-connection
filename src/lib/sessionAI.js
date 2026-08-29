@@ -277,17 +277,6 @@ export function detectHypothesisRejection(userMessage) {
   return HYPOTHESIS_REJECTION_SIGNALS.some((sig) => lower.includes(sig));
 }
 
-const QUESTION_CONFUSION_SIGNALS = [
-  "не понимаю твой вопрос", "не понял твой вопрос", "спроси по-другому", "переформулируй",
-  "что ты имеешь в виду", "вопрос непонятен", "не понимаю вопрос",
-  "no entiendo tu pregunta", "pregúntamelo de otra manera", "reformula", "qué quieres decir",
-];
-
-export function detectQuestionConfusion(userMessage) {
-  const lower = (userMessage || "").toLowerCase().trim();
-  return QUESTION_CONFUSION_SIGNALS.some((sig) => lower.includes(sig));
-}
-
 const NON_RESONANCE_SIGNALS = [
   "не вижу связи", "не вижу такой связи", "не могу найти параллель", "не могу найти такие параллели",
   "это мне не откликается", "мне это не откликается", "это не похоже", "не похоже на меня",
