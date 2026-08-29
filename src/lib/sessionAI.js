@@ -1029,6 +1029,7 @@ export async function getAIResponse(session, step, messages, userMessage, langua
   const dreamMappingComplete = mappingStageComplete;
 
   const isMismatch = detectMismatch(userMessage);
+  const nonResonanceDetected = detectNonResonance(userMessage);
   const isDreamAlreadyTold = isDreamMode && detectDreamAlreadyTold(userMessage);
   const isMapStatusQuery = detectMapStatusQuery(userMessage);
   const userAlreadyAnswered = detectUserAlreadyAnswered(userMessage);
@@ -1048,6 +1049,22 @@ export async function getAIResponse(session, step, messages, userMessage, langua
   }
 
   const focusForAck = mappingStage.selected_focus || mappingStage.current_process_target;
+  const nonResonanceInstruction = nonResonanceDetected
+    ? (language === "es"
+      ? `\n\n🔵 CORRECCIÓN DE LA PERSONA / LA HIPÓTESIS NO RESUENA\n` +
+        `La persona acaba de indicar que la relación o hipótesis propuesta NO encaja. Trátalo como una corrección válida del facilitador, NO como resistencia.\n` +
+        `PROHIBIDO reformular o insistir en la misma hipótesis. Reconoce brevemente que esa vía no encaja y vuelve al último material confirmado por la persona.\n` +
+        (isDreamMode
+          ? `En modo sueño: vuelve al foco del sueño y explora el ESTADO/POSICIÓN DEL YO-DEL-SUEÑO y su agencia dentro de la escena (qué hace, qué acepta, qué rechaza, si el acto se vive como elección o imposición, qué cambia antes/después del rechazo). No inventes trauma, infancia, víctima ni complacencia. Solo explora esas dimensiones si aparecen en las palabras de la persona.`
+          : `En este modo: vuelve al último material confirmado y elige una dirección procesual distinta. No fuerces una conexión con la vida real que la persona ya rechazó.`)
+      : `\n\n🔵 КОРРЕКЦИЯ ПОЛЬЗОВАТЕЛЯ / ГИПОТЕЗА НЕ РЕЗОНИРУЕТ\n` +
+        `Пользователь только что сообщил, что предложенная связь или гипотеза НЕ подходит. Считай это валидной коррекцией фасилитатора, а НЕ сопротивлением.\n` +
+        `ЗАПРЕЩЕНО переформулировать или продолжать ту же гипотезу. Коротко признай, что эта линия не подходит, и вернись к последнему материалу, который пользователь явно подтвердил.\n` +
+        (isDreamMode
+          ? `В режиме СОН: вернись к выбранному фокусу сна и исследуй СОСТОЯНИЕ/ПОЗИЦИЮ DREAM-SELF и её агентность внутри сцены: что она делает, с чем соглашается, от чего отказывается, воспринимается ли действие как выбор или принуждение, что меняется до/после отказа. НЕ объявляй это травмой, внутренним ребёнком, жертвой или угождением — исследуй эти направления только если соответствующий материал появляется у самого пользователя.`
+          : `В этом режиме вернись к последнему подтверждённому материалу и выбери другое процессуальное направление. Не форсируй связь с реальной жизнью, которую пользователь уже отверг.`))
+    : "";
+
   const alreadyAnsweredInstruction = userAlreadyAnswered
     ? `\n\n🟠 ПОЛЬЗОВАТЕЛЬ УКАЗАЛ, ЧТО УЖЕ ОТВЕТИЛ / НЕ ПОНЯЛ ВОПРОС\n` +
       `НЕ задавай тот же вопрос снова. Перечитай предыдущие сообщения и извлеки уже данный ответ.\n` +
