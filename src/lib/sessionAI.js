@@ -1625,7 +1625,7 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
   })() : "";
 
   const buildPrompt = (extraInstruction = "") => isEsRuntime
-    ? `${systemPrompt}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${spanishRuntimeBlock}${questionConfusionInstruction}${nonResonanceInstruction}${edgeLimitInstruction}${beginnerChoicesInstruction}${extraInstruction}
+    ? `${systemPrompt}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${spanishRuntimeBlock}${questionConfusionInstruction}${nonResonanceInstruction}${temporalTransitionInstruction}${edgeLimitInstruction}${beginnerChoicesInstruction}${extraInstruction}
 
 MODO: ${currentMode}
 
@@ -1640,7 +1640,7 @@ ${userMessage}
 2. Usa palabras concretas de la persona en una reflexión breve.
 3. Haz exactamente UNA pregunta que corresponda al siguiente movimiento permitido.
 4. Responde en 2–3 frases, sin repetir, sin plantillas y sin mezclar idiomas.`
-    : `${systemPrompt}${languageOverride}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${questionConfusionInstruction}${nonResonanceInstruction}${alreadyAnsweredInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${focusContinuity}${edgeLimitInstruction}${beginnerChoicesInstruction}${extraInstruction}
+    : `${systemPrompt}${languageOverride}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${questionConfusionInstruction}${nonResonanceInstruction}${temporalTransitionInstruction}${alreadyAnsweredInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${focusContinuity}${edgeLimitInstruction}${beginnerChoicesInstruction}${extraInstruction}
 
 Режим: ${currentMode}
 
@@ -1707,7 +1707,7 @@ ${userMessage}
       .map((m) => `${m.role === "user" ? (isEsRuntime ? "Persona" : "Пользователь") : (isEsRuntime ? "Talvira" : "Ассистент")}: ${m.content}`)
       .join("\n");
     const trimmedPrompt = isEsRuntime
-      ? `${systemPrompt}${carryOverBlock}${memoriesBlock}${stepContext}${termsContext}${spanishRuntimeBlock}${questionConfusionInstruction}${nonResonanceInstruction}
+      ? `${systemPrompt}${carryOverBlock}${memoriesBlock}${stepContext}${termsContext}${spanishRuntimeBlock}${questionConfusionInstruction}${nonResonanceInstruction}${temporalTransitionInstruction}
 
 MODO: ${currentMode}
 
