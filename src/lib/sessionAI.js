@@ -1573,7 +1573,7 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
   })() : "";
 
   const buildPrompt = (extraInstruction = "") => isEsRuntime
-    ? `${systemPrompt}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${spanishRuntimeBlock}${edgeLimitInstruction}${beginnerChoicesInstruction}${extraInstruction}
+    ? `${systemPrompt}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${spanishRuntimeBlock}${questionConfusionInstruction}${nonResonanceInstruction}${edgeLimitInstruction}${beginnerChoicesInstruction}${extraInstruction}
 
 MODO: ${currentMode}
 
@@ -1655,7 +1655,7 @@ ${userMessage}
       .map((m) => `${m.role === "user" ? (isEsRuntime ? "Persona" : "Пользователь") : (isEsRuntime ? "Talvira" : "Ассистент")}: ${m.content}`)
       .join("\n");
     const trimmedPrompt = isEsRuntime
-      ? `${systemPrompt}${carryOverBlock}${memoriesBlock}${stepContext}${termsContext}${spanishRuntimeBlock}
+      ? `${systemPrompt}${carryOverBlock}${memoriesBlock}${stepContext}${termsContext}${spanishRuntimeBlock}${questionConfusionInstruction}${nonResonanceInstruction}
 
 MODO: ${currentMode}
 
@@ -1702,6 +1702,7 @@ ${userMessage}
     hasValidStep,
     sessionId: session.id,
     userAlreadyAnswered,
+    nonResonanceDetected,
     mappingStageObj: mappingStage,
     sessionState,
     userChangedFocus,
