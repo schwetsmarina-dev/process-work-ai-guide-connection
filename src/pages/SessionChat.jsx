@@ -131,6 +131,8 @@ export default function SessionChat() {
   // ── Reset all init state when sessionId changes ───────────────────────────
   useEffect(() => {
     initDone.current = false;
+    setContinuationRequested(false);
+    setSessionComplete(false);
     setStepError(false);
     setStepDebugInfo(null);
     setOptimisticMessages([]);
