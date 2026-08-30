@@ -39,6 +39,6 @@ describe("Spanish chat prompt source", () => {
     expect(source).toContain('const systemPrompt = isEsRuntime ? SYSTEM_PROMPT_ES : SYSTEM_PROMPT');
     expect(source).toContain('const languageOverride = isEsRuntime ? "" : buildLanguageOverride(language)');
     expect(source).toContain('━━━ RUNTIME METODOLÓGICO ES ━━━');
-    expect(source).toContain('const summaryPrompt = lang === "es" ? spanishSummaryPrompt : russianSummaryPrompt');
+    expect(source).toContain('const summaryPrompt = (lang === "es" ? spanishSummaryPrompt : russianSummaryPrompt)');
   });
 });
