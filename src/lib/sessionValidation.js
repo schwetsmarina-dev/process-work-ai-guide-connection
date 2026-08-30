@@ -1,3 +1,4 @@
+import { validateFeedbackQuality } from "./sessionFeedbackGuards";
 // ─── Assistant response validation + safe fallbacks ─────────────────────────
 // Extracted from sessionAI.js. SessionState-driven guards run first, then the
 // legacy stage/phrase gates. Pure functions — no network calls.
@@ -116,6 +117,8 @@ function fallbacksFor(language) {
 }
 
 export function validateAssistantResponse({ responseText, currentMode, forcedNextLayer, integrationLock, conversationHistory, lastUserMessage, dreamMappingComplete, mappingStageValue, userSelectedFocus, completionDetected, coveredLayers, resistanceCount, step, hasValidStep, sessionId, userAlreadyAnswered, nonResonanceDetected, mappingStageObj, sessionState, userChangedFocus }, validationContext) {
+  const quality = validateFeedbackQuality(responseText, conversationHistory, lastUserMessage);
+  if (!quality.isValid) return quality;
   if (!validationContext) validationContext = { completionDetected };
   const lower = responseText.toLowerCase();
 
