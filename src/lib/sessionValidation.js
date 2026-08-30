@@ -497,7 +497,7 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
   }
 
   // 3. Integration lock validation
-  if (integrationLock) {
+  if (integrationLock && completionDetected) {
     for (const phrase of INTEGRATION_INVALID_PHRASES) {
       if (lower.includes(phrase)) {
         return {
