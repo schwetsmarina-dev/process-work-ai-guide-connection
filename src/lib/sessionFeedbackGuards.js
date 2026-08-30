@@ -17,7 +17,9 @@ export function isIntegrationQuestion(text = "") {
     /(?:cambi|aporta|sumar|anadir|integr|llevar|incorpor|измен|добав|привнес|перенес|интегр|примен)/u.test(t);
 }
 export function answeredIntegration(messages = []) {
-  for (let i = messages.length - 2; i >= 0; i--) {
+  // A later, explicitly reopened exploration may legitimately integrate again.
+  const reopening = messages.findLastIndex(m => m.role === "user" && getTurnIntent(m.content).continueRequested);
+  for (let i = messages.length - 2; i > reopening; i--) {
     if (messages[i].role !== "assistant" || !isIntegrationQuestion(messages[i].content)) continue;
     const answer = messages.slice(i + 1).find(m => m.role === "user");
     if (!answer) continue;
