@@ -36,6 +36,7 @@ export function buildContinuationPrompt({ rows, terms, messages, language, syste
   return systemPrompt + "\n" + feedbackInstructions(language, true) + "\n" + memoriesBlock +
     "\n" + rules + "\nTABLE:\n" + JSON.stringify(table) +
     "\nTERM REFERENCES:\n" + JSON.stringify(definitions) +
+    "\n" + (es ? "Las definiciones son referencias generales; las instrucciones concretas de cada fila tienen prioridad para elegir la intervención. En la fila feelings pregunta por sentimientos, sin sustituirlos por sensaciones corporales." : "Определения — общие справочные сведения; конкретная инструкция строки определяет интервенцию. В строке feelings спрашивай чувства, не подменяя их телесными ощущениями.") +
     "\nCONTINUATION START: " + (startedAt || "current turn") +
     "\nCONVERSATION DATA:\n" + JSON.stringify(messages.map(m => ({role:m.role, content:m.content}))) +
     '\nReturn ONLY JSON: {"step_key":"one exact table key","response":"user-facing response"}.';
