@@ -1,3 +1,5 @@
+import { getTurnIntent } from "./sessionFeedbackGuards";
+
 // ─── Completion / closure signals — process has naturally completed (all modes) ──
 
 export const COMPLETION_SIGNALS = [
@@ -140,15 +142,13 @@ export const COMPLETION_SIGNALS = [
 
 // Detects if the process has reached a natural completion/closure state.
 // Returns { isComplete: boolean, closureState: string, matchedSignal: string|null }
-export function detectCompletionState(messages) {
-  const userMessages = messages.filter((m) => m.role === "user");
-  // Only check recent messages — completion must be fresh (last 3 user messages)
-  const recentUserMessages = userMessages.slice(-3).map((m) => m.content.toLowerCase());
-  const combined = recentUserMessages.join(" ");
-
-  const matchedSignal = COMPLETION_SIGNALS.find((sig) => combined.includes(sig));
-  if (matchedSignal) {
-    return { isComplete: true, closureState: "integrated_empowered_state", matchedSignal };
-  }
-  return { isComplete: false, closureState: null, matchedSignal: null };
+export function detectCompletionState(messages = []) {
+  const last = [...messages].reverse().find(m => m.role === "user");
+  const intent = getTurnIntent(last?.content || "");
+  return {
+    isComplete: intent.explicitClose,
+    closureState: intent.explicitClose ? "user_requested_closure" : null,
+    matchedSignal: intent.explicitClose ? "explicit_request" : null,
+    ...intent,
+  };
 }
