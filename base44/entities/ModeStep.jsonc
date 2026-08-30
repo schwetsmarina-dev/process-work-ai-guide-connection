@@ -1,88 +1,116 @@
 {
   "name": "ModeStep",
-  "type": "object",
   "properties": {
-    "mode_id": {
-      "type": "string",
-      "description": "Mode identifier"
-    },
-    "step_number": {
-      "type": "number",
-      "description": "Step order number"
-    },
-    "step_key": {
-      "type": "string",
-      "description": "Unique step key"
-    },
-    "goal": {
-      "type": "string",
-      "description": "Step goal in Russian/source language"
-    },
-    "goal_es": {
-      "type": "string",
-      "description": "Spanish localization of the methodological step goal"
-    },
-    "question": {
-      "type": "string",
-      "description": "Step question in Russian/source language"
-    },
-    "question_es": {
-      "type": "string",
-      "description": "Spanish localization of the methodological step question"
-    },
-    "response_type": {
-      "type": "string",
-      "description": "Expected response type"
-    },
-    "save_to_memory_key": {
-      "type": "string",
-      "description": "Memory key to save response"
-    },
-    "is_required": {
-      "type": "boolean",
-      "default": true
-    },
-    "next_step_on_answer": {
-      "type": "number",
-      "description": "Next step index when answered"
-    },
-    "next_step_on_skip": {
-      "type": "number",
-      "description": "Next step index when skipped"
-    },
-    "related_term_ids": {
-      "type": "string",
-      "description": "Comma-separated related term IDs"
-    },
-    "facilitator_hint": {
-      "type": "string",
-      "description": "Methodological facilitator hint in Russian/source language"
-    },
-    "facilitator_hint_es": {
-      "type": "string",
-      "description": "Spanish localization of the methodological facilitator hint"
-    },
-    "possible_mode_shift": {
-      "type": "string",
-      "description": "Conditions for mode shift in source language/internal key"
-    },
-    "possible_mode_shift_es": {
-      "type": "string",
-      "description": "Spanish localization of human-readable mode-shift condition when applicable"
-    },
-    "pending_mode": {
-      "type": "string",
-      "description": "Mode to shift to if triggered"
-    },
     "description": {
-      "type": "string",
+      "description": "Optional free-text description",
       "maxLength": 1000,
-      "description": "Optional free-text description"
+      "type": "string"
     },
     "description_es": {
-      "type": "string",
+      "description": "Spanish localization of optional description",
       "maxLength": 1000,
-      "description": "Spanish localization of optional description"
+      "type": "string"
+    },
+    "facilitator_hint": {
+      "description": "Methodological facilitator hint in Russian/source language",
+      "type": "string"
+    },
+    "facilitator_hint_es": {
+      "description": "Spanish localization of the methodological facilitator hint",
+      "type": "string"
+    },
+    "goal": {
+      "description": "Step goal in Russian/source language",
+      "type": "string"
+    },
+    "goal_es": {
+      "description": "Spanish localization of the methodological step goal",
+      "type": "string"
+    },
+    "is_required": {
+      "default": true,
+      "type": "boolean"
+    },
+    "mode_id": {
+      "description": "Mode identifier",
+      "type": "string"
+    },
+    "next_step_on_answer": {
+      "description": "Next step index when answered",
+      "type": "number"
+    },
+    "next_step_on_skip": {
+      "description": "Next step index when skipped",
+      "type": "number"
+    },
+    "pending_mode": {
+      "description": "Mode to shift to if triggered",
+      "type": "string"
+    },
+    "possible_mode_shift": {
+      "description": "Conditions for mode shift in source language/internal key",
+      "type": "string"
+    },
+    "possible_mode_shift_es": {
+      "description": "Spanish localization of human-readable mode-shift condition when applicable",
+      "type": "string"
+    },
+    "question": {
+      "description": "Step question in Russian/source language",
+      "type": "string"
+    },
+    "question_es": {
+      "description": "Spanish localization of the methodological step question",
+      "type": "string"
+    },
+    "related_term_ids": {
+      "description": "Comma-separated related term IDs",
+      "type": "string"
+    },
+    "response_type": {
+      "description": "Expected response type",
+      "type": "string"
+    },
+    "save_to_memory_key": {
+      "description": "Memory key to save response",
+      "type": "string"
+    },
+    "step_key": {
+      "description": "Unique step key",
+      "type": "string"
+    },
+    "step_number": {
+      "description": "Step order number",
+      "type": "number"
+    },
+    "block": {
+      "type": "string",
+      "enum": [
+        "main",
+        "continuation"
+      ],
+      "description": "Continuation rows are excluded from the linear main chain."
+    },
+    "entry_condition": {
+      "type": "string"
+    },
+    "entry_condition_es": {
+      "type": "string"
+    },
+    "transition_hint": {
+      "type": "string"
+    },
+    "transition_hint_es": {
+      "type": "string"
+    },
+    "allowed_next_keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "channel_key": {
+      "type": "string"
     }
   },
   "required": [
@@ -95,16 +123,17 @@
         "role": "admin"
       }
     },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
     "read": {},
     "update": {
       "user_condition": {
         "role": "admin"
       }
-    },
-    "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
     }
-  }
+  },
+  "type": "object"
 }
