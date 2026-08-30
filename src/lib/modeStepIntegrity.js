@@ -12,7 +12,7 @@
 // self-test panel (AdminDataStatus.jsx) and covered by
 // modeStepIntegrity.test.js.
 export function checkModeStepChain(modeSteps) {
-  const byNumber = new Map((modeSteps || []).map((s) => [Number(s.step_number), s]));
+  const byNumber = new Map((modeSteps || []).filter(s => s.block !== "continuation" && !String(s.step_key || "").includes("_continue_")).map((s) => [Number(s.step_number), s]));
 
   if (byNumber.size === 0) {
     return { ok: false, issues: ["no steps found for this mode"], terminalStep: null, stepCount: 0, maxStepNumber: null };
