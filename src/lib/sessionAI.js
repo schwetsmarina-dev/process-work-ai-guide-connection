@@ -1,4 +1,5 @@
 import { base44 } from "@/api/base44Client";
+import { feedbackInstructions, feedbackFallback, answeredIntegration, validateFeedbackQuality } from "@/lib/sessionFeedbackGuards";
 import { detectCompletionState } from "@/lib/sessionSignals";
 import { SYSTEM_PROMPT, SYSTEM_PROMPT_ES } from "@/lib/systemPrompt";
 import { detectBodyProcessStage, buildBodyStageInstruction } from "@/lib/bodyProcess";
@@ -994,7 +995,7 @@ function buildLanguageOverride(language) {
 export async function getAIResponse(session, step, messages, userMessage, language = "es", memoriesBlock = "") {
   const currentMode = session.mode_id || session.mode;
   const isEsRuntime = language === "es";
-  const systemPrompt = isEsRuntime ? SYSTEM_PROMPT_ES : SYSTEM_PROMPT;
+  const systemPrompt = (isEsRuntime ? SYSTEM_PROMPT_ES : SYSTEM_PROMPT) + feedbackInstructions(language, !!session.continuation_requested);
   const languageOverride = isEsRuntime ? "" : buildLanguageOverride(language);
 
   const recent = messages.slice(-8).map((m) => ({
@@ -1013,7 +1014,9 @@ export async function getAIResponse(session, step, messages, userMessage, langua
   });
 
   const coveredLayers = detectCoveredLayers(messages);
-  const isIntegrationStage = detectIntegrationStage(messages);
+  const turnIntent = detectCompletionState(messages);
+  const continued = !!session.continuation_requested || turnIntent.continueRequested || turnIntent.edge;
+  const isIntegrationStage = !continued && detectIntegrationStage(messages);
   const resistanceCount = detectResistanceCount(messages);
   const completionDetection = detectCompletionState(messages);
 
@@ -1452,23 +1455,7 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
 
   const isConflictMode = (currentMode || "").toLowerCase().includes("conflict");
   const integrationLock = isIntegrationStage
-    ? `\n\n🔒 БЛОКИРОВКА — СТАДИЯ ИНТЕГРАЦИИ АКТИВНА\n` +
-      `Пользователь уже выразил внутреннее изменение или сдвиг состояния.\n` +
-      `ЗАПРЕЩЕНО: возвращаться к образу, метафоре, телу, взаимодействию, сну.\n` +
-      `ЗАПРЕЩЕНО: спрашивать «каким бы это стало образом», «что происходит в теле», «что ты видишь».\n` +
-      (isConflictMode
-        ? `ЗАПРЕЩЕНО (режим КОНФЛИКТ): возвращаться к частям, вводить образы или метафоры.\n` +
-          `ОБЯЗАТЕЛЬНО (режим КОНФЛИКТ): веди к решению и действию. Используй ТОЛЬКО эти вопросы:\n` +
-          `• «Что в твоём решении начинает проясняться сейчас?»\n` +
-          `• «Как это состояние влияет на твоё ощущение — оставаться или уходить?»\n` +
-          `• «Что сейчас кажется более честным по отношению к себе?»\n` +
-          `• «Какой маленький шаг ты могла бы сделать, не предавая себя?»\n`
-        : `ОБЯЗАТЕЛЬНО: оставайся на уровне интеграции. Допустимы только:\n` +
-          `1. Признание сдвига: «Похоже, здесь уже происходит внутреннее изменение.»\n` +
-          `2. Вопрос о реальной жизни: «Насколько это состояние уже есть в твоей жизни, а где его пока не хватает?»\n` +
-          `3. Вопрос о будущем: «Как могла бы измениться твоя жизнь, если бы ты жила из этого состояния?»\n` +
-          `4. Завершение: отражение + инсайт + «Ты хочешь зафиксировать этот инсайт?»\n`) +
-      `Используй конкретные слова пользователя.`
+    ? "\nИнтеграция: не повторяй уже отвеченный вопрос о переносе в жизнь. Можно остаться с переживаемым качеством или исследовать возникший край по выбору человека. Предложи завершить или продолжить; не объявляй процесс законченным.\n"
     : "";
 
   if (completionDetection.isComplete) {
@@ -1534,7 +1521,7 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
   // ModeStep may not move the session backwards. Once exploration/integration/closure
   // is active (rank >= 5), ModeStep becomes advisory — SessionState wins.
   const modeStepDemoted = hasValidStep && sessionState.current_stage_rank >= 5;
-  const stepContext = !hasValidStep
+  const stepContext = continued ? feedbackInstructions(language, true) : !hasValidStep
     ? (isEsRuntime
       ? "\n\nTodos los pasos metodológicos están completados. Cierra la sesión con calidez y sin abrir preguntas nuevas."
       : "\n\nВсе шаги пройдены. Мягко и тепло завершай сессию — без новых вопросов.")
@@ -1609,8 +1596,8 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
 
     if (isIntegrationStage) {
       blocks.push(isConflictMode
-        ? `INTEGRACIÓN ACTIVA EN CONFLICTO. No vuelvas a roles, imágenes ni cartografía. Lleva el descubrimiento hacia claridad de decisión, límites y un posible pequeño paso real, sin decidir por la persona.`
-        : `INTEGRACIÓN ACTIVA. No abras imágenes o material nuevo. Ayuda a notar qué cambió y cómo la cualidad descubierta podría tener un lugar concreto en la vida, manteniendo cualquier conclusión como hipótesis de la persona.`);
+        ? `INTEGRACIÓN ACTIVA EN CONFLICTO. No repitas la cartografía. Permite volver a una experiencia o rol si la persona quiere explorar un borde; no exijas decisión ni acción.`
+        : `INTEGRACIÓN ACTIVA. No repitas preguntas ya respondidas. Ofrece cerrar o seguir con la experiencia o un borde según la elección de la persona. No presupongas resultados.`);
     }
 
     if (completionDetection.isComplete) {
@@ -1624,8 +1611,10 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
     return blocks.length ? `\n\n━━━ RUNTIME METODOLÓGICO ES ━━━\n- ${blocks.join("\n- ")}` : "";
   })() : "";
 
+  const integrationAnswered = answeredIntegration(messages);
+  const qualityContext = feedbackInstructions(language, continued) + (integrationAnswered ? "\nIntegration already answered: do not ask another life-transfer question. Reflect the answer and offer a choice, or follow the explicitly requested remaining edge.\n" : "");
   const buildPrompt = (extraInstruction = "") => isEsRuntime
-    ? `${systemPrompt}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${spanishRuntimeBlock}${questionConfusionInstruction}${nonResonanceInstruction}${temporalTransitionInstruction}${edgeLimitInstruction}${beginnerChoicesInstruction}${extraInstruction}
+    ? `${systemPrompt}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${spanishRuntimeBlock}${questionConfusionInstruction}${nonResonanceInstruction}${temporalTransitionInstruction}${edgeLimitInstruction}${beginnerChoicesInstruction}${qualityContext}${extraInstruction}
 
 MODO: ${currentMode}
 
@@ -1638,9 +1627,9 @@ ${userMessage}
 ━━━ TAREA DE ESTE TURNO ━━━
 1. Respeta el estado y los bloqueos anteriores.
 2. Usa palabras concretas de la persona en una reflexión breve.
-3. Haz exactamente UNA pregunta que corresponda al siguiente movimiento permitido.
+3. Haz como máximo UNA pregunta; ninguna si la persona pidió terminar.
 4. Responde en 2–3 frases, sin repetir, sin plantillas y sin mezclar idiomas.`
-    : `${systemPrompt}${languageOverride}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${questionConfusionInstruction}${nonResonanceInstruction}${temporalTransitionInstruction}${alreadyAnsweredInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${focusContinuity}${edgeLimitInstruction}${beginnerChoicesInstruction}${extraInstruction}
+    : `${systemPrompt}${languageOverride}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${layerStatus}${dreamMapContext}${mappingStageInstruction}${questionConfusionInstruction}${nonResonanceInstruction}${temporalTransitionInstruction}${alreadyAnsweredInstruction}${mappingCompleteContext}${primaryThreadGuard}${integrationLock}${closureInstruction}${forcedInstruction}${loopWarning}${focusContinuity}${edgeLimitInstruction}${beginnerChoicesInstruction}${qualityContext}${extraInstruction}
 
 Режим: ${currentMode}
 
@@ -1654,7 +1643,7 @@ ${userMessage}
 1. Сверься со списком УЖЕ ПРОЙДЕННЫХ СЛОЁВ выше.
 2. Найди первый слой, которого нет в списке.
 3. Напиши 1 отражение, используя конкретные слова человека (не «этот образ», не «ты ощущаешь»).
-4. Задай 1 точный вопрос к следующему слою, строя его на том, что уже сказано.
+4. Задай максимум один вопрос; при просьбе завершить — ни одного.
 Строго 2–3 предложения. Никаких повторов. Никаких шаблонов. Движение вперёд.`;
 
   const fullPrompt = buildPrompt();
@@ -1697,46 +1686,7 @@ ${userMessage}
     assistantReflectedMap,
   });
 
-  if (estimatedTokens > 6000) {
-    console.warn("[AI_RUNTIME] Prompt too large (" + estimatedTokens + " est. tokens). Trimming history to 4 messages.");
-    const trimmed = messages.slice(-4).map((m) => ({
-      ...m,
-      content: m.content.length > 400 ? m.content.slice(0, 400) + "…" : m.content,
-    }));
-    const trimmedHistory = trimmed
-      .map((m) => `${m.role === "user" ? (isEsRuntime ? "Persona" : "Пользователь") : (isEsRuntime ? "Talvira" : "Ассистент")}: ${m.content}`)
-      .join("\n");
-    const trimmedPrompt = isEsRuntime
-      ? `${systemPrompt}${carryOverBlock}${memoriesBlock}${stepContext}${termsContext}${spanishRuntimeBlock}${questionConfusionInstruction}${nonResonanceInstruction}${temporalTransitionInstruction}
-
-MODO: ${currentMode}
-
-━━━ HISTORIAL RECIENTE ━━━
-${trimmedHistory}
-
-━━━ ÚLTIMO MENSAJE DE LA PERSONA ━━━
-${userMessage}
-
-Respeta la etapa actual. Escribe una reflexión breve usando palabras concretas de la persona y exactamente UNA pregunta que haga avanzar el proceso. 2–3 frases, solo en español.`
-      : `${systemPrompt}${languageOverride}${carryOverBlock}${memoriesBlock}${stepContext}${layerStatus}${questionConfusionInstruction}${nonResonanceInstruction}${alreadyAnsweredInstruction}${integrationLock}${forcedInstruction}${loopWarning}
-
-Режим: ${currentMode}
-
-━━━ ИСТОРИЯ РАЗГОВОРА ━━━
-${trimmedHistory}
-
-━━━ ПОСЛЕДНЕЕ СООБЩЕНИЕ ЧЕЛОВЕКА ━━━
-${userMessage}
-
-Напиши 1 отражение и 1 вопрос к следующему слою. Строго 2–3 предложения.`;
-    try {
-      const r = await base44.functions.invoke("invokeAI", { prompt: trimmedPrompt });
-      return r.data?.response || getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold, language);
-    } catch (e) {
-      console.error("[AI_RUNTIME] InvokeLLM FAILED (trimmed):", e?.message);
-      throw e;
-    }
-  }
+  // All responses, including large prompts, pass the same validation/retry path.
 
   const validationParams = {
     currentMode,
@@ -1773,7 +1723,8 @@ ${userMessage}
       : `Ты Process Work фасилитатор. Отвечай ТОЛЬКО по-русски. Задай один мягкий вопрос, без интерпретаций и диагнозов.\n\nПоследнее сообщение пользователя: ${userMessage}`;
     try {
       const safeResponse = (await base44.functions.invoke("invokeAI", { prompt: minimalPrompt })).data?.response;
-      return safeResponse || getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold, language);
+      const quality = validateFeedbackQuality(safeResponse, messages, userMessage);
+      return quality.isValid ? safeResponse : feedbackFallback(language, userMessage, messages);
     } catch (e2) {
       console.error("[AI_RUNTIME] Safe-mode retry ALSO FAILED:", e2?.message);
       throw e;
@@ -1797,7 +1748,7 @@ ${userMessage}
     console.log("[AI_RUNTIME] InvokeLLM pass 2 success, response length:", secondResponse?.length);
   } catch (e) {
     console.error("[AI_RUNTIME] InvokeLLM FAILED (pass 2):", e?.message);
-    return getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold, language);
+    return feedbackFallback(language, userMessage, messages);
   }
 
   const secondValidation = validateAssistantResponse({ responseText: secondResponse, ...validationParams });
@@ -1808,7 +1759,7 @@ ${userMessage}
   }
 
   console.warn("[AI_RUNTIME] Pass 2 also failed validation:", secondValidation.reason);
-  const fallback = getSafeFallback(currentMode, forcedNext, isIntegrationStage, mappingStage, isMismatch, isDreamAlreadyTold, language);
+  const fallback = feedbackFallback(language, userMessage, messages);
   console.info("[AI_RUNTIME] Using safe fallback:", fallback);
   return fallback;
 }
@@ -1926,7 +1877,7 @@ ${langInstruction} Будь конкретным, опирайся на реал
 Сессия:
 ${conversation}`;
 
-  const summaryPrompt = lang === "es" ? spanishSummaryPrompt : russianSummaryPrompt;
+  const summaryPrompt = (lang === "es" ? spanishSummaryPrompt : russianSummaryPrompt) + feedbackInstructions(lang) + (lang === "es" ? "\nEn este JSON conserva explícitamente la diferencia entre lo deseado, lo hipotético y lo sentido ahora. Las interpretaciones de Talvira no son evidencia del resultado de la persona." : "\nВ JSON явно различай желаемое, гипотетическое и переживаемое сейчас. Интерпретации Talvira не являются свидетельством результата пользователя.");
   const llmPromise = base44.functions.invoke("invokeAI", {
     prompt: summaryPrompt,
     response_json_schema: {
