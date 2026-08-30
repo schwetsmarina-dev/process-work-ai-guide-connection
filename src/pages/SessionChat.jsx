@@ -234,7 +234,7 @@ export default function SessionChat() {
   useEffect(() => {
     if (!session?.mode_id) return;
     base44.entities.ModeStep.filter({ mode_id: session.mode_id }).then((rows) => {
-      setTotalSteps(rows.length);
+      setTotalSteps(rows.filter(row => row.block !== "continuation" && !String(row.step_key || "").includes("_continue_")).length);
     });
   }, [session?.mode_id]);
 
@@ -502,10 +502,20 @@ export default function SessionChat() {
         ? formatMemoriesForPrompt(memories, language)
         : "";
 
+      // Persist reopening independently of the browser page lifecycle.
+      const continuationForTurn = continuationRequested || session.continuation_requested || getTurnIntent(text).continueRequested;
+      let continuationStartedAt = session.continuation_started_at;
+      if (continuationForTurn && !session.continuation_requested) {
+        continuationStartedAt = savedUserMsg?.created_date || optimisticUserMsg.created_at;
+        const patch = { continuation_requested: true, continuation_started_at: continuationStartedAt };
+        await base44.entities.Session.update(sessionId, patch);
+        queryClient.setQueryData(["session", sessionId, currentUser?.email], prev => prev ? { ...prev, ...patch } : prev);
+        setContinuationRequested(true);
+      }
       // Get AI response
       let rawResponse;
       try {
-        rawResponse = await getAIResponse({ ...session, current_step: currentStep, continuation_requested: continuationRequested || getTurnIntent(text).continueRequested || getTurnIntent(text).edge }, step, updatedMessages, text, language, memoriesBlock);
+        rawResponse = await getAIResponse({ ...session, current_step: currentStep, continuation_requested: continuationForTurn, continuation_started_at: continuationStartedAt }, step, updatedMessages, text, language, memoriesBlock);
         console.log("[CHAT_FLOW] 4. AI response generated, length:", rawResponse?.length);
       } catch (aiErr) {
         if (import.meta.env.DEV) console.error("[CHAT_FLOW] AI generation failed:", aiErr);
@@ -535,7 +545,7 @@ export default function SessionChat() {
       // Advance step using next_step_on_answer
       const nextStep = step.next_step_on_answer ? Number(step.next_step_on_answer) : null;
 
-      if (nextStep) {
+      if (nextStep && !continuationForTurn) {
         await base44.entities.Session.update(sessionId, {
           current_step: nextStep,
           system_prompt_version: SYSTEM_PROMPT_VERSION,
@@ -553,7 +563,7 @@ export default function SessionChat() {
       } else {
         // No next step — final closing message shown; reveal the "end session" button instead of auto-redirect
         const intent = getTurnIntent(text);
-        setSessionComplete(intent.explicitClose || (!continuationRequested && !intent.continueRequested && !intent.edge));
+        setSessionComplete(intent.explicitClose || (!continuationForTurn && !intent.continueRequested && !intent.edge));
       }
 
       queryClient.invalidateQueries({ queryKey: ["session", sessionId, currentUser?.email] });
@@ -615,9 +625,20 @@ export default function SessionChat() {
   // "session complete" banner without altering current_step, so the very next
   // message is sent as a normal turn and the facilitator continues the process
   // instead of leaving "Завершить сессию" as the only option.
-  const handleContinueChat = () => {
-    setContinuationRequested(true);
-    setSessionComplete(false);
+  const handleContinueChat = async () => {
+    if (isAiLoading || isAdminView) return;
+    setIsAiLoading(true);
+    try {
+      const patch = { continuation_requested: true, continuation_started_at: new Date().toISOString() };
+      await base44.entities.Session.update(sessionId, patch);
+      queryClient.setQueryData(["session", sessionId, currentUser?.email], prev => prev ? { ...prev, ...patch } : prev);
+      setContinuationRequested(true);
+      setSessionComplete(false);
+    } catch {
+      setSendErrorMessage(t("err_save_generic", language));
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   // Note: an older design auto-finalized the session without user action.
@@ -892,7 +913,7 @@ export default function SessionChat() {
                       : "Можно завершить здесь или продолжить исследовать то, что для тебя осталось важным."}
                   </p>
                   <div className="flex gap-2 flex-wrap justify-center">
-                    <Button size="lg" variant="outline" onClick={handleContinueChat}>
+                    <Button size="lg" variant="outline" onClick={handleContinueChat} disabled={isAiLoading}>
                       {language === "es" ? "Continuar la sesión" : "Продолжить сессию"}
                     </Button>
                     <Button size="lg" onClick={handleEndSession}>
