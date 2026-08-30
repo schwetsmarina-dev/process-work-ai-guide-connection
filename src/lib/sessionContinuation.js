@@ -67,7 +67,8 @@ export async function generateContinuationResponse({ client, session, messages, 
   if (resistanceCount >= 3) return pause;
   const all = await client.entities.ModeStep.filter({mode_id:session.mode_id || session.mode});
   const rows = continuationRows(all, session.mode_id || session.mode);
-  if (!rows.length || rows.some(r => ["goal", "question", "facilitator_hint", "entry_condition", "transition_hint"].some(key => !String(r[language === "es" ? key + "_es" : key] || "").trim()))) {
+  const expectedKeys = ["orient", "clarify", "feelings", "movement", "sound", "visual", "relationships", "edge", "positions", "focus", "repair", "integrate", "close"].map(suffix => `${session.mode_id || session.mode}_continue_${suffix}`);
+  if (rows.length !== expectedKeys.length || expectedKeys.some(key => rows.filter(r => r.step_key === key).length !== 1) || rows.some(r => !Array.isArray(r.allowed_next_keys) || !r.allowed_next_keys.length || r.allowed_next_keys.some(key => !expectedKeys.includes(key))) || rows.some(r => ["goal", "question", "facilitator_hint", "entry_condition", "transition_hint"].some(key => !String(r[language === "es" ? key + "_es" : key] || "").trim()))) {
     throw new Error("Continuation methodology is unavailable in the selected language");
   }
   const keys = new Set(rows.flatMap(r => (r.related_term_ids || "").split(";").map(k => k.trim()).filter(Boolean)));
