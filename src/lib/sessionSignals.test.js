@@ -12,7 +12,7 @@ describe("detectCompletionState", () => {
   it("detects an explicit closure signal in the last user message", () => {
     const messages = [
       aiMsg("Что сейчас в теле?"),
-      userMsg("Мне стало легче, напряжение ушло."),
+      userMsg("На сегодня достаточно."),
     ];
     const result = detectCompletionState(messages);
     expect(result.isComplete).toBe(true);
