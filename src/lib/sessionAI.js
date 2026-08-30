@@ -1,4 +1,5 @@
 import { base44 } from "@/api/base44Client";
+import { mainSteps, generateContinuationResponse } from "./sessionContinuation";
 import { feedbackInstructions, feedbackFallback, answeredIntegration } from "@/lib/sessionFeedbackGuards";
 import { detectCompletionState } from "@/lib/sessionSignals";
 import { SYSTEM_PROMPT, SYSTEM_PROMPT_ES } from "@/lib/systemPrompt";
@@ -39,7 +40,7 @@ export async function fetchStep(modeId, stepNumber) {
     return null;
   }
 
-  const normalized = all.map((s) => ({
+  const normalized = mainSteps(all).map((s) => ({
     ...s,
     _modeId: String(s.mode_id || "").trim(),
     _stepKey: String(s.step_key || "").trim(),
@@ -993,6 +994,16 @@ function buildLanguageOverride(language) {
 
 export async function getAIResponse(session, step, messages, userMessage, language = "es", memoriesBlock = "") {
   const currentMode = session.mode_id || session.mode;
+  // Reopened sessions use authored continuation rows, not stale terminal-stage locks.
+  const continuationIntent = detectCompletionState(messages);
+  if (session.continuation_requested || continuationIntent.continueRequested) {
+    if (continuationIntent.isComplete) return feedbackFallback(language, userMessage, messages);
+    return generateContinuationResponse({
+      client: base44, session, messages, userText: userMessage, language,
+      systemPrompt: language === "es" ? SYSTEM_PROMPT_ES : SYSTEM_PROMPT,
+      memoriesBlock, resistanceCount: detectResistanceCount(messages),
+    });
+  }
   const isEsRuntime = language === "es";
   const systemPrompt = isEsRuntime ? SYSTEM_PROMPT_ES : SYSTEM_PROMPT;
   const languageOverride = isEsRuntime ? "" : buildLanguageOverride(language);
@@ -1068,7 +1079,7 @@ export async function getAIResponse(session, step, messages, userMessage, langua
         `Исследуй агентность, возможность выбирать/отказываться, границы, отношение к себе и другим, внутреннюю опору ТОЛЬКО если это соответствует словам пользователя. Не объявляй одно состояние "правильным" и не диагностируй причину. В режиме СОН сначала оставайся внутри dream-self и сцены сна.`)
     : "";
 
-  const beginnerChoicesInstruction = questionConfusionDetected
+  const beginnerChoicesInstruction = isQuestionConfusion
     ? (language === "es"
       ? `\n\n🟠 LA PERSONA NO ENTIENDE LA PREGUNTA\nReformula SOLO la misma pregunta en palabras más simples. No cambies de tema, no introduzcas emociones ni opciones que la persona no haya mencionado, y no profundices todavía.`
       : `\n\n🟠 ПОЛЬЗОВАТЕЛЬ НЕ ПОНЯЛ ВОПРОС\nПереформулируй ТОЛЬКО тот же вопрос простыми словами. Не меняй тему, не подсовывай эмоции/варианты, которых пользователь не называл, и пока не углубляй процесс.`)
