@@ -1,0 +1,83 @@
+[
+  {
+    "latin_key": "movement_channel",
+    "term": "Двигательный канал",
+    "term_es": "Canal del movimiento",
+    "short_definition": "Канал переживания и выражения опыта через движение, жест, позу и ритм движения.",
+    "short_definition_es": "Canal de experiencia y expresión mediante el movimiento, los gestos, la postura y el ritmo corporal.",
+    "practical_application": "Следуй конкретному опыту человека. Предложи, если удобно, встать, занять удобную позу и дать найденной силе, фигуре или другому опыту движение. Не требуй болезненных или недоступных движений.",
+    "practical_application_es": "Sigue la experiencia concreta de la persona. Si le resulta cómodo, invítala a ponerse de pie, adoptar una postura cómoda y dar movimiento a la fuerza, figura u otra experiencia que haya aparecido. No pidas movimientos dolorosos ni inaccesibles."
+  },
+  {
+    "latin_key": "relationship_channel",
+    "term": "Канал восприятия информации через взаимодействие с другими людьми, включающий проекции, перенос, контрперенос и межличностную динамику",
+    "term_es": "Canal relacional",
+    "short_definition": "Канал восприятия информации через взаимодействие с другими людьми, включающий проекции, перенос, контрперенос и межличностную динамику",
+    "short_definition_es": "Información que aparece a través de la interacción: distancia, tono, ritmo, contacto, posiciones, reacciones y dinámica entre personas.",
+    "practical_application": "Парная терапия, семейная терапия, групповая работа, анализ переноса, работа с проекциями, межличностная терапия",
+    "practical_application_es": "Distinguir señales observables de interpretaciones y explorar qué ocurre en el contacto desde la propia experiencia."
+  },
+  {
+    "latin_key": "visual_channel",
+    "term": "Канал восприятия через зрение, включающий образы, цвета, формы, символы, видения и визуальные сновидения",
+    "term_es": "Canal visual",
+    "short_definition": "Канал восприятия через зрение, включающий образы, цвета, формы, символы, видения и визуальные сновидения",
+    "short_definition_es": "Canal de percepción mediante imágenes, colores, formas, símbolos y escenas internas o externas.",
+    "practical_application": "Работа с визуальными образами сновидений, медитация на мандалах, арт-терапия, визуализация, анализ символов",
+    "practical_application_es": "Explorar características concretas de una imagen y observar cómo cambia sin imponerle una interpretación."
+  },
+  {
+    "latin_key": "proprioceptive_channel",
+    "term": "Канал внутренних телесных ощущений, включающий давление, температуру, мышечное напряжение, дыхание, сердцебиение, боль и другие соматические сигналы",
+    "term_es": "Canal propioceptivo",
+    "short_definition": "Канал внутренних телесных ощущений, включающий давление, температуру, мышечное напряжение, дыхание, сердцебиение, боль и другие соматические сигналы",
+    "short_definition_es": "Canal de percepción de sensaciones internas del cuerpo como presión, temperatura, tensión, respiración, pulso o movimiento interno.",
+    "practical_application": "Работа с телесными симптомами, соматическая терапия, дыхательные практики, телесно-ориентированная терапия, работа с болью",
+    "practical_application_es": "Describir sensaciones internas con precisión y seguir sus cambios sin asumir automáticamente un significado psicológico."
+  },
+  {
+    "latin_key": "auditory_channel",
+    "term": "Канал восприятия через слух, включающий звуки, голоса, музыку, ритмы, тоны, внутренние голоса и звуковые паттерны",
+    "term_es": "Canal auditivo",
+    "short_definition": "Канал восприятия через слух, включающий звуки, голоса, музыку, ритмы, тоны, внутренние голоса и звуковые паттерны",
+    "short_definition_es": "Canal de percepción mediante sonidos, palabras, tono, ritmo, música, voz e imágenes sonoras internas.",
+    "practical_application": "Работа с голосом, звукотерапия, ритмические практики, музыкальная терапия, слушание внутренних голосов, работа с тоном речи",
+    "practical_application_es": "Explorar el tono, ritmo y cualidad de un sonido o una frase y observar su efecto en la experiencia."
+  },
+  {
+    "latin_key": "process",
+    "term": "Изменения в восприятии, поток сигналов, воспринимаемых наблюдателем, подобный поезду, назначение которого не всегда можно предсказать",
+    "term_es": "Proceso",
+    "short_definition": "Изменения в восприятии, поток сигналов, воспринимаемых наблюдателем, подобный поезду, назначение которого не всегда можно предсказать",
+    "short_definition_es": "Flujo de cambios en la experiencia y en las señales que puede observarse momento a momento sin asumir de antemano hacia dónde debe conducir.",
+    "practical_application": "Отслеживание развития событий в терапии, наблюдение за внутренними изменениями, работа с групповой динамикой",
+    "practical_application_es": "Seguir cómo cambian las sensaciones, imágenes, palabras, movimientos, relaciones y focos de atención, dejando que la siguiente intervención responda a lo que realmente está ocurriendo."
+  },
+  {
+    "latin_key": "edge",
+    "term": "Граница между первичным и вторичным процессами, место где возникают сложности, падение энергии, страх, избегание, зацикливание",
+    "term_es": "Borde",
+    "short_definition": "Граница между первичным и вторичным процессами, место где возникают сложности, падение энергии, страх, избегание, зацикливание",
+    "short_definition_es": "Límite entre el proceso primario y el secundario: un punto donde pueden aparecer dificultad, caída de energía, miedo, evitación, vergüenza o repetición.",
+    "practical_application": "Работа с сопротивлением, преодоление страхов, расширение зоны комфорта, интеграция новых аспектов личности",
+    "practical_application_es": "Observar qué ocurre cuando una experiencia nueva se acerca al límite de la identidad habitual y explorar ese límite sin forzarlo."
+  },
+  {
+    "latin_key": "primary_process",
+    "term": "Состояние или представление о себе, с которыми человек себя отождествляет, обычная привычная индивидуальность, с которой ассоциируется эго",
+    "term_es": "Proceso primario",
+    "short_definition": "Состояние или представление о себе, с которыми человек себя отождествляет, обычная привычная индивидуальность, с которой ассоциируется эго",
+    "short_definition_es": "Estado, identidad o forma de verse a sí misma/o con la que la persona se identifica habitualmente.",
+    "practical_application": "Идентификация привычных паттернов клиента, работа с самооценкой, исследование зоны комфорта",
+    "practical_application_es": "Reconocer la identidad y los patrones familiares desde los que la persona organiza su experiencia cotidiana."
+  },
+  {
+    "latin_key": "secondary_process",
+    "term": "Переживания, которые мы не воспринимаем как относящиеся к нашей самотождественности, обычно проецируются, отрицаются, обнаруживаются в теле",
+    "term_es": "Proceso secundario",
+    "short_definition": "Переживания, которые мы не воспринимаем как относящиеся к нашей самотождественности, обычно проецируются, отрицаются, обнаруживаются в теле",
+    "short_definition_es": "Experiencias, señales o cualidades que la persona todavía no reconoce como parte de su identidad habitual y que pueden aparecer indirectamente en el cuerpo, los sueños, las relaciones o señales involuntarias.",
+    "practical_application": "Работа с проекциями, интеграция отвергаемых частей, работа с двойными сигналами, амплификация неосознаваемого материала",
+    "practical_application_es": "Explorar con cuidado experiencias menos identificadas y comprobar con la persona qué significado o utilidad tienen para ella."
+  }
+]
