@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import records from "../../docs/continuation-steps-ru-es.json";
+import termRecords from "../../docs/continuation-term-references-ru-es.json";
+import { SYSTEM_PROMPT_ES } from "./systemPrompt";
 import { mainSteps, continuationRows, cycleMessages, buildContinuationPrompt, parseContinuationResponse, generateContinuationResponse } from "./sessionContinuation";
 import { checkModeStepChain } from "./modeStepIntegrity";
 const client = vi.hoisted(() => ({
@@ -18,7 +20,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   client.entities.ModeStep.filter.mockResolvedValue(records);
   client.entities.ModeStep.list.mockResolvedValue(records);
-  client.entities.Term.list.mockResolvedValue([]);
+  client.entities.Term.list.mockResolvedValue(termRecords);
 });
 
 describe("five-channel continuation", () => {
