@@ -1881,7 +1881,7 @@ ${langInstruction} Будь конкретным, опирайся на реал
 Сессия:
 ${conversation}`;
 
-  const summaryPrompt = (lang === "es" ? spanishSummaryPrompt : russianSummaryPrompt) + feedbackInstructions(lang) + (lang === "es" ? "\nEn este JSON conserva explícitamente la diferencia entre lo deseado, lo hipotético y lo sentido ahora. Las interpretaciones de Talvira no son evidencia del resultado de la persona." : "\nВ JSON явно различай желаемое, гипотетическое и переживаемое сейчас. Интерпретации Talvira не являются свидетельством результата пользователя.");
+  const summaryPrompt = (lang === "es" ? spanishSummaryPrompt : russianSummaryPrompt) + (lang === "es" ? "\nNo describas el sueño como recurrente salvo que la persona diga que se repite. No atribuyas protección o fuerza sin evidencia. En este JSON conserva explícitamente la diferencia entre lo deseado, lo hipotético y lo sentido ahora. Las interpretaciones de Talvira no son evidencia del resultado de la persona." : "\nНе называй сон повторяющимся без слов пользователя о повторении. Не приписывай защиту или силу без свидетельства. В JSON явно различай желаемое, гипотетическое и переживаемое сейчас. Интерпретации Talvira не являются свидетельством результата пользователя.");
   const llmPromise = base44.functions.invoke("invokeAI", {
     prompt: summaryPrompt,
     response_json_schema: {
