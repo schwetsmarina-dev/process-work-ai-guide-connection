@@ -1,122 +1,129 @@
 {
   "name": "Session",
-  "type": "object",
   "properties": {
-    "user_id": {
-      "type": "string",
-      "description": "Authenticated Base44 user id that owns this session"
+    "ai_gateway_version": {
+      "description": "Configured AI gateway/model routing revision used for this session",
+      "type": "string"
     },
-    "mode_id": {
-      "type": "string",
-      "description": "Mode identifier"
+    "carry_over_context": {
+      "description": "Short summary of the previous session's theme, injected into the opening greeting when the user chose to continue/deepen it instead of starting fresh",
+      "type": "string"
+    },
+    "confidence_note": {
+      "description": "Disclaimer note that the summary is automatic and should be checked by the user",
+      "type": "string"
+    },
+    "continued_from_session_id": {
+      "description": "If the user chose to deepen a previous completed session's theme, the id of that prior Session",
+      "type": "string"
+    },
+    "current_step": {
+      "default": 0,
+      "type": "number"
+    },
+    "edge_signals": {
+      "description": "Moments where resistance, an inner critic, shame, looping, or another process edge appeared",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "ended_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "memory_excluded": {
+      "default": false,
+      "description": "User-controlled: if true, this session must not contribute to cross-session memory or AI retrieval",
+      "type": "boolean"
+    },
+    "memory_excluded_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "memory_exclusion_reason": {
+      "maxLength": 1000,
+      "type": "string"
     },
     "mode": {
-      "type": "string",
+      "description": "Session mode type",
       "enum": [
         "body",
         "dream",
         "conflict",
         "journaling"
       ],
-      "description": "Session mode type"
+      "type": "string"
     },
-    "current_step": {
-      "type": "number",
-      "default": 0
+    "mode_id": {
+      "description": "Mode identifier",
+      "type": "string"
+    },
+    "next_step_suggestion": {
+      "type": "string"
+    },
+    "primary_process": {
+      "description": "What felt familiar or identity-consistent in this session",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "risk_flag": {
+      "default": false,
+      "type": "boolean"
+    },
+    "secondary_process": {
+      "description": "What felt new, unfamiliar, or emergent in this session",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "signals": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
     },
     "started_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "ended_at": {
-      "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "type": "string"
     },
     "status": {
-      "type": "string",
+      "default": "active",
       "enum": [
         "active",
         "completed",
         "abandoned"
       ],
-      "default": "active"
-    },
-    "summary": {
-      "type": "string",
-      "description": "AI-generated session summary"
-    },
-    "confidence_note": {
-      "type": "string",
-      "description": "Disclaimer note that the summary is automatic and should be checked by the user"
-    },
-    "system_prompt_version": {
-      "type": "string",
-      "description": "Talvira orchestration/system-prompt release used for this session"
-    },
-    "ai_gateway_version": {
-      "type": "string",
-      "description": "Configured AI gateway/model routing revision used for this session"
-    },
-    "themes": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "signals": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "edge_signals": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Moments where resistance, an inner critic, shame, looping, or another process edge appeared"
-    },
-    "primary_process": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "What felt familiar or identity-consistent in this session"
-    },
-    "secondary_process": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "What felt new, unfamiliar, or emergent in this session"
-    },
-    "next_step_suggestion": {
       "type": "string"
     },
-    "risk_flag": {
+    "summary": {
+      "description": "AI-generated session summary",
+      "type": "string"
+    },
+    "system_prompt_version": {
+      "description": "Talvira orchestration/system-prompt release used for this session",
+      "type": "string"
+    },
+    "themes": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "user_id": {
+      "description": "Authenticated Base44 user id that owns this session",
+      "type": "string"
+    },
+    "continuation_requested": {
       "type": "boolean",
       "default": false
     },
-    "continued_from_session_id": {
-      "type": "string",
-      "description": "If the user chose to deepen a previous completed session's theme, the id of that prior Session"
-    },
-    "carry_over_context": {
-      "type": "string",
-      "description": "Short summary of the previous session's theme, injected into the opening greeting when the user chose to continue/deepen it instead of starting fresh"
-    },
-    "memory_excluded": {
-      "type": "boolean",
-      "default": false,
-      "description": "User-controlled: if true, this session must not contribute to cross-session memory or AI retrieval"
-    },
-    "memory_excluded_at": {
+    "continuation_started_at": {
       "type": "string",
       "format": "date-time"
-    },
-    "memory_exclusion_reason": {
-      "type": "string",
-      "maxLength": 1000
     }
   },
   "required": [
@@ -127,6 +134,18 @@
       "user_condition": {
         "role": "admin"
       }
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     },
     "read": {
       "$or": [
@@ -151,18 +170,7 @@
           }
         }
       ]
-    },
-    "delete": {
-      "$or": [
-        {
-          "data.user_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
     }
-  }
+  },
+  "type": "object"
 }
