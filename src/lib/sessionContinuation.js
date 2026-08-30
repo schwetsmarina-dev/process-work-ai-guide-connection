@@ -23,6 +23,7 @@ export function buildContinuationPrompt({ rows, terms, messages, language, syste
   const field = (row, name) => row[es ? name + "_es" : name] || "";
   const table = rows.map(row => ({
     step_key: row.step_key, channel: row.channel_key || null,
+    term_keys: (row.related_term_ids || "").split(";").map(key => key.trim()).filter(Boolean),
     goal: field(row, "goal"), enter: field(row, "entry_condition"),
     example: field(row, "question"), instructions: field(row, "facilitator_hint"),
     transitions: field(row, "transition_hint"), allowed_next_keys: row.allowed_next_keys,
@@ -36,7 +37,7 @@ export function buildContinuationPrompt({ rows, terms, messages, language, syste
   return systemPrompt + "\n" + feedbackInstructions(language, true) + "\n" + memoriesBlock +
     "\n" + rules + "\nTABLE:\n" + JSON.stringify(table) +
     "\nTERM REFERENCES:\n" + JSON.stringify(definitions) +
-    "\n" + (es ? "Las definiciones son referencias generales; las instrucciones concretas de cada fila tienen prioridad para elegir la intervención. En la fila feelings pregunta por sentimientos, sin sustituirlos por sensaciones corporales." : "Определения — общие справочные сведения; конкретная инструкция строки определяет интервенцию. В строке feelings спрашивай чувства, не подменяя их телесными ощущениями.") +
+    "\n" + (es ? "Cada term_keys de una fila enlaza con key en TERM REFERENCES: consulta su nombre, definición y aplicación en español al seguir esa fila. Las definiciones son referencias generales; las instrucciones concretas de cada fila tienen prioridad para elegir la intervención. En la fila feelings pregunta por sentimientos, sin sustituirlos por sensaciones corporales." : "Каждый term_keys строки ссылается на key в TERM REFERENCES: используй русское название, определение и применение термина при работе с этой строкой. Определения — общие справочные сведения; конкретная инструкция строки определяет интервенцию. В строке feelings спрашивай чувства, не подменяя их телесными ощущениями.") +
     "\nCONTINUATION START: " + (startedAt || "current turn") +
     "\nCONVERSATION DATA:\n" + JSON.stringify(messages.map(m => ({role:m.role, content:m.content}))) +
     '\nReturn ONLY JSON: {"step_key":"one exact table key","response":"user-facing response"}.';
@@ -72,7 +73,7 @@ export async function generateContinuationResponse({ client, session, messages, 
   const keys = new Set(rows.flatMap(r => (r.related_term_ids || "").split(";").map(k => k.trim()).filter(Boolean)));
   const allTerms = await client.entities.Term.list("term", 500);
   const terms = allTerms.filter(t => keys.has(t.latin_key));
-  if ([...keys].some(key => !terms.some(t => t.latin_key === key && String(t[language === "es" ? "short_definition_es" : "short_definition"] || "").trim()))) {
+  if ([...keys].some(key => !terms.some(t => t.latin_key === key && ["term", "short_definition", "practical_application"].every(field => String(t[language === "es" ? field + "_es" : field] || "").trim())))) {
     throw new Error("Continuation term methodology is unavailable in the selected language");
   }
   const prompt = buildContinuationPrompt({rows, terms, messages, language, systemPrompt, memoriesBlock, startedAt:session.continuation_started_at});
