@@ -14,7 +14,6 @@ import {
 } from "@/lib/stageLocks";
 import {
   validateAssistantResponse,
-  getSafeFallback,
 } from "@/lib/sessionValidation";
 
 // Crisis detection moved to ./crisis (kept re-exported for existing imports).
@@ -1646,6 +1645,9 @@ ${userMessage}
 4. Задай максимум один вопрос; при просьбе завершить — ни одного.
 Строго 2–3 предложения. Никаких повторов. Никаких шаблонов. Движение вперёд.`;
 
+  const runtimeFallback = () => resistanceCount >= 3
+    ? (isEsRuntime ? "No hace falta forzar este punto. Podemos hacer una pausa y atender a lo que te ayuda a sentirte a salvo." : "Не нужно преодолевать это через силу. Можно сделать паузу и обратиться к тому, что помогает чувствовать себя в безопасности.")
+    : feedbackFallback(language, userMessage, messages);
   const fullPrompt = buildPrompt();
   const estimatedTokens = Math.ceil(fullPrompt.length / 4);
 
@@ -1726,7 +1728,7 @@ ${userMessage}
     try {
       const safeResponse = (await base44.functions.invoke("invokeAI", { prompt: minimalPrompt })).data?.response;
       const quality = validateAssistantResponse({ responseText: safeResponse, ...validationParams });
-      return quality.isValid ? safeResponse : feedbackFallback(language, userMessage, messages);
+      return quality.isValid ? safeResponse : runtimeFallback();
     } catch (e2) {
       console.error("[AI_RUNTIME] Safe-mode retry ALSO FAILED:", e2?.message);
       throw e;
@@ -1750,7 +1752,7 @@ ${userMessage}
     console.log("[AI_RUNTIME] InvokeLLM pass 2 success, response length:", secondResponse?.length);
   } catch (e) {
     console.error("[AI_RUNTIME] InvokeLLM FAILED (pass 2):", e?.message);
-    return feedbackFallback(language, userMessage, messages);
+    return runtimeFallback();
   }
 
   const secondValidation = validateAssistantResponse({ responseText: secondResponse, ...validationParams });
@@ -1761,7 +1763,7 @@ ${userMessage}
   }
 
   console.warn("[AI_RUNTIME] Pass 2 also failed validation:", secondValidation.reason);
-  const fallback = feedbackFallback(language, userMessage, messages);
+  const fallback = runtimeFallback();
   console.info("[AI_RUNTIME] Using safe fallback:", fallback);
   return fallback;
 }
