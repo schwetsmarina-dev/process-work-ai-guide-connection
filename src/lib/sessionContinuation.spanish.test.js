@@ -33,7 +33,9 @@ describe("Spanish methodology reaching the AI gateway", () => {
     expect(prompt).toContain("Los ejemplos de fuerza NO autorizan introducir fuerza");
     expect(prompt).toContain("Canal de experiencia y expresión mediante el movimiento");
     expect(prompt).toContain("Sigue la experiencia concreta de la persona.");
-    expect(prompt).not.toContain("Explora con curiosidad qué intenta proteger");
+    expect(prompt).toContain("Explora con curiosidad qué intenta proteger");
+    expect(prompt).toContain("La figura del borde protege algo importante");
+    expect(prompt).not.toContain("sin suponer que protege");
     expect(SYSTEM_PROMPT_ES).toContain("tabla de continuación");
   });
   it.each(["goal_es","entry_condition_es","transition_hint_es","facilitator_hint_es","question_es"])("rejects missing %s before calling AI", async field => {
