@@ -1,3 +1,4 @@
+import { getTurnIntent } from "@/lib/sessionFeedbackGuards";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
@@ -104,6 +105,7 @@ export default function SessionChat() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [sessionComplete, setSessionComplete] = useState(false);
+  const [continuationRequested, setContinuationRequested] = useState(false);
   const [stepError, setStepError] = useState(false);
   const [stepDebugInfo, setStepDebugInfo] = useState(null);
   const [sendError, setSendError] = useState(false);
@@ -501,7 +503,7 @@ export default function SessionChat() {
       // Get AI response
       let rawResponse;
       try {
-        rawResponse = await getAIResponse({ ...session, current_step: currentStep }, step, updatedMessages, text, language, memoriesBlock);
+        rawResponse = await getAIResponse({ ...session, current_step: currentStep, continuation_requested: continuationRequested || getTurnIntent(text).continueRequested || getTurnIntent(text).edge }, step, updatedMessages, text, language, memoriesBlock);
         console.log("[CHAT_FLOW] 4. AI response generated, length:", rawResponse?.length);
       } catch (aiErr) {
         if (import.meta.env.DEV) console.error("[CHAT_FLOW] AI generation failed:", aiErr);
@@ -548,7 +550,8 @@ export default function SessionChat() {
         );
       } else {
         // No next step — final closing message shown; reveal the "end session" button instead of auto-redirect
-        setSessionComplete(true);
+        const intent = getTurnIntent(text);
+        setSessionComplete(intent.explicitClose || (!continuationRequested && !intent.continueRequested && !intent.edge));
       }
 
       queryClient.invalidateQueries({ queryKey: ["session", sessionId, currentUser?.email] });
@@ -611,6 +614,7 @@ export default function SessionChat() {
   // message is sent as a normal turn and the facilitator continues the process
   // instead of leaving "Завершить сессию" as the only option.
   const handleContinueChat = () => {
+    setContinuationRequested(true);
     setSessionComplete(false);
   };
 
@@ -882,8 +886,8 @@ export default function SessionChat() {
                 <div className="flex flex-col items-center gap-3 p-5 rounded-2xl border border-primary/20 bg-primary/5 text-center">
                   <p className="text-sm text-muted-foreground">
                     {language === "es"
-                      ? "Esta sesión ha llegado a su cierre natural. Puedes finalizarla o seguir explorando un poco más."
-                      : "Эта сессия подошла к естественному завершению. Можно завершить её или продолжить исследование."}
+                      ? "Puedes finalizar aquí o seguir explorando lo que para ti quedó pendiente."
+                      : "Можно завершить здесь или продолжить исследовать то, что для тебя осталось важным."}
                   </p>
                   <div className="flex gap-2 flex-wrap justify-center">
                     <Button size="lg" variant="outline" onClick={handleContinueChat}>
@@ -945,7 +949,7 @@ export default function SessionChat() {
               {(() => {
                 // Input is disabled ONLY for states where typing makes no sense.
                 // stepError NO LONGER disables input — user must always be able to type.
-                const inputDisabled = !!shiftSuggestion || isAdminView || sessionComplete;
+                const inputDisabled = !!shiftSuggestion || isAdminView;
                 if (import.meta.env.DEV) {
                   console.log("[CHAT_INPUT_STATE]", {
                     disabled: inputDisabled,
