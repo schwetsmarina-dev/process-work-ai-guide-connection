@@ -1,5 +1,5 @@
 import { base44 } from "@/api/base44Client";
-import { feedbackInstructions, feedbackFallback, answeredIntegration, validateFeedbackQuality } from "@/lib/sessionFeedbackGuards";
+import { feedbackInstructions, feedbackFallback, answeredIntegration } from "@/lib/sessionFeedbackGuards";
 import { detectCompletionState } from "@/lib/sessionSignals";
 import { SYSTEM_PROMPT, SYSTEM_PROMPT_ES } from "@/lib/systemPrompt";
 import { detectBodyProcessStage, buildBodyStageInstruction } from "@/lib/bodyProcess";
@@ -995,7 +995,7 @@ function buildLanguageOverride(language) {
 export async function getAIResponse(session, step, messages, userMessage, language = "es", memoriesBlock = "") {
   const currentMode = session.mode_id || session.mode;
   const isEsRuntime = language === "es";
-  const systemPrompt = (isEsRuntime ? SYSTEM_PROMPT_ES : SYSTEM_PROMPT) + feedbackInstructions(language, !!session.continuation_requested);
+  const systemPrompt = isEsRuntime ? SYSTEM_PROMPT_ES : SYSTEM_PROMPT;
   const languageOverride = isEsRuntime ? "" : buildLanguageOverride(language);
 
   const recent = messages.slice(-8).map((m) => ({
@@ -1686,6 +1686,8 @@ ${userMessage}
     assistantReflectedMap,
   });
 
+  // Explicit closure is user-controlled and does not require another AI question.
+  if (completionDetection.isComplete) return feedbackFallback(language, userMessage, messages);
   // All responses, including large prompts, pass the same validation/retry path.
 
   const validationParams = {
@@ -1723,7 +1725,7 @@ ${userMessage}
       : `Ты Process Work фасилитатор. Отвечай ТОЛЬКО по-русски. Задай один мягкий вопрос, без интерпретаций и диагнозов.\n\nПоследнее сообщение пользователя: ${userMessage}`;
     try {
       const safeResponse = (await base44.functions.invoke("invokeAI", { prompt: minimalPrompt })).data?.response;
-      const quality = validateFeedbackQuality(safeResponse, messages, userMessage);
+      const quality = validateAssistantResponse({ responseText: safeResponse, ...validationParams });
       return quality.isValid ? safeResponse : feedbackFallback(language, userMessage, messages);
     } catch (e2) {
       console.error("[AI_RUNTIME] Safe-mode retry ALSO FAILED:", e2?.message);
@@ -1740,7 +1742,7 @@ ${userMessage}
   console.warn("[AI_RUNTIME] Pass 1 failed validation:", firstValidation.reason);
 
   const retryInstruction = isEsRuntime
-    ? `\n\n🚨 IMPORTANTE: la respuesta anterior fue rechazada por el validador (${firstValidation.reason || "respuesta no válida"}). Corrige el problema respetando estrictamente el estado metodológico ES anterior. No repitas preguntas ya respondidas, no retrocedas de etapa, no mezcles idiomas y haz exactamente una pregunta.`
+    ? `\n\n🚨 IMPORTANTE: respuesta rechazada (${firstValidation.reason || "respuesta no válida"}). ${firstValidation.correctedInstruction || ""} Respeta la seguridad y el estado actual. Como máximo una pregunta, ninguna al cerrar.`
     : `\n\n🚨 ВАЖНО: предыдущий ответ был ОТКЛОНЁН. Причина: ${firstValidation.reason}. ${firstValidation.correctedInstruction}`;
   let secondResponse;
   try {
