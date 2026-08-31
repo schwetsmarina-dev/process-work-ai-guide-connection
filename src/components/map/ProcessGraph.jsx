@@ -1,294 +1,120 @@
+import React, { useState } from "react";
 import { t, getStoredLanguage } from "@/lib/i18n";
-import React, { useMemo, useState } from "react";
+import "./ProcessGraph.css";
 
-// Node type visual config
-const TYPE_STYLE = {
-  theme: { color: "#326ea0", labelKey: "node_theme" },
-  signal: { color: "#c89632", labelKey: "node_signal" },
-  edge: { color: "#b45309", labelKey: "node_edge" },
-  primary: { color: "#64748b", labelKey: "node_primary" },
-  secondary: { color: "#0891b2", labelKey: "node_secondary" },
-  tag: { color: "#46825f", labelKey: "node_tag" },
-  term: { color: "#6e50a0", labelKey: "node_term" },
-  risk: { color: "#dc2626", labelKey: "node_risk" },
+const COPY = {
+  ru: {
+    figure: "Краевая фигура", primary: "Первичный процесс", secondary: "Вторичный процесс", edge: "Содержание края",
+    figureEmpty: "Отдельные данные о фигуре пока не сохранены.",
+    empty: "В этой области пока нет сохранённых наблюдений.",
+    hint: "Выбери область схемы — ниже откроются полные тексты наблюдений.",
+    scope: "Карта объединяет материал разных сессий. Соседство на схеме не означает, что все записи относятся к одному процессу.",
+    observations: "Наблюдений", mentions: "Упоминаний", connections: "Встречались в одной сессии",
+    noConnections: "Связанные записи не найдены.", details: "Связанные записи", additional: "Другой материал карты",
+    other: "Другие наблюдения", selected: "Выбранная область", figureNote: "Здесь появится фигура, сохранённая отдельно. Содержание края остаётся в центре схемы.",
+  },
+  es: {
+    figure: "Figura del borde", primary: "Proceso primario", secondary: "Proceso secundario", edge: "Contenido del borde",
+    figureEmpty: "Aún no hay datos guardados por separado sobre la figura.",
+    empty: "Aún no hay observaciones guardadas en esta área.",
+    hint: "Elige un área del esquema para leer las observaciones completas debajo.",
+    scope: "El mapa reúne material de distintas sesiones. La proximidad en el esquema no significa que todas las observaciones pertenezcan al mismo proceso.",
+    observations: "Observaciones", mentions: "Menciones", connections: "Aparecieron en la misma sesión",
+    noConnections: "No se encontraron observaciones relacionadas.", details: "Observaciones relacionadas", additional: "Otro material del mapa",
+    other: "Otras observaciones", selected: "Área seleccionada", figureNote: "Aquí aparecerá la figura cuando se guarde por separado. El contenido del borde permanece en el centro del esquema.",
+  },
 };
+const OTHER_TYPES = { theme: "node_theme", signal: "node_signal", tag: "node_tag", term: "node_term", risk: "node_risk" };
+const MAIN_TYPES = new Set(["primary", "secondary", "edge", "edge_figure"]);
 
-const WIDTH = 900;
-const HEIGHT = 640;
-
-// Simple deterministic radial layout: distribute nodes on concentric rings by type,
-// then run a few relaxation iterations to spread co-occurring nodes apart.
-function computeLayout(nodes, edges) {
-  const cx = WIDTH / 2;
-  const cy = HEIGHT / 2;
-  const n = nodes.length;
-  if (n === 0) return {};
-
-  const pos = {};
-  nodes.forEach((node, i) => {
-    const angle = (i / n) * Math.PI * 2;
-    const radius = 120 + (i % 5) * 45;
-    pos[node.id] = {
-      x: cx + Math.cos(angle) * radius,
-      y: cy + Math.sin(angle) * radius,
-    };
-  });
-
-  // Light force relaxation: attract connected nodes, repel all pairs.
-  const adj = new Map();
-  edges.forEach((e) => {
-    if (!adj.has(e.source)) adj.set(e.source, []);
-    if (!adj.has(e.target)) adj.set(e.target, []);
-    adj.get(e.source).push({ id: e.target, w: e.weight });
-    adj.get(e.target).push({ id: e.source, w: e.weight });
-  });
-
-  for (let iter = 0; iter < 120; iter++) {
-    const disp = {};
-    nodes.forEach((a) => (disp[a.id] = { x: 0, y: 0 }));
-
-    // Repulsion
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        const a = nodes[i], b = nodes[j];
-        let dx = pos[a.id].x - pos[b.id].x;
-        let dy = pos[a.id].y - pos[b.id].y;
-        let dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
-        const rep = 5200 / (dist * dist);
-        dx /= dist; dy /= dist;
-        disp[a.id].x += dx * rep; disp[a.id].y += dy * rep;
-        disp[b.id].x -= dx * rep; disp[b.id].y -= dy * rep;
-      }
-    }
-    // Attraction along edges
-    edges.forEach((e) => {
-      const a = pos[e.source], b = pos[e.target];
-      if (!a || !b) return;
-      let dx = a.x - b.x, dy = a.y - b.y;
-      let dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
-      const attr = (dist * dist) / 9000 * (1 + e.weight * 0.3);
-      dx /= dist; dy /= dist;
-      disp[e.source].x -= dx * attr; disp[e.source].y -= dy * attr;
-      disp[e.target].x += dx * attr; disp[e.target].y += dy * attr;
-    });
-
-    const damping = 0.85;
-    nodes.forEach((a) => {
-      pos[a.id].x += Math.max(-15, Math.min(15, disp[a.id].x * damping));
-      pos[a.id].y += Math.max(-15, Math.min(15, disp[a.id].y * damping));
-      // keep inside bounds
-      pos[a.id].x = Math.max(40, Math.min(WIDTH - 40, pos[a.id].x));
-      pos[a.id].y = Math.max(40, Math.min(HEIGHT - 40, pos[a.id].y));
-    });
-  }
-
-  return pos;
+function FigureSymbol() {
+  return (
+    <svg viewBox="0 0 64 84" className="process-map-person" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+      <ellipse cx="32" cy="15" rx="9" ry="12" />
+      <path d="M32 28v27 M32 34L13 48 M32 34l19 14 M32 55L18 77 M32 55l14 22" />
+    </svg>
+  );
 }
 
-export default function ProcessGraph({ nodes, edges }) {
-  const lang = getStoredLanguage();
-  const [hoverId, setHoverId] = useState(null);
-  const [selectedId, setSelectedId] = useState(null);
-  const [activeTypes, setActiveTypes] = useState(new Set(Object.keys(TYPE_STYLE)));
-
-  const visibleNodes = useMemo(
-    () => nodes.filter((nd) => activeTypes.has(nd.type)),
-    [nodes, activeTypes]
+function ObservationList({ items, allNodes, edges, copy }) {
+  if (!items.length) return <p className="process-map-empty">{copy.empty}</p>;
+  const byId = new Map(allNodes.map(node => [node.id, node]));
+  return (
+    <ul className="process-map-observations">
+      {items.map(node => {
+        const related = edges.filter(edge => edge.source === node.id || edge.target === node.id)
+          .map(edge => ({ node: byId.get(edge.source === node.id ? edge.target : edge.source), weight: edge.weight }))
+          .filter(item => item.node)
+          .sort((a, b) => (b.weight || 0) - (a.weight || 0));
+        return (
+          <li key={node.id} className="process-map-observation">
+            <p className="process-map-text">{node.label}</p>
+            {node.count > 1 && <p className="process-map-meta">{copy.mentions}: {node.count}</p>}
+            <details className="process-map-related">
+              <summary>{copy.details} ({related.length})</summary>
+              {related.length ? <><p className="process-map-meta">{copy.connections}</p><ul>{related.map(item => <li key={item.node.id}>{item.node.label}</li>)}</ul></> : <p className="process-map-meta">{copy.noConnections}</p>}
+            </details>
+          </li>
+        );
+      })}
+    </ul>
   );
-  const visibleIds = useMemo(() => new Set(visibleNodes.map((n) => n.id)), [visibleNodes]);
-  const visibleEdges = useMemo(
-    () => edges.filter((e) => visibleIds.has(e.source) && visibleIds.has(e.target)),
-    [edges, visibleIds]
-  );
+}
 
-  const pos = useMemo(() => computeLayout(visibleNodes, visibleEdges), [visibleNodes, visibleEdges]);
-
-  const maxCount = useMemo(
-    () => Math.max(1, ...visibleNodes.map((n) => n.count || 1)),
-    [visibleNodes]
-  );
-  const maxWeight = useMemo(
-    () => Math.max(1, ...visibleEdges.map((e) => e.weight || 1)),
-    [visibleEdges]
-  );
-
-  const toggleType = (type) => {
-    setActiveTypes((prev) => {
-      const next = new Set(prev);
-      if (next.has(type)) next.delete(type);
-      else next.add(type);
-      return next;
-    });
+export default function ProcessGraph({ nodes = [], edges = [], lang: requestedLanguage }) {
+  const lang = requestedLanguage || getStoredLanguage();
+  const copy = COPY[lang] || COPY.es;
+  const [selected, setSelected] = useState("primary");
+  const cleanNodes = nodes.filter(node => node && typeof node.label === "string" && node.label.trim());
+  const groups = {
+    primary: cleanNodes.filter(node => node.type === "primary"),
+    secondary: cleanNodes.filter(node => node.type === "secondary"),
+    edge: cleanNodes.filter(node => node.type === "edge"),
+    figure: cleanNodes.filter(node => node.type === "edge_figure"),
   };
+  const otherGroups = Object.entries(OTHER_TYPES).map(([type, key]) => ({ type, label: t(key, lang), items: cleanNodes.filter(node => node.type === type) }));
+  const unknown = cleanNodes.filter(node => !MAIN_TYPES.has(node.type) && !Object.hasOwn(OTHER_TYPES, node.type));
+  if (unknown.length) otherGroups.push({ type: "other", label: copy.other, items: unknown });
 
-  // Focus node: selected takes priority, otherwise hovered
-  const focusId = selectedId || hoverId;
-
-  // Connected node ids for highlight
-  const connectedIds = useMemo(() => {
-    if (!focusId) return null;
-    const ids = new Set([focusId]);
-    visibleEdges.forEach((e) => {
-      if (e.source === focusId) ids.add(e.target);
-      if (e.target === focusId) ids.add(e.source);
-    });
-    return ids;
-  }, [focusId, visibleEdges]);
-
-  // Details for the selected node
-  const selectedNode = useMemo(
-    () => visibleNodes.find((nd) => nd.id === selectedId) || null,
-    [visibleNodes, selectedId]
+  const zone = (key, numeral) => (
+    <button type="button" className={"process-map-zone process-map-zone-" + key} aria-pressed={selected === key} onClick={() => setSelected(key)}>
+      {numeral && <span className="process-map-numeral" aria-hidden="true">{numeral}</span>}
+      <span className="process-map-zone-title">{copy[key]}</span>
+      <span className="process-map-zone-count">{copy.observations}: {groups[key].length}</span>
+    </button>
   );
-  const selectedConnections = useMemo(() => {
-    if (!selectedId) return [];
-    const byId = new Map(nodes.map((nd) => [nd.id, nd]));
-    return visibleEdges
-      .filter((e) => e.source === selectedId || e.target === selectedId)
-      .map((e) => {
-        const otherId = e.source === selectedId ? e.target : e.source;
-        return { node: byId.get(otherId), weight: e.weight };
-      })
-      .filter((c) => c.node)
-      .sort((a, b) => b.weight - a.weight);
-  }, [selectedId, visibleEdges, nodes]);
 
   return (
-    <div className="space-y-4">
-      {/* Legend / filters */}
-      <div className="flex flex-wrap gap-2">
-        {Object.entries(TYPE_STYLE).map(([type, cfg]) => {
-          const on = activeTypes.has(type);
-          return (
-            <button
-              key={type}
-              onClick={() => toggleType(type)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                on ? "bg-card border-border" : "bg-muted/50 border-transparent opacity-50"
-              }`}
-            >
-              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: cfg.color }} />
-              {t(cfg.labelKey, lang)}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="rounded-2xl border border-border bg-card overflow-hidden">
-        <svg
-          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          className="w-full h-auto"
-          style={{ maxHeight: "70vh" }}
-        >
-          {/* Edges */}
-          {visibleEdges.map((e, i) => {
-            const a = pos[e.source], b = pos[e.target];
-            if (!a || !b) return null;
-            const highlighted = connectedIds
-              ? connectedIds.has(e.source) && connectedIds.has(e.target)
-              : true;
-            return (
-              <line
-                key={i}
-                x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-                stroke={highlighted ? "#9ca3af" : "#e5e7eb"}
-                strokeWidth={0.6 + (e.weight / maxWeight) * 3}
-                strokeOpacity={connectedIds && !highlighted ? 0.1 : 0.5}
-              />
-            );
-          })}
-
-          {/* Nodes */}
-          {visibleNodes.map((nd) => {
-            const p = pos[nd.id];
-            if (!p) return null;
-            const cfg = TYPE_STYLE[nd.type] || { color: "#888" };
-            const r = 8 + ((nd.count || 1) / maxCount) * 14;
-            const dim = connectedIds && !connectedIds.has(nd.id);
-            return (
-              <g
-                key={nd.id}
-                transform={`translate(${p.x}, ${p.y})`}
-                onMouseEnter={() => setHoverId(nd.id)}
-                onMouseLeave={() => setHoverId(null)}
-                onClick={() => setSelectedId((prev) => (prev === nd.id ? null : nd.id))}
-                style={{ cursor: "pointer", opacity: dim ? 0.25 : 1 }}
-              >
-                <circle
-                  r={r}
-                  fill={cfg.color}
-                  fillOpacity={0.85}
-                  stroke={selectedId === nd.id ? "#1a1a1a" : "#fff"}
-                  strokeWidth={selectedId === nd.id ? 3 : 2}
-                />
-                {(focusId === nd.id || (connectedIds && connectedIds.has(nd.id)) || nd.count >= 2) && (
-                  <text
-                    y={-r - 5}
-                    textAnchor="middle"
-                    fontSize={11}
-                    fill="#1a1a1a"
-                    style={{ pointerEvents: "none", fontWeight: focusId === nd.id ? 600 : 400 }}
-                  >
-                    {nd.label.length > 34 ? nd.label.slice(0, 34) + "…" : nd.label}
-                  </text>
-                )}
-              </g>
-            );
-          })}
+    <div className="process-map" data-testid="process-map-triangle">
+      <p className="process-map-hint">{copy.hint}</p>
+      <div className="process-map-sketch">
+        <svg className="process-map-mountain" viewBox="0 0 1000 470" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M45 450 L500 170 L955 450" fill="none" stroke="currentColor" strokeWidth="3" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
+        <button type="button" className="process-map-figure" aria-pressed={selected === "figure"} onClick={() => setSelected("figure")}>
+          <span className="process-map-zone-title">{copy.figure}</span>
+          <FigureSymbol />
+          <span className="process-map-figure-status">{groups.figure.length ? copy.observations + ": " + groups.figure.length : copy.figureEmpty}</span>
+        </button>
+        {zone("primary", "I")}
+        {zone("secondary", "II")}
+        {zone("edge")}
       </div>
-
-      {/* Selected node details */}
-      {selectedNode && (
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <span
-                className="w-3.5 h-3.5 rounded-full shrink-0"
-                style={{ backgroundColor: (TYPE_STYLE[selectedNode.type] || {}).color || "#888" }}
-              />
-              <div>
-                <h3 className="font-semibold text-sm leading-snug">{selectedNode.label}</h3>
-                <p className="text-xs text-muted-foreground">
-                  {TYPE_STYLE[selectedNode.type] ? t(TYPE_STYLE[selectedNode.type].labelKey, lang) : selectedNode.type} ·
-                  {" "}{t("graph_occurs_in", lang)} {selectedNode.count || 1} {t("graph_sessions_short", lang)}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setSelectedId(null)}
-              className="text-xs text-muted-foreground hover:text-foreground shrink-0"
-            >
-              {t("close", lang)}
-            </button>
-          </div>
-
-          <div className="mt-4">
-            <p className="text-xs font-medium text-muted-foreground mb-2">
-              {t("graph_connected", lang)} ({selectedConnections.length})
-            </p>
-            {selectedConnections.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{t("graph_no_links", lang)}</p>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {selectedConnections.map((c) => (
-                  <button
-                    key={c.node.id}
-                    onClick={() => setSelectedId(c.node.id)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border border-border bg-background hover:bg-accent transition-colors"
-                  >
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: (TYPE_STYLE[c.node.type] || {}).color || "#888" }}
-                    />
-                    {c.node.label.length > 28 ? c.node.label.slice(0, 28) + "…" : c.node.label}
-                    <span className="text-muted-foreground">×{c.weight}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+      <section className={"process-map-panel process-map-panel-" + selected} aria-label={copy.selected} aria-live="polite">
+        <div className="process-map-panel-heading"><h2>{copy[selected]}</h2><span>{groups[selected].length}</span></div>
+        {selected === "figure" && !groups.figure.length ? <p className="process-map-empty">{copy.figureNote}</p> : <ObservationList items={groups[selected]} allNodes={cleanNodes} edges={edges} copy={copy} />}
+      </section>
+      <p className="process-map-scope">{copy.scope}</p>
+      {otherGroups.some(group => group.items.length) && (
+        <section className="process-map-other">
+          <h2>{copy.additional}</h2>
+          {otherGroups.filter(group => group.items.length).map(group => (
+            <details key={group.type} className="process-map-other-group" open={group.type === "risk" ? true : undefined}>
+              <summary>{group.label} <span>{group.items.length}</span></summary>
+              <ObservationList items={group.items} allNodes={cleanNodes} edges={edges} copy={copy} />
+            </details>
+          ))}
+        </section>
       )}
     </div>
   );
