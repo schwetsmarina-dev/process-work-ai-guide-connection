@@ -10,6 +10,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { generateThemePatterns } from "@/lib/themePatternsAI";
 import useEntitlement from "@/hooks/useEntitlement";
 import { FEATURES } from "@/lib/entitlement";
+import KeyObservations from "@/components/insights/KeyObservations";
 
 const MODE_COLORS = {
   body: "hsl(160, 30%, 42%)",
@@ -48,13 +49,13 @@ export default function Insights() {
     enabled: !!currentUser?.id,
   });
 
-  const { data: memories = [], isLoading: memoriesLoading } = useQuery({
-    queryKey: ["memories", currentUser?.email],
-    queryFn: () => base44.entities.UserMemory.filter({ user_id: currentUser.id }, "-created_date", 50),
+  const { data: memories = [], isLoading: memoriesLoading, isError: memoriesError } = useQuery({
+    queryKey: ["memories", currentUser?.id],
+    queryFn: () => base44.entities.UserMemory.filter({ user_id: currentUser.id }, "-updated_at", 500),
     enabled: !!currentUser?.id,
   });
 
-  const isLoading = sessionsLoading || memoriesLoading;
+  const isLoading = !currentUser || sessionsLoading || memoriesLoading;
   const completedSessions = sessions.filter((s) => s.status === "completed");
 
   const { data: themePatterns = [], isLoading: patternsLoading } = useQuery({
@@ -126,14 +127,6 @@ export default function Insights() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8)
     .map(([name, count]) => ({ name, count }));
-
-  // Memory categories
-  const memoryCategories = Object.entries(
-    memories.reduce((acc, m) => {
-      acc[m.category || "other"] = (acc[m.category || "other"] || 0) + 1;
-      return acc;
-    }, {})
-  ).map(([cat, count]) => ({ name: cat, count }));
 
   if (isLoading) {
     return (
@@ -317,27 +310,11 @@ export default function Insights() {
             </Card>
           )}
 
-          {/* Key memories */}
-          {memories.length > 0 && (
-            <Card className="p-6">
-              <h3 className="font-semibold text-sm mb-4">{t("key_observations", lang)}</h3>
-              <div className="space-y-3">
-                {memories.slice(0, 10).map((mem) => (
-                  <div key={mem.id} className="flex items-start gap-3 text-sm">
-                    <Badge variant="secondary" className="text-xs shrink-0 mt-0.5">
-                      {mem.category || "insight"}
-                    </Badge>
-                    <div>
-                      <p className="font-medium">{mem.key}</p>
-                      <p className="text-muted-foreground text-xs mt-0.5">{mem.value}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
         </div>
       )}
+      <div className="mt-6">
+        <KeyObservations memories={memories} lang={lang} error={memoriesError} />
+      </div>
     </div>
   );
 }
