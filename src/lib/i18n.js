@@ -224,11 +224,11 @@ const translations = {
     timeline_insights: "Инсайты",
     timeline_empty: "Пока нет данных для шкалы",
     map_title: "Карта процесса",
-    map_subtitle: "Темы, сигналы и термины из твоих сессий и связи между ними",
+    map_subtitle: "Первичный процесс, вторичный процесс и край — на одной схеме",
     map_building: "Строим карту процесса…",
     map_error: "Не удалось построить карту.",
-    map_empty: "Пока недостаточно данных для карты. Пройди несколько сессий — темы и сигналы появятся здесь и соединятся в граф.",
-    map_legend: "Размер узла — как часто тема встречалась, толщина связи — как часто две темы встречались вместе в одной сессии. Наведи на узел, чтобы подсветить связи.",
+    map_empty: "Пока недостаточно данных для карты. Сохранённые наблюдения из твоих сессий появятся здесь в соответствующих областях схемы.",
+    map_legend: "Выбери область схемы, чтобы прочитать наблюдения. Связанные записи встречались вместе в сессиях.",
     refresh: "Обновить",
 
     // —— Полный отчёт о сессии ——
@@ -706,11 +706,11 @@ const translations = {
     timeline_insights: "Insights",
     timeline_empty: "Todavía no hay datos para la línea de tiempo",
     map_title: "Mapa del proceso",
-    map_subtitle: "Temas, señales y términos de tus sesiones, y las conexiones entre ellos",
+    map_subtitle: "El proceso primario, el secundario y el borde en un mismo esquema",
     map_building: "Construyendo el mapa del proceso…",
     map_error: "No se ha podido construir el mapa.",
-    map_empty: "Todavía no hay datos suficientes para el mapa. Completa algunas sesiones y los temas y señales aparecerán aquí conectados en un gráfico.",
-    map_legend: "El tamaño del nodo indica con qué frecuencia aparece el tema; el grosor de la línea, cuántas veces dos temas coincidieron en una misma sesión. Pasa el cursor por un nodo para resaltar sus conexiones.",
+    map_empty: "Todavía no hay datos suficientes para el mapa. Las observaciones guardadas de tus sesiones aparecerán en las áreas correspondientes del esquema.",
+    map_legend: "Elige un área del esquema para leer las observaciones. Las observaciones relacionadas aparecieron juntas en las sesiones.",
     refresh: "Actualizar",
 
     // —— Informe completo de la sesión ——
