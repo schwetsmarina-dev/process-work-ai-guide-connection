@@ -42,7 +42,7 @@ export default function LifeProcessMap() {
   }
 
   return (
-    <div className="p-6 md:p-10 max-w-5xl mx-auto">
+    <div className="p-4 md:p-10 max-w-5xl mx-auto">
       <div className="flex items-start justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -92,10 +92,7 @@ export default function LifeProcessMap() {
 
       {!isLoading && !isError && nodes.length > 0 && (
         <>
-          <ProcessGraph nodes={nodes} edges={edges} />
-          <p className="text-xs text-muted-foreground mt-3">
-            {t("map_legend", lang)}
-          </p>
+          <ProcessGraph nodes={nodes} edges={edges} lang={lang} />
         </>
       )}
     </div>
