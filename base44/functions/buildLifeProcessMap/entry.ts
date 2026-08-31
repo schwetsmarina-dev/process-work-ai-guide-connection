@@ -178,6 +178,11 @@ Deno.serve(async (req) => {
         const k = addNode(edgeSig, 'edge');
         if (k) labelsInSession.push(k);
       }
+      // Edge figures are independent stored material, never inferred from edge signals.
+      for (const figure of s.edge_figures || []) {
+        const k = addNode(figure, 'edge_figure');
+        if (k) labelsInSession.push(k);
+      }
       for (const p of s.primary_process || []) {
         const k = addNode(p, 'primary');
         if (k) labelsInSession.push(k);
