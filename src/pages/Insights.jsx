@@ -55,7 +55,7 @@ export default function Insights() {
     enabled: !!currentUser?.id,
   });
 
-  const isLoading = !currentUser || sessionsLoading || memoriesLoading;
+  const isLoading = sessionsLoading || memoriesLoading;
   const completedSessions = sessions.filter((s) => s.status === "completed");
 
   const { data: themePatterns = [], isLoading: patternsLoading } = useQuery({
