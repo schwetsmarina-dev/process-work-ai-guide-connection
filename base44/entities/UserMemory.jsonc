@@ -18,7 +18,7 @@
     },
     "memory_type": {
       "type": "string",
-      "description": "Type of memory: theme, pattern, body_signal, edge, primary_process, secondary_process, resource, progress, change"
+      "description": "Type of memory: theme, pattern, body_signal, edge, edge_figure, primary_process, secondary_process, resource, progress, change. edge_figure is stored as a separate row, never merged into edge."
     },
     "memory_key": {
       "type": "string",
@@ -27,6 +27,13 @@
     "memory_value": {
       "type": "string",
       "description": "Human-readable memory content"
+    },
+    "related_memory_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Explicit links to related memory records owned by the same user; e.g. an edge_figure record points to its edge record."
     },
     "source_mode_id": {
       "type": "string",
