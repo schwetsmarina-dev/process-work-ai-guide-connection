@@ -21,6 +21,13 @@
       "default": 0,
       "type": "number"
     },
+    "edge_figures": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Separately saved descriptions of edge figures, voices or parts in the person's own words. Not interchangeable with edge content in edge_signals. Do not infer a figure from difficulty alone."
+    },
     "edge_signals": {
       "description": "Moments where resistance, an inner critic, shame, looping, or another process edge appeared",
       "items": {
