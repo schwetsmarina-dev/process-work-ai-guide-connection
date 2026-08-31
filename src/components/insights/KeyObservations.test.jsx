@@ -1,5 +1,9 @@
 import React from "react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterAll } from "vitest";
+// The shared UI utilities inspect whether the app is in an iframe on import.
+// Provide that browser-only surface while rendering the real components in Node.
+vi.hoisted(() => vi.stubGlobal("window", { self: null, top: null }));
+afterAll(() => vi.unstubAllGlobals());
 import { renderToStaticMarkup } from "react-dom/server";
 import KeyObservations from "./KeyObservations";
 
