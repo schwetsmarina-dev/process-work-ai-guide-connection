@@ -63,8 +63,8 @@ export default function KeyObservations({ memories = [], lang = "es", error = fa
           <p className="text-xs text-muted-foreground mb-4">{copy.hint}</p>
           <ul className="space-y-4">
             {visible.map(memory => {
-              const label = [memory.memory_type, memory.memory_key, memory.category].map(key => labels[key]).find(Boolean) || labels.other;
-              const status = memory.excluded_from_ai ? copy.excluded : copy[memory.user_status];
+              const label = [memory.memory_type, memory.memory_key, memory.category].map(key => labels[key]).find(value => typeof value === "string") || labels.other;
+              const status = memory.excluded_from_ai ? copy.excluded : ["confirmed", "corrected"].includes(memory.user_status) ? copy[memory.user_status] : "";
               return (
                 <li key={memory.id} className="min-w-0 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
