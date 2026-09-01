@@ -11,10 +11,11 @@ This file is the source-of-truth checklist for privacy, security and due-diligen
 4. Consent records the accepted language/version, AI disclosure acknowledgement and explicit special-category consent before a session can start.
 5. User session content is stored in Base44 and sent through the configured AI gateway/model provider to generate a reply.
 6. Talvira screens messages for safety signals and may create a RiskEvent.
-7. Session completion may create summaries, memories, insights, reports and a personalised practice.
-8. Paddle Checkout handles payment; signed Paddle webhooks update a server-side Entitlement.
-9. Optional monitoring receives technical errors subject to configured redaction.
-10. Users can export or delete data from Settings → Privacy.
+7. Session completion may create summaries, memories, insights, reports and a personalised practice derived from recurring material across completed sessions.
+8. After eligibility and a non-clinical safety screening, a user may start the 28-day programme. Each generated day and completed reflection may store distress checks, user-reviewed observations, personal resources and an explicit progression decision (advance, repeat, resource, pause or stop).
+9. Paddle Checkout handles payment; signed Paddle webhooks update a server-side Entitlement.
+10. Optional monitoring receives technical errors subject to configured redaction.
+11. Users can export or delete data from Settings → Privacy.
 
 ## 2. System inventory
 
@@ -35,7 +36,12 @@ This file is the source-of-truth checklist for privacy, security and due-diligen
 | AppUser | Account, language, plan, consent, birth year | User/admin; birth year only |
 | Session / Message | Guided-session state and transcript | Owner-scoped; sensitive |
 | UserMemory / Insight | Persistent derived reflection | Owner-scoped; user controls required |
-| ProcessPractice | Personalised practice | Owner-scoped |
+| ProcessExercise | Safety-classified practice library | Admin-authored; only AI-usable material may feed self-guided generation |
+| ProcessPractice | Personalised seven-step practice and optional audio reference | Owner-scoped; derived from completed sessions |
+| EdgeProgram | 28-day programme state, source context, pause/resume state and personal resource library | Owner-scoped; backend-created after eligibility and screening |
+| EdgeProgramDay | Daily generated practice, reflection, distress checks, reviewed observations/resources and progression decision | Owner-scoped; sensitive derived data |
+| EdgeProgramScreening | Pre-start non-clinical safety answers and result | Owner-scoped; sensitive |
+| EdgeProgramMilestone | Weekly synthesis, recurring signals, resources and next-week adjustment | Owner-scoped; backend-generated |
 | RiskEvent | Safety classification and references | Restricted review; retention must be justified |
 | PhysiologicalData | Optional body data | Special-category; explicit consent/minimisation |
 | Entitlement | Paddle references and access status | Server-authoritative; no card data |

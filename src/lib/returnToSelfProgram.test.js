@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from 'vitest';
 import { RETURN_TO_SELF_DAYS, RETURN_TO_SELF_ENGINE_RULES, getReturnToSelfDay, validateReturnToSelfProgram } from './returnToSelfProgram';
 import { RETURN_TO_SELF_DAYS as SERVER_DAYS, RETURN_TO_SELF_ENGINE_RULES as SERVER_RULES } from '../../base44/functions/generateEdgeProgramDay/methodology.ts';
