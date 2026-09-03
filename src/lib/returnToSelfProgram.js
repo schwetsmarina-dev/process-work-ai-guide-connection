@@ -51,7 +51,7 @@ export const RETURN_TO_SELF_ENGINE_RULES = {
   ],
 };
 
-const d = (day, week, key, title, purpose, steps, journal, extra = {}) => ({ day, week, key, title, purpose, steps, journal, ...extra });
+const d = (day, week, key, title, purpose, steps, journal, /** @type {Record<string, any>} */ extra = {}) => /** @type {{ day: number, week: number, key: string, title: string, purpose: string, steps: string[], journal: string[], celebration?: boolean, adaptive?: boolean, support?: boolean, risk?: string, [key: string]: any }} */ ({ day, week, key, title, purpose, steps, journal, ...extra });
 
 export const RETURN_TO_SELF_DAYS = [
   d(1,1,"current_experience","Что происходит со мной сейчас","Notice the strongest present signal and the first moment of interruption without searching for a problem.",[
