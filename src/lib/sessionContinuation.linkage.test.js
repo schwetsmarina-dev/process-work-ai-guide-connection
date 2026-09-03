@@ -10,7 +10,7 @@ function clientFor(rows = records, definitions = terms) {
     functions: { invoke: vi.fn().mockResolvedValue({ data: { response: JSON.stringify({ step_key: "dream_continue_edge", response: "¿Qué intenta proteger esta figura?" }) } }) },
   };
 }
-const args = { session: { mode_id: "dream" }, messages: [], userText: "", language: "es", systemPrompt: SYSTEM_PROMPT_ES, resistanceCount: 0 };
+const args = { session: { mode_id: "dream" }, messages: [], userText: "", language: "es", systemPrompt: SYSTEM_PROMPT_ES, memoriesBlock: "", resistanceCount: 0 };
 describe("complete bilingual continuation linkage", () => {
   for (const language of ["ru", "es"]) {
     it.each(["body", "dream", "conflict", "journaling"])(language + " %s sends every row with localized linked definitions and distinct transitions", async mode => {
