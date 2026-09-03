@@ -42,12 +42,12 @@ describe("Spanish methodology reaching the AI gateway", () => {
     const rows=records.map(r=>({...r}));
     delete rows.find(r=>r.step_key==="dream_continue_positions")[field];
     client.entities.ModeStep.filter.mockResolvedValue(rows);
-    await expect(generateContinuationResponse({client,session:{mode_id:"dream"},messages:[],userText:"",language:"es",systemPrompt:SYSTEM_PROMPT_ES,resistanceCount:0})).rejects.toThrow("methodology is unavailable");
+    await expect(generateContinuationResponse({client,session:{mode_id:"dream"},messages:[],userText:"",language:"es",systemPrompt:SYSTEM_PROMPT_ES,memoriesBlock:"",resistanceCount:0})).rejects.toThrow("methodology is unavailable");
     expect(client.functions.invoke).not.toHaveBeenCalled();
   });
   it("rejects a broken Spanish Term reference before calling AI", async () => {
     client.entities.Term.list.mockResolvedValue(termRecords.filter(t=>t.latin_key!=="movement_channel"));
-    await expect(generateContinuationResponse({client,session:{mode_id:"dream"},messages:[],userText:"",language:"es",systemPrompt:SYSTEM_PROMPT_ES,resistanceCount:0})).rejects.toThrow("term methodology is unavailable");
+    await expect(generateContinuationResponse({client,session:{mode_id:"dream"},messages:[],userText:"",language:"es",systemPrompt:SYSTEM_PROMPT_ES,memoriesBlock:"",resistanceCount:0})).rejects.toThrow("term methodology is unavailable");
     expect(client.functions.invoke).not.toHaveBeenCalled();
   });
 });
