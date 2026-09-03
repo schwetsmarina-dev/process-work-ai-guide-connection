@@ -5,7 +5,7 @@ import {
   normalizeResourceCandidates,
   applyObservationReview,
   mergeResourceLibrary,
-} from '../../base44/functions/completeEdgeProgramDay/completionRules.ts';
+} from '../../base44/functions/completeEdgeProgramDay/completionRules';
 
 describe('Return to Self day completion rules', () => {
   it('advances one day only when no safety guard or user rollback choice blocks it', () => {
