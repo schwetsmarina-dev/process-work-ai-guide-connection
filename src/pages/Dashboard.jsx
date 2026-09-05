@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { isAdmin as hasAdminRole } from "@/lib/roles";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
@@ -78,6 +78,10 @@ export default function Dashboard() {
   const lang = normalizeLang(appUser?.language);
   const [quotaBlockedMode, setQuotaBlockedMode] = useState(null);
   const [freeText, setFreeText] = useState("");
+  // Starting a session is a single user action. Guard it client-side so a
+  // double tap / overlapping handler cannot create two near-identical active
+  // sessions (and later two misleading "abandoned" rows / quota charges).
+  const sessionStartInFlightRef = useRef(false);
   const [routingSuggestion, setRoutingSuggestion] = useState(null);
 
   useEffect(() => {
@@ -349,6 +353,11 @@ export default function Dashboard() {
    * @param {{ continuedFromSessionId?: any, carryOverContext?: any }} [options]
    */
   const createSession = async (mode, { continuedFromSessionId, carryOverContext } = {}) => {
+    if (sessionStartInFlightRef.current) {
+      console.warn("[SessionFlow] duplicate start suppressed");
+      return;
+    }
+    sessionStartInFlightRef.current = true;
     const modeId = mode.mode_id;
     const stepKey = `${modeId}_1`;
 
@@ -392,18 +401,22 @@ export default function Dashboard() {
       return;
     }
 
-    const result = await startSession(modeId, { continuedFromSessionId, carryOverContext });
-    if (result.blocked) {
-      setQuotaBlockedMode(modeId);
-      return;
-    }
-    const session = result.session;
+    try {
+      const result = await startSession(modeId, { continuedFromSessionId, carryOverContext });
+      if (result.blocked) {
+        setQuotaBlockedMode(modeId);
+        return;
+      }
+      const session = result.session;
 
-    if (appUser?.id) {
-      await base44.entities.AppUser.update(appUser.id, { last_session_id: session.id }).catch(() => {});
-    }
+      if (appUser?.id) {
+        await base44.entities.AppUser.update(appUser.id, { last_session_id: session.id }).catch(() => {});
+      }
 
-    navigate(`/session/${session.id}`);
+      navigate(`/session/${session.id}`);
+    } finally {
+      sessionStartInFlightRef.current = false;
+    }
   };
 
   const continuationPreview = lastCompletedForMode
