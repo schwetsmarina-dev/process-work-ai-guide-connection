@@ -22,6 +22,11 @@
     "source": {
       "type": "string"
     },
+    "needs_rework_from_zingerman_materials": {
+      "type": "boolean",
+      "default": false,
+      "description": "Internal editorial marker: exercise came from Zingerman training materials and still needs source verification or functional replacement; never use as public authorship"
+    },
     "term_keys": {
       "type": "array",
       "items": {
