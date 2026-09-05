@@ -382,10 +382,15 @@ const BODY_MATERIAL_SIGNALS = [
 ];
 
 const CONFLICT_MATERIAL_SIGNALS = [
-  "конфликт", "с одной стороны", "с другой стороны", "часть меня", "спор",
-  "не могу решить", "выбор", "уйти", "остаться",
-  "quiero", "no quiero", "conflicto", "por una parte", "por otra parte",
-  "una parte de mí", "decisión",
+  // A generic mention of «конфликт / conflicto» is intentionally NOT enough.
+  // Conflict mode needs at least some actual polarity material before we ask
+  // which side is primary/secondary; otherwise the facilitator starts inventing
+  // the two sides for the person (see the Sergey 2026-08-23 regression case).
+  "с одной стороны", "с другой стороны", "часть меня", "другая часть", "спор",
+  "не могу решить", "выбор", "уйти", "остаться", "между",
+  "хочу, но", "хочу но", "должен, но", "должна, но", "надо, но",
+  "por una parte", "por otra parte", "una parte de mí", "otra parte",
+  "decisión", "entre", "quiero, pero", "quiero pero", "tengo que, pero", "debo, pero",
 ];
 
 const JOURNALING_MATERIAL_SIGNALS = [
@@ -1622,7 +1627,13 @@ ${formatProcessMapForPrompt(dreamProcessMap, dreamMapFilledCount)}
   })() : "";
 
   const integrationAnswered = answeredIntegration(messages);
-  const qualityContext = feedbackInstructions(language, continued) + (integrationAnswered ? "\nIntegration already answered: do not ask another life-transfer question. Reflect the answer and offer a choice, or follow the explicitly requested remaining edge.\n" : "");
+  const isTerminalMainStep = hasValidStep && step?.block !== "continuation" && (step?.next_step_on_answer == null);
+  const terminalStepInstruction = isTerminalMainStep && !continued
+    ? (language === "es"
+      ? "\nPASO FINAL ESTRUCTURAL. La respuesta de la persona a este turno cierra el recorrido principal. Resume brevemente usando solo su material y NO hagas ninguna pregunta nueva. No abras otra línea ni conviertas el cierre en otra exploración.\n"
+      : "\nСТРУКТУРНО ФИНАЛЬНЫЙ ШАГ. Ответ человека на этом ходу завершает основной цикл. Кратко подведи итог только из его материала и НЕ задавай нового вопроса. Не открывай новую линию и не превращай завершение в дальнейшее исследование.\n")
+    : "";
+  const qualityContext = feedbackInstructions(language, continued) + terminalStepInstruction + (integrationAnswered ? "\nIntegration already answered: do not ask another life-transfer question. Reflect the answer and offer a choice, or follow the explicitly requested remaining edge.\n" : "");
   const buildPrompt = (extraInstruction = "") => isEsRuntime
     ? `${systemPrompt}${carryOverBlock}${sessionStateBlock}${memoriesBlock}${stepContext}${termsContext}${modeShiftHint}${spanishRuntimeBlock}${questionConfusionInstruction}${nonResonanceInstruction}${temporalTransitionInstruction}${edgeLimitInstruction}${beginnerChoicesInstruction}${qualityContext}${extraInstruction}
 
