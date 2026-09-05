@@ -972,7 +972,7 @@ export default function SessionChat() {
               {(() => {
                 // Input is disabled ONLY for states where typing makes no sense.
                 // stepError NO LONGER disables input — user must always be able to type.
-                const inputDisabled = !!shiftSuggestion || isAdminView;
+                const inputDisabled = !!shiftSuggestion || isAdminView || sessionComplete;
                 if (import.meta.env.DEV) {
                   console.log("[CHAT_INPUT_STATE]", {
                     disabled: inputDisabled,
