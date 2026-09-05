@@ -64,6 +64,10 @@ const COPY = {
     audioFailed: "Не удалось создать аудио. Текст практики остаётся доступен.",
     restCount: "Дней отдыха",
     resourceCount: "Ресурсных дней",
+    progress: "Прогресс",
+    daysLeft: "дней осталось",
+    paceHint: "Ты выбираешь темп: обычный день, мягкая версия, ресурс или отдых. Программа не требует двигаться быстрее, чем тебе подходит.",
+    completionNote: "28 дней завершены. То, что ты исследовала и подтвердила по ходу программы, остаётся в твоей карте процесса — к этому можно возвращаться без необходимости начинать заново.",
   },
   es: {
     title: "Volver a mí",
@@ -119,6 +123,10 @@ const COPY = {
     audioFailed: "No se pudo crear el audio. El texto de la práctica sigue disponible.",
     restCount: "Días de descanso",
     resourceCount: "Días de recursos",
+    progress: "Progreso",
+    daysLeft: "días restantes",
+    paceHint: "Tú eliges el ritmo: día habitual, versión suave, recursos o descanso. El programa no te obliga a avanzar más rápido de lo que te conviene.",
+    completionNote: "Has completado los 28 días. Lo que fuiste explorando y confirmando queda integrado en tu mapa de proceso para poder retomarlo sin empezar de cero.",
   },
 };
 
@@ -372,8 +380,11 @@ export default function EdgeProgram() {
       resetDayState();
       setTimeout(() => document.getElementById("edge-day-feedback")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
       const decision = res?.data?.progression_decision;
-      if (decision === "resource") setTimeout(() => generate("resource_day"), 50);
-      else if (decision === "repeat") setTimeout(() => generate("repeat_previous"), 50);
+      // Chain support/repeat only after finalization has actually completed.
+      // Avoid the previous timer race where finalize() could clear the loading
+      // state while the next generation request was already in flight.
+      if (decision === "resource") await generate("resource_day");
+      else if (decision === "repeat") await generate("repeat_previous");
     } catch (e) {
       console.error("[EdgeProgram] finalize failed", e?.message); setError(c.error);
     } finally { setWorking(""); }
@@ -394,13 +405,22 @@ export default function EdgeProgram() {
         <p className="text-xs uppercase tracking-wide text-primary mb-1">{c.day} {program.current_day || 1} · {c.week} {program.current_week || 1}</p>
         <h1 className="font-serif text-3xl font-semibold">{c.title}</h1>
         <p className="text-muted-foreground mt-1">{c.subtitle}</p>
-        <p className="text-xs text-muted-foreground mt-2">{c.resourceCount}: {Number(program.resource_days_taken || 0)} · {c.restCount}: {Number(program.rest_days_taken || 0)}</p>
+        <div className="mt-4 max-w-xl">
+          <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground mb-1.5">
+            <span>{c.progress}: {Math.min(28, Math.max(0, Number(program.last_completed_day || 0)))}/28</span>
+            <span>{Math.max(0, 28 - Math.min(28, Math.max(0, Number(program.last_completed_day || 0))))} {c.daysLeft}</span>
+          </div>
+          <div className="h-2 rounded-full bg-muted overflow-hidden" aria-label={`${c.progress} ${Math.min(28, Math.max(0, Number(program.last_completed_day || 0)))}/28`}>
+            <div className="h-full bg-primary transition-all" style={{ width: `${(Math.min(28, Math.max(0, Number(program.last_completed_day || 0))) / 28) * 100}%` }} />
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground mt-3">{c.resourceCount}: {Number(program.resource_days_taken || 0)} · {c.restCount}: {Number(program.rest_days_taken || 0)}</p>
       </div>
 
       {program.status === "paused" && <Card className="p-4 border-amber-200 bg-amber-50"><p className="text-sm">{c.paused}</p>{cautionPaused && <p className="text-sm text-amber-800 mt-2">{c.caution}</p>}{!cautionPaused && <Button size="sm" className="mt-3" onClick={() => updateProgramState("resume")} disabled={working}>{c.resumeNow}</Button>}</Card>}
       {program.status === "completed" && (
         <>
-          <Card className="p-4"><p>{c.completed}</p></Card>
+          <Card className="p-4"><p className="font-medium">{c.completed}</p><p className="text-sm text-muted-foreground mt-2">{c.completionNote}</p></Card>
           <button
             type="button"
             onClick={() => document.getElementById("edge-program-feedback")?.scrollIntoView({ behavior: "smooth", block: "start" })}
@@ -458,6 +478,7 @@ export default function EdgeProgram() {
 
       {!content && !["completed", "stopped"].includes(program.status) && (
         <Card className="p-5 space-y-5">
+          <p className="text-sm text-muted-foreground">{c.paceHint}</p>
           <RangeField value={distressBefore} onChange={setDistressBefore} label={c.checkin} />
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => generate("standard")} disabled={working || deepModesDisabled || program.status === "paused"}><Sparkles className="w-4 h-4 mr-2" />{c.standard}</Button>
