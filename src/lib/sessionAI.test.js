@@ -75,6 +75,26 @@ describe("detectProcessMappingStage — journaling", () => {
   });
 });
 
+describe("detectProcessMappingStage — conflict", () => {
+  it("does not treat a generic mention of conflict as an already defined polarity", () => {
+    const messages = [
+      ai("Опиши, пожалуйста, конфликт, который ты хочешь исследовать. Какие стороны, желания или позиции в нём сталкиваются?"),
+      user("Я не знаю, чем мне заниматься и чего хочу. Хочу разобраться, кто участвует в этом конфликте и какие мои части."),
+    ];
+    const result = detectProcessMappingStage(messages, "conflict");
+    expect(result.stage).toBe("awaiting_conflict_material");
+  });
+
+  it("moves forward once the user actually names polarity material", () => {
+    const messages = [
+      ai("Опиши, пожалуйста, конфликт, который ты хочешь исследовать. Какие стороны, желания или позиции в нём сталкиваются?"),
+      user("С одной стороны я хочу уйти с этой работы, с другой стороны боюсь остаться без дохода."),
+    ];
+    const result = detectProcessMappingStage(messages, "conflict");
+    expect(result.stage).toBe("awaiting_primary");
+  });
+});
+
 describe("detectProcessMappingStage — dream", () => {
   it("stays at awaiting_dream until the user actually tells the dream", () => {
     const messages = [ai("Расскажи мне свой сон так, как ты его помнишь.")];
