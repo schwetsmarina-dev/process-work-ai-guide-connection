@@ -393,11 +393,13 @@ export default function Dashboard() {
         `All mode_id values in DB: ${allModeIds.join(", ") || "(empty)"}\n` +
         `ModeStep records visible to this user: ${allSample.length}`
       );
+      sessionStartInFlightRef.current = false;
       return;
     }
 
     if (!currentUser?.id) {
       alert(t("profile_not_loaded", lang));
+      sessionStartInFlightRef.current = false;
       return;
     }
 
