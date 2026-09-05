@@ -160,21 +160,38 @@ async function repairContinuationIfNeeded(session, modeId, opts) {
   return session;
 }
 
+const sessionStartFlights = new Map();
+
 export async function startSession(modeId, opts = {}) {
   const payload = { modeId };
   if (opts.continuedFromSessionId) payload.continuedFromSessionId = opts.continuedFromSessionId;
   if (opts.carryOverContext) payload.carryOverContext = opts.carryOverContext;
 
-  const res = await base44.functions.invoke("startSession", payload);
-  const data = res?.data ?? res;
+  // Single-flight across every entry point (Dashboard, Journal, Summary,
+  // assigned practices). A double tap or overlapping React handler now shares
+  // one backend request instead of creating duplicate Session rows.
+  const flightKey = JSON.stringify(payload);
+  if (sessionStartFlights.has(flightKey)) return sessionStartFlights.get(flightKey);
 
-  if (data?.blocked) {
-    return { blocked: true, reason: data.reason, modeId: data.modeId };
-  }
-  if (!data?.session) {
-    throw new Error(data?.error || "Could not start the session");
-  }
+  const flight = (async () => {
+    const res = await base44.functions.invoke("startSession", payload);
+    const data = res?.data ?? res;
 
-  const session = await repairContinuationIfNeeded(data.session, modeId, opts);
-  return { session };
+    if (data?.blocked) {
+      return { blocked: true, reason: data.reason, modeId: data.modeId };
+    }
+    if (!data?.session) {
+      throw new Error(data?.error || "Could not start the session");
+    }
+
+    const session = await repairContinuationIfNeeded(data.session, modeId, opts);
+    return { session };
+  })();
+
+  sessionStartFlights.set(flightKey, flight);
+  try {
+    return await flight;
+  } finally {
+    sessionStartFlights.delete(flightKey);
+  }
 }
