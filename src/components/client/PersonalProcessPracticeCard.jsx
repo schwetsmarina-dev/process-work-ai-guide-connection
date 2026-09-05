@@ -22,6 +22,8 @@ const COPY = {
     refresh: "Создать новую практику по последним сессиям",
     error: "Не удалось подготовить практику. Попробуйте позже.",
     facilitator: "Дополнительная поддержка",
+    feedback: "Я закончила практику — оставить отзыв",
+    hideFeedback: "Скрыть форму отзыва",
   },
   es: {
     eyebrow: "Práctica procesual personal",
@@ -38,6 +40,8 @@ const COPY = {
     refresh: "Crear una práctica nueva con las últimas sesiones",
     error: "No se pudo preparar la práctica. Inténtalo más tarde.",
     facilitator: "Apoyo adicional",
+    feedback: "He terminado la práctica — dejar feedback",
+    hideFeedback: "Ocultar formulario",
   },
   en: {
     eyebrow: "Personal process practice",
@@ -54,6 +58,8 @@ const COPY = {
     refresh: "Create a new practice from recent sessions",
     error: "The practice could not be prepared. Please try again later.",
     facilitator: "Additional support",
+    feedback: "I finished the practice — leave feedback",
+    hideFeedback: "Hide feedback form",
   },
 };
 
@@ -67,6 +73,7 @@ export default function PersonalProcessPracticeCard({ userId, user = null, lang 
   const [working, setWorking] = useState(false);
   const [audioWorking, setAudioWorking] = useState(false);
   const [error, setError] = useState("");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const { data: practices = [], isLoading: practicesLoading } = useQuery({
     queryKey: ["process-practices", userId],
@@ -192,22 +199,28 @@ export default function PersonalProcessPracticeCard({ userId, user = null, lang 
 
             <button
               type="button"
-              onClick={() => document.getElementById(`practice-feedback-${visiblePractice.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              onClick={() => {
+                const next = !feedbackOpen;
+                setFeedbackOpen(next);
+                if (next) setTimeout(() => document.getElementById(`practice-feedback-${visiblePractice.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+              }}
               className="mt-5 w-full rounded-xl bg-primary px-4 py-3.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition flex items-center justify-center gap-2"
             >
               <MessageSquareText className="w-4 h-4" />
-              {lang === "es" ? "¿Has terminado? Déjanos tu feedback" : "Закончила практику? Оставь отзыв"}
-              <ChevronDown className="w-4 h-4" />
+              {feedbackOpen ? c.hideFeedback : c.feedback}
+              <ChevronDown className={`w-4 h-4 transition-transform ${feedbackOpen ? "rotate-180" : ""}`} />
             </button>
-            <div id={`practice-feedback-${visiblePractice.id}`} className="scroll-mt-6">
-              <ExperienceFeedbackForm
-                user={user || { id: userId }}
-                lang={lang}
-                experienceType="practice"
-                experienceLabel={lang === "ru" ? "Персональная практика" : "Práctica personal"}
-                referenceId={visiblePractice.id}
-              />
-            </div>
+            {feedbackOpen && (
+              <div id={`practice-feedback-${visiblePractice.id}`} className="scroll-mt-6">
+                <ExperienceFeedbackForm
+                  user={user || { id: userId }}
+                  lang={lang}
+                  experienceType="practice"
+                  experienceLabel={lang === "ru" ? "Персональная практика" : lang === "en" ? "Personal practice" : "Práctica personal"}
+                  referenceId={visiblePractice.id}
+                />
+              </div>
+            )}
 
             {!latestPracticeCoversNewestSession && readiness?.ready && (
               <Button className="mt-4" onClick={handleGenerate} disabled={working || audioWorking}>
