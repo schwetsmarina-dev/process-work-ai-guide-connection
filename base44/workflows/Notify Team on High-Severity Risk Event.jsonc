@@ -1,0 +1,37 @@
+{
+  "name": "Notify Team on High-Severity Risk Event",
+  "description": "Sends an email notification to the team whenever a high or critical severity RiskEvent is created.",
+  "trigger": {
+    "condition": "${ (.trigger.data.severity == \"high\" or .trigger.data.severity == \"critical\") }",
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "RiskEvent"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "notify_team_on_high_severity_risk_event",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "notifyRiskEvent",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "notifyRiskEvent"
+  }
+}
