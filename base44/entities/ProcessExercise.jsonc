@@ -22,10 +22,20 @@
     "source": {
       "type": "string"
     },
+    "needs_rework": {
+      "type": "boolean",
+      "default": false,
+      "description": "Internal editorial marker: exercise is inactive and requires source resolution or a genuinely new functional replacement before any future use"
+    },
     "needs_rework_from_zingerman_materials": {
       "type": "boolean",
       "default": false,
       "description": "Internal editorial marker: exercise came from Zingerman training materials and still needs source verification or functional replacement; never use as public authorship"
+    },
+    "needs_rework_from_yulia_smirnova_materials": {
+      "type": "boolean",
+      "default": false,
+      "description": "Internal editorial marker: exercise is based on Yulia Smirnova's authorial training material, permission to use was denied, and a genuinely new functional replacement is required before future use"
     },
     "term_keys": {
       "type": "array",
