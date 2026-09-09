@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -6,6 +6,7 @@ import { normalizeLang, t } from "@/lib/i18n";
 import { buildConsentRecord } from "@/lib/consent";
 import { isOldEnough } from "@/lib/ageGate";
 import { track, EVENTS } from "@/lib/telemetry";
+import { JOURNEY_EVENTS, logJourneyEvent } from "@/lib/journeyEvents";
 import OnboardingShell from "./OnboardingShell";
 import ModeSelectStep from "./ModeSelectStep";
 import ConsentStep from "./ConsentStep";
@@ -14,8 +15,10 @@ export default function Onboarding({ appUser, currentUser, onComplete }) {
   const navigate = useNavigate();
   const lang = normalizeLang(appUser?.language);
 
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() => Math.max(0, Math.min(4, Number(appUser?.onboarding_step || 0))));
   const [selectedMode, setSelectedMode] = useState(null);
+  const startedLoggedRef = useRef(false);
+  const lastSavedStepRef = useRef(null);
   const [check1, setCheck1] = useState(false);
   const [check2, setCheck2] = useState(false);
   const [check3, setCheck3] = useState(false);
@@ -27,12 +30,40 @@ export default function Onboarding({ appUser, currentUser, onComplete }) {
     queryFn: () => base44.entities.Mode.filter({ is_active: true }, "sort_order"),
   });
 
+  useEffect(() => {
+    if (!selectedMode && appUser?.current_mode && modes.length) {
+      setSelectedMode(modes.find((mode) => mode.mode_id === appUser.current_mode) || null);
+    }
+  }, [modes, appUser?.current_mode, selectedMode]);
+
+  useEffect(() => {
+    if (!appUser?.id || appUser.onboarding_completed) return;
+    if (!startedLoggedRef.current) {
+      startedLoggedRef.current = true;
+      logJourneyEvent(JOURNEY_EVENTS.ONBOARDING_STARTED, { step_number: step, language: lang });
+    }
+    if (lastSavedStepRef.current === step) return;
+    lastSavedStepRef.current = step;
+    base44.entities.AppUser.update(appUser.id, {
+      onboarding_step: step,
+      onboarding_updated_at: new Date().toISOString(),
+    }).catch((error) => console.warn("[Onboarding] step save failed:", error?.message));
+    logJourneyEvent(JOURNEY_EVENTS.ONBOARDING_STEP_VIEWED, { step_number: step, language: lang });
+  }, [appUser?.id, appUser?.onboarding_completed, step, lang]);
+
   const next = () => setStep((s) => Math.min(s + 1, 4));
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
-  // Step 3: persist current_mode as soon as user picks one
+  // Persist the choice immediately, so a resumed onboarding can restore it.
   const handleSelectMode = async (mode) => {
     setSelectedMode(mode);
+    if (appUser?.id) {
+      await base44.entities.AppUser.update(appUser.id, {
+        current_mode: mode.mode_id,
+        onboarding_step: step,
+        onboarding_updated_at: new Date().toISOString(),
+      }).catch((error) => console.warn("[Onboarding] mode save failed:", error?.message));
+    }
   };
 
   const finish = async () => {
@@ -42,6 +73,8 @@ export default function Onboarding({ appUser, currentUser, onComplete }) {
       if (appUser?.id) {
         await base44.entities.AppUser.update(appUser.id, {
           onboarding_completed: true,
+          onboarding_step: 4,
+          onboarding_updated_at: new Date().toISOString(),
           ...buildConsentRecord(lang, birthYear),
           current_mode: selectedMode?.mode_id || "",
         });
@@ -49,6 +82,11 @@ export default function Onboarding({ appUser, currentUser, onComplete }) {
 
       const modeId = selectedMode?.mode_id;
       track(EVENTS.ONBOARDING_COMPLETED, { mode: modeId || "", language: lang });
+      await logJourneyEvent(JOURNEY_EVENTS.ONBOARDING_COMPLETED, {
+        mode_id: modeId || "",
+        step_number: 4,
+        language: lang,
+      });
 
       // Onboarding no longer starts a session — that would consume the user's
       // free-trial session in this mode before they knowingly begin a chat.
