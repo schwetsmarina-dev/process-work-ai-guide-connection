@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { detectCompletionState } from "./sessionSignals";
-import { answeredIntegration, validateFeedbackQuality, feedbackFallback } from "./sessionFeedbackGuards";
+import { answeredIntegration, getTurnIntent, validateFeedbackQuality, feedbackFallback } from "./sessionFeedbackGuards";
 const u = content => ({ role: "user", content });
 const a = content => ({ role: "assistant", content });
 describe("feedback regressions", () => {
@@ -13,11 +13,25 @@ describe("feedback regressions", () => {
   it("does not carry an old ending over a new request", () => {
     expect(detectCompletionState([u("Хочу завершить"), a("Хорошо"), u("Нет, хочу продолжить")]).isComplete).toBe(false);
   });
-  it("rejects a paraphrased integration loop", () => {
-    const messages = [a("¿Qué cambiaría en tu vida cotidiana?"), u("Naturalidad")];
+  it("Tsusi: relief is a lived shift, not automatic closure or another integration loop", () => {
+    const messages = [a("¿Qué cambiaría en tu vida cotidiana?"), u("Alivio, no hay rigidez")];
+    expect(detectCompletionState([u("Alivio, no hay rigidez")]).isComplete).toBe(false);
     expect(answeredIntegration(messages)).toBe(true);
-    expect(validateFeedbackQuality("¿Qué aporta esa calma a tus decisiones?", messages, "Naturalidad").reason).toBe("repeated_integration");
-    expect(feedbackFallback("es", "Naturalidad", messages)).toContain("Prefieres");
+    expect(validateFeedbackQuality("¿Qué aporta ese alivio a tus decisiones?", messages, "Alivio, no hay rigidez").reason).toBe("repeated_integration");
+    expect(feedbackFallback("es", "Alivio, no hay rigidez", messages)).toContain("Prefieres");
+  });
+
+  it("Esther: «Libertad» answers integration and must not trigger its paraphrase", () => {
+    const messages = [a("¿Qué llevarías de esta experiencia a tu vida cotidiana?"), u("Libertad")];
+    expect(answeredIntegration(messages)).toBe(true);
+    expect(validateFeedbackQuality("¿Qué cambiaría esa libertad en tu día a día?", messages, "Libertad").reason).toBe("repeated_integration");
+  });
+
+  it("Irina: explicit confusion triggers a concrete reformulation, not closure", () => {
+    const text = "Я с твоей помощью всё равно не могу понять, про что этот сон.";
+    expect(getTurnIntent(text).confusion).toBe(true);
+    expect(detectCompletionState([u(text)]).isComplete).toBe(false);
+    expect(feedbackFallback("ru", text, [])).toContain("Скажу иначе и конкретнее");
   });
   it("does not count confusion as an integration answer", () => {
     expect(answeredIntegration([a("¿Qué cambiaría en tu vida?"), u("No entiendo")])).toBe(false);
