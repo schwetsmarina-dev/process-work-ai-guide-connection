@@ -25,6 +25,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { queryClientInstance } from "@/lib/query-client";
 import { normalizeLang, t, getStoredLanguage } from "@/lib/i18n";
 import Onboarding from "@/components/onboarding/Onboarding";
+import { JOURNEY_EVENTS, logJourneyEvent } from "@/lib/journeyEvents";
 
 const regularNavItems = [
   { path: "/dashboard", labelKey: "nav_home", icon: LayoutDashboard },
@@ -116,6 +117,7 @@ export default function AppLayout() {
       setIsAdmin(admin);
       setIsTherapist(hasTherapistRole(user));
       setCurrentUser(user);
+      logJourneyEvent(JOURNEY_EVENTS.APP_OPENED, { language: getStoredLanguage() });
       try {
         const rows = await base44.entities.AppUser.filter({ email: user?.email });
         setAppUser(rows[0] || null);
