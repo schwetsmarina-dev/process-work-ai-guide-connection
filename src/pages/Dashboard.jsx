@@ -19,6 +19,7 @@ import { MODE_LABELS } from "@/lib/modeSteps";
 import { listMessages } from "@/lib/messageApi";
 import UpgradePrompt from "@/components/billing/UpgradePrompt";
 import SuggestedPractices from "@/components/client/SuggestedPractices";
+import { JOURNEY_EVENTS, logJourneyEvent } from "@/lib/journeyEvents";
 
 const UNAVAILABLE_SUMMARY_MARKERS = [
   "резюме недоступно",
@@ -289,6 +290,7 @@ export default function Dashboard() {
 
   const handleModeSelect = async (mode) => {
     const modeId = mode.mode_id;
+    logJourneyEvent(JOURNEY_EVENTS.MODE_OPENED, { mode_id: modeId, language: lang });
     const existing = sessions.find((s) => s.status === "active" && (s.mode_id || s.mode) === modeId);
     if (existing) {
       console.log("[SessionFlow] existing active session found for mode:", modeId, "→", existing.id);
@@ -330,7 +332,15 @@ export default function Dashboard() {
   };
 
   const handleContinueExisting = () => {
-    if (existingActive) navigate(`/session/${existingActive.id}`);
+    if (existingActive) {
+      logJourneyEvent(JOURNEY_EVENTS.SESSION_RESUMED, {
+        session_id: existingActive.id,
+        mode_id: existingActive.mode_id || existingActive.mode,
+        step_number: existingActive.current_step || 1,
+        language: lang,
+      });
+      navigate(`/session/${existingActive.id}`);
+    }
     setExistingActive(null);
     setPendingMode(null);
   };
