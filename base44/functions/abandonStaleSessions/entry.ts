@@ -16,12 +16,22 @@ Deno.serve(async (req) => {
 
     const cutoff = Date.now() - STALE_HOURS * 60 * 60 * 1000;
     const now = new Date().toISOString();
+    const svc = base44.asServiceRole;
     let abandoned = 0;
 
     for (const s of active) {
       const started = new Date(s.started_at || s.created_date).getTime();
       if (!Number.isFinite(started) || started > cutoff) continue;
       await base44.entities.Session.update(s.id, { status: 'abandoned', ended_at: now }).catch(() => {});
+      await svc.entities.UserJourneyEvent.create({
+        user_id: user.id,
+        user_email: String(user.email || '').toLowerCase(),
+        event_type: 'session_abandoned',
+        session_id: s.id,
+        mode_id: s.mode_id || s.mode || '',
+        step_number: Number(s.current_step || 0),
+        occurred_at: now,
+      }).catch((error) => console.warn('[abandonStaleSessions] journey event failed:', error?.message));
       abandoned++;
     }
 
