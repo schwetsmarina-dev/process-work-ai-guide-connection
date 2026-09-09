@@ -28,6 +28,16 @@ const UNAVAILABLE_SUMMARY_MARKERS = [
   "resumen no disponible",
 ];
 
+const ABANDONMENT_OPTIONS = [
+  ["completed_suitable_place", "Я закончила в подходящем месте", "Terminé en un lugar adecuado"],
+  ["questions_repeated", "Вопросы повторялись", "Las preguntas se repetían"],
+  ["unclear", "Было непонятно", "No quedaba claro"],
+  ["unsuitable_direction", "Направление мне не подошло", "La dirección no me servía"],
+  ["emotional_or_physical_discomfort", "Стало эмоционально или физически некомфортно", "Sentí malestar emocional o físico"],
+  ["interrupted", "Меня прервали", "Me interrumpieron"],
+  ["continue_same_place", "Хочу продолжить с того же места", "Quiero continuar desde el mismo lugar"],
+];
+
 const EDGE_FIGURE_MARKERS = [
   "внутренний критик", "внутренняя критика", "внутренний цензор",
   "внутренний голос", "голос внутри", "запрещающая часть", "критикующая часть",
@@ -84,6 +94,8 @@ export default function Dashboard() {
   // sessions (and later two misleading "abandoned" rows / quota charges).
   const sessionStartInFlightRef = useRef(false);
   const [routingSuggestion, setRoutingSuggestion] = useState(null);
+  const [pendingAbandonment, setPendingAbandonment] = useState(null);
+  const [abandonmentSubmitting, setAbandonmentSubmitting] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -93,6 +105,33 @@ export default function Dashboard() {
       setAppUser(rows[0] || null);
     })();
   }, []);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    base44.functions.invoke("abandonmentFollowUp", { action: "pending" })
+      .then((response) => setPendingAbandonment((response?.data ?? response)?.session || null))
+      .catch((error) => console.warn("[Dashboard] abandonment follow-up lookup failed:", error?.message));
+  }, [currentUser?.id]);
+
+  const submitAbandonmentReason = async (reason) => {
+    if (!pendingAbandonment?.id || abandonmentSubmitting) return;
+    setAbandonmentSubmitting(true);
+    try {
+      const response = await base44.functions.invoke("abandonmentFollowUp", {
+        action: "submit",
+        session_id: pendingAbandonment.id,
+        reason,
+      });
+      const result = response?.data ?? response;
+      const sessionId = pendingAbandonment.id;
+      setPendingAbandonment(null);
+      if (result?.continue_session) navigate(`/session/${sessionId}`);
+    } catch (error) {
+      console.error("[Dashboard] abandonment feedback failed:", error?.message);
+    } finally {
+      setAbandonmentSubmitting(false);
+    }
+  };
 
   const { data: modes = [], isLoading: modesLoading } = useQuery({
     queryKey: ["modes-active"],
@@ -492,6 +531,39 @@ export default function Dashboard() {
           <UpgradePrompt lang={lang} variant="quota" onDismiss={() => setQuotaBlockedMode(null)} />
         </div>
       )}
+
+      <Dialog open={!!pendingAbandonment} onOpenChange={(open) => { if (!open) setPendingAbandonment(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {lang === "es" ? "¿Qué ocurrió en la sesión anterior?" : "Что произошло в прошлой сессии?"}
+            </DialogTitle>
+            <DialogDescription>
+              {lang === "es"
+                ? "La sesión quedó sin finalizar. Elige la opción más cercana; no guardamos aquí el contenido del diálogo."
+                : "Сессия осталась незавершённой. Выбери наиболее близкий вариант — содержание диалога в этот журнал не сохраняется."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2">
+            {ABANDONMENT_OPTIONS.map(([code, ru, es]) => (
+              <Button
+                key={code}
+                variant={code === "continue_same_place" ? "default" : "outline"}
+                className="h-auto min-h-11 justify-start whitespace-normal text-left"
+                disabled={abandonmentSubmitting}
+                onClick={() => submitAbandonmentReason(code)}
+              >
+                {lang === "es" ? es : ru}
+              </Button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" disabled={abandonmentSubmitting} onClick={() => setPendingAbandonment(null)}>
+              {lang === "es" ? "Ahora no" : "Не сейчас"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!routingSuggestion} onOpenChange={(open) => { if (!open) setRoutingSuggestion(null); }}>
         <DialogContent>
