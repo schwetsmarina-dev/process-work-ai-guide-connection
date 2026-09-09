@@ -27,6 +27,7 @@ import { getSummaryUnavailableText } from "@/lib/summaryFallback";
 import { reportOperationalError, track, EVENTS } from "@/lib/telemetry";
 import { AI_GATEWAY_VERSION, SYSTEM_PROMPT_VERSION } from "@/lib/aiVersion";
 import { fetchEntitlement } from "@/hooks/useEntitlement";
+import { JOURNEY_EVENTS, logJourneyEvent } from "@/lib/journeyEvents";
 
 // Canonical, mode-specific opening question (do NOT use DB step.question for the first greeting)
 function getInitialOpeningQuestion(modeId, language, step, carryOverContext) {
@@ -551,6 +552,12 @@ export default function SessionChat() {
           system_prompt_version: SYSTEM_PROMPT_VERSION,
           ai_gateway_version: AI_GATEWAY_VERSION,
         });
+        logJourneyEvent(JOURNEY_EVENTS.SESSION_STEP_ADVANCED, {
+          session_id: sessionId,
+          mode_id: modeId,
+          step_number: nextStep,
+          language,
+        });
         // Update the cache synchronously as well. invalidateQueries only marks
         // the data stale and refetches asynchronously, which left a window
         // where the next turn still read the previous step and re-asked the
@@ -706,6 +713,13 @@ export default function SessionChat() {
           ai_gateway_version: AI_GATEWAY_VERSION,
         });
       }
+
+      await logJourneyEvent(JOURNEY_EVENTS.SESSION_COMPLETED, {
+        session_id: sessionId,
+        mode_id: session?.mode_id || session?.mode,
+        step_number: session?.current_step || 0,
+        language,
+      });
 
       // Keep AppUser.last_session_id pointing at the most recent session
       if (appUser?.id) {
