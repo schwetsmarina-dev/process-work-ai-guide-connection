@@ -35,6 +35,15 @@
       "type": "boolean",
       "default": false
     },
+    "onboarding_step": {
+      "type": "integer",
+      "default": 0,
+      "description": "Last onboarding screen reached (0-4), used to resume after interruption"
+    },
+    "onboarding_updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "consent_given": {
       "type": "boolean",
       "default": false
