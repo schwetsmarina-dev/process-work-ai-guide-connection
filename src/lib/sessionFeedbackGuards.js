@@ -6,9 +6,10 @@ export function getTurnIntent(text = "") {
   const explicitClose = /(?:^|[.!?]\s*|,\s*)(?:я )?(?:хочу завершить|хочу закончить|готова? завершить|на сегодня достаточно|мне достаточно|этого достаточно|не хочу больше копать|quiero terminar|quiero cerrar aqui|por hoy es suficiente|con esto me basta|no quiero seguir escarbando)(?:[.!?,]|$|\s)/u.test(t);
   const hypothetical = /(?:может быть|возможно|хотелось бы|если бы|стало бы|tal vez|quizas|ojala|me gustaria|seria|podria|iria|si pudiera)/u.test(t);
   const edge = /(?:но.{0,25}(?:боюсь|не могу|трудно)|мешает|стыд|снова должен|sigo bloquead|pero.{0,25}(?:miedo|no puedo|cuesta)|me impide|verguenza)/u.test(t);
-  const negated = /(?:не чувствую|не стало|не понимаю|no me siento|no siento|no entiendo|no ha cambiado)/u.test(t);
+  const confusion = /(?:не понимаю|не могу понять|непонятно|что ты имеешь в виду|no entiendo|no consigo entender|no me queda claro|que quieres decir)/u.test(t);
+  const negated = /(?:не чувствую|не стало|не понимаю|не могу понять|no me siento|no siento|no entiendo|no consigo entender|no ha cambiado)/u.test(t);
   const shift = !hypothetical && !negated && /(?:облегчение|стало легче|напряжение ушло|отпустило|мне спокойно|alivio|no hay rigidez|tranquilidad|naturalidad|me siento tranquil|se ha soltado)/u.test(t);
-  return { continueRequested, explicitClose: explicitClose && !continueRequested, hypothetical, edge, shift };
+  return { continueRequested, explicitClose: explicitClose && !continueRequested, hypothetical, confusion, edge, shift };
 }
 export function isIntegrationQuestion(text = "") {
   const t = normalize(text);
@@ -49,6 +50,7 @@ export function feedbackFallback(language, userText, messages = []) {
   const intent = getTurnIntent(userText);
   if (intent.explicitClose) return es ? "Podemos dejarlo aquí. Cuando quieras, pulsa «Finalizar sesión»." : "Можем на этом остановиться. Когда захочешь, нажми «Завершить сессию».";
   if (intent.hypothetical) return es ? "Lo planteas como una posibilidad. ¿Notas algún cambio ahora o todavía es algo que te gustaría experimentar?" : "Ты говоришь об этом как о возможности. Сейчас уже что-то изменилось или это пока то, что хотелось бы почувствовать?";
+  if (intent.confusion) return es ? "Veo que mi pregunta no te está ayudando. La formularé de otra manera y más concretamente: ¿qué parte de lo que estamos explorando te resulta ahora menos clara?" : "Вижу, что мой вопрос не помогает. Скажу иначе и конкретнее: какая часть того, что мы сейчас исследуем, остаётся для тебя самой непонятной?";
   if (answeredIntegration(messages) && !intent.continueRequested && !intent.edge) return es ? "Ya has nombrado lo que te llevas. ¿Prefieres dejarlo aquí por hoy o explorar algo que quedó pendiente?" : "Ты уже назвала, что берёшь с собой. Хочешь на сегодня остановиться или исследовать что-то оставшееся?";
   return es ? "Podemos seguir a tu ritmo. ¿En qué te gustaría detenerte ahora?" : "Можем продолжать в твоём темпе. На чём тебе хочется сейчас остановиться подробнее?";
 }
