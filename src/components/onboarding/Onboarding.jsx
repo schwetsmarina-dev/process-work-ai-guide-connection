@@ -11,7 +11,7 @@ import OnboardingShell from "./OnboardingShell";
 import ModeSelectStep from "./ModeSelectStep";
 import ConsentStep from "./ConsentStep";
 
-export default function Onboarding({ appUser, currentUser, onComplete }) {
+export default function Onboarding({ appUser, currentUser: _currentUser, onComplete }) {
   const navigate = useNavigate();
   const lang = normalizeLang(appUser?.language);
 
