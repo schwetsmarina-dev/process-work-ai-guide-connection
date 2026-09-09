@@ -11,11 +11,31 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  * Body: {
  *   modeId: "body" | "dream" | "conflict" | "journaling",
  *   continuedFromSessionId?: string,
- *   carryOverContext?: string // legacy/fallback only
+ *   carryOverContext?: string, // legacy/fallback only
+ *   startRequestId?: string // idempotency key generated once per user action
  * }
  */
 
 const FREE_SESSIONS_PER_MODE = 1;
+
+async function hasConsumedTrial(svc, session) {
+  if (session?.trial_consumed_at || Number(session?.user_message_count || 0) > 0 || session?.first_user_message_at) return true;
+
+  // Legacy rows predate the counters. Inspect only those rows and count the
+  // trial if an actual user message exists. An assistant greeting alone never
+  // consumes the free session, regardless of status.
+  try {
+    const userMessages = await svc.entities.Message.filter(
+      { session_id: session.id, role: 'user' },
+      '-created_date',
+      1,
+    );
+    return Array.isArray(userMessages) && userMessages.some((message) => String(message?.content || '').trim());
+  } catch (error) {
+    console.warn('[startSession] legacy trial check failed:', session?.id, error?.message);
+    return false;
+  }
+}
 
 const EDGE_FIGURE_DIRECT_MARKERS = [
   // RU
@@ -151,8 +171,19 @@ Deno.serve(async (req) => {
     if (!modeId) {
       return Response.json({ error: 'modeId is required' }, { status: 400 });
     }
+    const startRequestId = String(body?.startRequestId || '').trim().slice(0, 120);
 
     const svc = base44.asServiceRole;
+
+    // A network retry or repeated handler call with the same user-action key
+    // returns the already-created row instead of creating a duplicate.
+    if (startRequestId) {
+      const existing = (await svc.entities.Session.filter({
+        user_id: user.id,
+        start_request_id: startRequestId,
+      })) || [];
+      if (existing[0]) return Response.json({ session: existing[0], reused: true });
+    }
     const email = String(user.email || '').toLowerCase();
     const now = new Date();
     let language = 'es';
@@ -175,7 +206,9 @@ Deno.serve(async (req) => {
     // ── Quota, for free users only ───────────────────────────────────────────
     if (!hasFullAccess) {
       const sessions = (await svc.entities.Session.filter({ user_id: user.id })) || [];
-      const usedInMode = sessions.filter((s) => (s.mode_id || s.mode) === modeId).length;
+      const modeSessions = sessions.filter((s) => (s.mode_id || s.mode) === modeId);
+      const consumedFlags = await Promise.all(modeSessions.map((session) => hasConsumedTrial(svc, session)));
+      const usedInMode = consumedFlags.filter(Boolean).length;
 
       if (usedInMode >= FREE_SESSIONS_PER_MODE) {
         console.log('[startSession] blocked by quota', { modeId, usedInMode });
@@ -219,6 +252,8 @@ Deno.serve(async (req) => {
 
     const session = await svc.entities.Session.create({
       ...extras,
+      ...(startRequestId ? { start_request_id: startRequestId } : {}),
+      user_message_count: 0,
       mode_id: modeId,
       mode: modeId,
       status: 'active',
@@ -259,6 +294,17 @@ Deno.serve(async (req) => {
         hasNextStep: !!continuation.nextStep,
       });
     }
+
+    await svc.entities.UserJourneyEvent.create({
+      user_id: user.id,
+      user_email: email,
+      event_type: 'session_created',
+      session_id: session.id,
+      mode_id: modeId,
+      step_number: 1,
+      language,
+      occurred_at: new Date().toISOString(),
+    }).catch((error) => console.warn('[startSession] journey event failed:', error?.message));
 
     console.log('[startSession] created', {
       email,
