@@ -415,7 +415,7 @@ export default function Dashboard() {
     let allModeSteps = [];
     try {
       allModeSteps = await base44.entities.ModeStep.filter({ mode_id: modeId });
-    } catch (e) {
+    } catch {
       try {
         const all = await base44.entities.ModeStep.list("step_number", 500);
         allModeSteps = all.filter((s) => String(s.mode_id || "").trim() === modeId);
