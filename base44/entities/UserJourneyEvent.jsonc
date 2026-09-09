@@ -1,0 +1,83 @@
+{
+  "name": "UserJourneyEvent",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "app_opened",
+        "onboarding_started",
+        "onboarding_step_viewed",
+        "onboarding_completed",
+        "mode_opened",
+        "session_created",
+        "session_first_message",
+        "session_step_advanced",
+        "session_resumed",
+        "session_completed",
+        "session_abandoned",
+        "abandonment_feedback_prompted",
+        "abandonment_reason_submitted"
+      ]
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "mode_id": {
+      "type": "string"
+    },
+    "step_number": {
+      "type": "integer"
+    },
+    "reason_code": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "event_type",
+    "occurred_at"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
