@@ -173,8 +173,11 @@ export async function startSession(modeId, opts = {}) {
   const flightKey = JSON.stringify(payload);
   if (sessionStartFlights.has(flightKey)) return sessionStartFlights.get(flightKey);
 
+  const startRequestId = globalThis.crypto?.randomUUID?.() ||
+    `start-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
   const flight = (async () => {
-    const res = await base44.functions.invoke("startSession", payload);
+    const res = await base44.functions.invoke("startSession", { ...payload, startRequestId });
     const data = res?.data ?? res;
 
     if (data?.blocked) {
