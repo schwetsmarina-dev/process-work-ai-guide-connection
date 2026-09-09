@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
       }
 
       const now = new Date().toISOString();
-      const patch = {
+      const patch: Record<string, unknown> = {
         abandonment_reason: reason,
         abandonment_feedback_at: now,
       };
