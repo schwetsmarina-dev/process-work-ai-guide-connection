@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
     if (role === 'user' && String(content || '').trim()) {
       const priorCount = Math.max(0, Number(session.user_message_count || 0));
       const firstMessage = priorCount === 0 && !session.first_user_message_at;
-      const patch = { user_message_count: priorCount + 1 };
+      const patch: Record<string, unknown> = { user_message_count: priorCount + 1 };
       if (firstMessage) {
         patch.first_user_message_at = now;
         patch.trial_consumed_at = now;
