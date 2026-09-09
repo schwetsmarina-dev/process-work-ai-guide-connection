@@ -449,7 +449,7 @@ export default function SessionChat() {
 
       // Low-severity distress check — log a RiskEvent but keep the session flowing
       if (checkLowRisk(text)) {
-        const createdLow = await base44.entities.RiskEvent.create({
+        await base44.entities.RiskEvent.create({
           session_id: sessionId,
           message_id: savedUserMsg?.id,
           user_id: currentUser?.id,
