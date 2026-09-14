@@ -22,6 +22,21 @@ export default function Register() {
   const [otpCode, setOtpCode] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
+    base44.auth.me()
+      .then((currentUser) => {
+        if (!cancelled && currentUser?.email) {
+          window.location.replace("/dashboard");
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!showOtp) return;
     // WebOTP API — Android Chrome auto-reads SMS codes
     if (!('OTPCredential' in window)) return;
@@ -154,17 +169,6 @@ export default function Register() {
         </>
       }
     >
-      <SocialButtons />
-
-      <div className="relative mb-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground">{t("auth_or", language)}</span>
-        </div>
-      </div>
-
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
           {error}
@@ -234,6 +238,17 @@ export default function Register() {
           )}
         </Button>
       </form>
+
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-card px-3 text-muted-foreground">{t("auth_or", language)}</span>
+        </div>
+      </div>
+
+      <SocialButtons />
     </AuthLayout>
   );
 }
