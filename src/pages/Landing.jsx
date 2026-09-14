@@ -21,6 +21,7 @@ const fadeUp = {
 export default function Landing() {
   const navigate = useNavigate();
   const [lang, setLang] = useState(getStoredLanguage());
+  const [starting, setStarting] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -54,11 +55,16 @@ export default function Landing() {
           }
           setLang(stored);
         }
+
+        // Base44 currently returns Google OAuth users to the site root even
+        // when /dashboard is supplied as fromUrl. Do not leave an authenticated
+        // user on the public landing page after a successful callback.
+        navigate("/dashboard", { replace: true });
       } catch {
         setLang(getStoredLanguage());
       }
     })();
-  }, []);
+  }, [navigate]);
 
   const handleLangSwitch = (value) => {
     setLang(value);
@@ -74,11 +80,20 @@ export default function Landing() {
     { icon: PenLine, title: t("landing_journaling_title", lang), desc: t("landing_journaling_desc", lang) },
   ];
 
-  const handleStart = () => {
-    // Keep new visitors inside Talvira's localized auth flow. The Base44-hosted
-    // auth screen is intentionally bypassed because it ignores our RU/ES UI.
+  const handleStart = async () => {
+    // Existing users should continue into the app; only new/logged-out visitors
+    // belong on registration. This also prevents the start button from making
+    // a valid returning user appear to have lost their account.
+    if (starting) return;
+    setStarting(true);
     setStoredLanguage(lang);
-    navigate("/register");
+
+    try {
+      const currentUser = await base44.auth.me();
+      navigate(currentUser?.email ? "/dashboard" : "/register");
+    } catch {
+      navigate("/register");
+    }
   };
 
   return (
@@ -133,6 +148,7 @@ export default function Landing() {
             <Button
               size="lg"
               onClick={handleStart}
+              disabled={starting}
               className="text-base px-8 py-6 rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
             >
               {t("start_session", lang)}
