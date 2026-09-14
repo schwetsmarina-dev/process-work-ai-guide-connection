@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -16,13 +16,31 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    let cancelled = false;
+    base44.auth.me()
+      .then((currentUser) => {
+        if (!cancelled && currentUser?.email) {
+          window.location.replace("/dashboard");
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await base44.auth.loginViaEmailPassword(email, password);
-      window.location.href = "/dashboard";
+      const result = await base44.auth.loginViaEmailPassword(email, password);
+      if (result?.access_token) {
+        base44.auth.setToken(result.access_token);
+      }
+      window.location.replace("/dashboard");
     } catch (err) {
       setError(translateAuthError(err?.message, language, "err_login_failed"));
     } finally {
@@ -44,17 +62,6 @@ export default function Login() {
         </>
       }
     >
-      <SocialButtons />
-
-      <div className="relative mb-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground">{t("auth_or", language)}</span>
-        </div>
-      </div>
-
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
           {error}
@@ -111,6 +118,17 @@ export default function Login() {
           )}
         </Button>
       </form>
+
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-card px-3 text-muted-foreground">{t("auth_or", language)}</span>
+        </div>
+      </div>
+
+      <SocialButtons />
     </AuthLayout>
   );
 }
