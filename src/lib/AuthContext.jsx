@@ -38,14 +38,11 @@ export const AuthProvider = ({ children }) => {
         const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
         setAppPublicSettings(publicSettings);
         
-        // If we got the app public settings successfully, check if user is authenticated
-        if (appParams.token) {
-          await checkUserAuth();
-        } else {
-          setIsLoadingAuth(false);
-          setIsAuthenticated(false);
-          setAuthChecked(true);
-        }
+        // Always ask the auth service for the current user. OAuth sessions may now
+        // be stored in an HTTP-only cookie and therefore have no access_token
+        // in the URL/localStorage. Checking only appParams.token causes a valid
+        // Google login to be treated as logged out after the callback.
+        await checkUserAuth();
         setIsLoadingPublicSettings(false);
       } catch (appError) {
         console.error('App state check failed:', appError);
@@ -54,10 +51,11 @@ export const AuthProvider = ({ children }) => {
         if (appError.status === 403 && appError.data?.extra_data?.reason) {
           const reason = appError.data.extra_data.reason;
           if (reason === 'auth_required') {
-            // Not logged in — let route guards handle redirect to login
+            // A cookie-backed OAuth session can exist even when the public
+            // settings request has no token header. Verify it before deciding
+            // that the visitor is logged out.
             setIsLoadingPublicSettings(false);
-            setIsLoadingAuth(false);
-            setAuthChecked(true);
+            await checkUserAuth();
           } else if (reason === 'user_not_registered') {
             // Logged in but no AppUser record yet — proceed as authenticated
             // RequireAuth will auto-create the AppUser
@@ -99,27 +97,36 @@ export const AuthProvider = ({ children }) => {
       const currentUser = await base44.auth.me();
       setUser(currentUser);
       setIsAuthenticated(true);
+      setAuthError(null);
       setIsLoadingAuth(false);
       setAuthChecked(true);
     } catch (error) {
       console.error('User auth check failed:', error);
-      // 403 user_not_registered means they ARE logged in but not yet in AppUser table.
-      // Treat as authenticated — RequireAuth will create the AppUser record.
-      if (error.status === 403) {
-        // Try to extract user info from error payload if available
+      const reason = error.data?.extra_data?.reason || error.data?.reason;
+
+      // Only this specific 403 means the identity is valid but the app profile
+      // has not been created yet. A generic 403/auth_required must never be
+      // treated as an authenticated user.
+      if (error.status === 403 && reason === 'user_not_registered') {
         const userData = error.data?.user || null;
         setUser(userData);
         setIsAuthenticated(true);
-        setIsLoadingAuth(false);
-        setAuthChecked(true);
+        setAuthError(null);
       } else {
-        setIsLoadingAuth(false);
+        setUser(null);
         setIsAuthenticated(false);
-        setAuthChecked(true);
-        if (error.status === 401) {
+        if (error.status === 401 || error.status === 403 || reason === 'auth_required') {
           setAuthError({ type: 'auth_required', message: 'Authentication required' });
+        } else {
+          setAuthError({
+            type: 'unknown',
+            message: error.message || 'Failed to verify authentication'
+          });
         }
       }
+
+      setIsLoadingAuth(false);
+      setAuthChecked(true);
     }
   };
 
