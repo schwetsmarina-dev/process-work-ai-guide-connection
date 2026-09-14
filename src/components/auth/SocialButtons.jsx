@@ -22,7 +22,7 @@ export default function SocialButtons() {
   };
 
   return (
-    <div className="space-y-3 mb-6">
+    <div className="space-y-3">
       {PROVIDERS.map(({ id, labelKey, Icon }) => (
         <Button
           key={id}
@@ -35,6 +35,14 @@ export default function SocialButtons() {
           {t(labelKey, language)}
         </Button>
       ))}
+      <p className="text-xs leading-relaxed text-muted-foreground text-center">
+        {t("auth_google_base44_notice", language)}
+      </p>
+      {language === "ru" && (
+        <p className="text-xs leading-relaxed text-muted-foreground text-center">
+          {t("auth_google_ru_hint", language)}
+        </p>
+      )}
     </div>
   );
 }
