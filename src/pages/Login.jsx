@@ -42,7 +42,12 @@ export default function Login() {
       }
       window.location.replace("/dashboard");
     } catch (err) {
-      setError(translateAuthError(err?.message, language, "err_login_failed"));
+      const rawMessage =
+        err?.response?.data?.message ||
+        err?.response?.data?.detail ||
+        err?.data?.message ||
+        err?.message;
+      setError(translateAuthError(rawMessage, language, "err_login_failed"));
     } finally {
       setLoading(false);
     }
