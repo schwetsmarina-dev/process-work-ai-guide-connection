@@ -38,11 +38,9 @@ export default function SocialButtons() {
       <p className="text-xs leading-relaxed text-muted-foreground text-center">
         {t("auth_google_base44_notice", language)}
       </p>
-      {language === "ru" && (
-        <p className="text-xs leading-relaxed text-muted-foreground text-center">
-          {t("auth_google_ru_hint", language)}
-        </p>
-      )}
+      <p className="text-xs leading-relaxed text-muted-foreground text-center">
+        {t("auth_google_ru_hint", language)}
+      </p>
     </div>
   );
 }
