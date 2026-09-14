@@ -444,7 +444,7 @@ const translations = {
     auth_forgot_password: "Забыли пароль?",
     auth_continue_google: "Продолжить через Google",
     auth_google_base44_notice: "Google временно откроет защищённое окно Base44 — это техническая платформа Тальвиры. После входа вы вернётесь в приложение.",
-    auth_google_ru_hint: "Для входа из России надёжнее использовать email и пароль выше: этот способ не зависит от Google.",
+    auth_google_ru_hint: "Если ссылка открыта внутри Telegram и Google не работает, откройте её в Safari/Chrome или используйте email и пароль выше.",
     auth_continue_microsoft: "Продолжить через Microsoft",
     auth_continue_facebook: "Продолжить через Facebook",
     auth_continue_apple: "Продолжить через Apple",
@@ -464,6 +464,7 @@ const translations = {
     auth_code_sent: "Код отправлен",
     auth_code_sent_desc: "Проверьте почту — мы отправили новый код.",
     auth_passwords_no_match: "Пароли не совпадают",
+    auth_password_hint: "Минимум 8 символов",
     auth_forgot_title: "Сброс пароля",
     auth_forgot_subtitle: "Мы отправим ссылку для сброса пароля",
     auth_forgot_sent: "Если аккаунт с таким email существует, вы скоро получите ссылку для сброса пароля.",
@@ -928,7 +929,7 @@ const translations = {
     auth_forgot_password: "¿Olvidaste tu contraseña?",
     auth_continue_google: "Continuar con Google",
     auth_google_base44_notice: "Google abrirá temporalmente una ventana segura de Base44, la plataforma técnica de Talvira. Después volverás a la aplicación.",
-    auth_google_ru_hint: "",
+    auth_google_ru_hint: "Si abriste el enlace dentro de Telegram y Google no funciona, ábrelo en Safari/Chrome o usa el correo y la contraseña de arriba.",
     auth_continue_microsoft: "Continuar con Microsoft",
     auth_continue_facebook: "Continuar con Facebook",
     auth_continue_apple: "Continuar con Apple",
@@ -948,6 +949,7 @@ const translations = {
     auth_code_sent: "Código enviado",
     auth_code_sent_desc: "Revisa tu correo, enviamos un código nuevo.",
     auth_passwords_no_match: "Las contraseñas no coinciden",
+    auth_password_hint: "Mínimo 8 caracteres",
     auth_forgot_title: "Restablecer contraseña",
     auth_forgot_subtitle: "Te enviaremos un enlace para restablecerla",
     auth_forgot_sent: "Si existe una cuenta con ese correo, recibirás un enlace para restablecer la contraseña en breve.",
@@ -987,7 +989,7 @@ export function translateAuthError(rawMessage, lang, fallbackKey = "err_login_fa
   if (/invalid.*(email|password|credential)|wrong password|incorrect password/.test(msg)) return t("err_invalid_credentials", l);
   if (/user.*not.*found|no.*user|account.*not.*found/.test(msg)) return t("err_user_not_found", l);
   if (/already.*(registered|exist|in use)|email.*taken/.test(msg)) return t("err_email_taken", l);
-  if (/password.*(short|length|weak)|too short/.test(msg)) return t("err_password_too_short", l);
+  if (/password.*(short|length|weak|characters)|too short|at least\s*8|minimum.*8|min.*8/.test(msg)) return t("err_password_too_short", l);
   if (/invalid.*code|wrong.*code|otp/.test(msg)) return t("err_invalid_code", l);
   return t(fallbackKey, l);
 }
