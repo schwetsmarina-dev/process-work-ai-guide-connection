@@ -55,6 +55,10 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    if (password.length < 8) {
+      setError(t("err_password_too_short", language));
+      return;
+    }
     if (password !== confirmPassword) {
       setError(t("auth_passwords_no_match", language));
       return;
@@ -64,7 +68,12 @@ export default function Register() {
       await base44.auth.register({ email, password });
       setShowOtp(true);
     } catch (err) {
-      setError(translateAuthError(err?.message, language, "err_registration_failed"));
+      const rawMessage =
+        err?.response?.data?.message ||
+        err?.response?.data?.detail ||
+        err?.data?.message ||
+        err?.message;
+      setError(translateAuthError(rawMessage, language, "err_registration_failed"));
     } finally {
       setLoading(false);
     }
@@ -203,6 +212,7 @@ export default function Register() {
               type="password"
               autoComplete="new-password"
               inputMode="text"
+              minLength={8}
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -210,6 +220,7 @@ export default function Register() {
               required
             />
           </div>
+          <p className="text-xs text-muted-foreground">{t("auth_password_hint", language)}</p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="confirm">{t("auth_confirm_password", language)}</Label>
