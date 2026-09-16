@@ -117,10 +117,16 @@ export default function AppLayout() {
       setIsAdmin(admin);
       setIsTherapist(hasTherapistRole(user));
       setCurrentUser(user);
-      logJourneyEvent(JOURNEY_EVENTS.APP_OPENED, { language: getStoredLanguage() });
       try {
         const rows = await base44.entities.AppUser.filter({ email: user?.email });
-        setAppUser(rows[0] || null);
+        const profile = rows[0] || null;
+        setAppUser(profile);
+        // Record app_opened only after the profile language is known. This keeps
+        // RU and ES telemetry on the same path and avoids relying on stale local
+        // storage from a previous session or account.
+        logJourneyEvent(JOURNEY_EVENTS.APP_OPENED, {
+          language: normalizeLang(profile?.language || getStoredLanguage()),
+        });
       } catch (e) {
         console.warn("[AppLayout] AppUser load failed:", e?.message);
       } finally {
