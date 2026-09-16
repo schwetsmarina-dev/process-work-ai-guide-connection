@@ -11,8 +11,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Only this user's active sessions
-    const active = await base44.entities.Session.filter({ status: 'active' }, '-created_date', 200);
+    // Only the authenticated user's active sessions. This must stay explicitly
+    // scoped even for admins: an admin opening Talvira must never sweep other
+    // users' sessions and attribute their abandonment event to the admin.
+    const active = await base44.asServiceRole.entities.Session.filter(
+      { status: 'active', user_id: user.id },
+      '-created_date',
+      200,
+    );
 
     const cutoff = Date.now() - STALE_HOURS * 60 * 60 * 1000;
     const now = new Date().toISOString();
@@ -22,7 +28,7 @@ Deno.serve(async (req) => {
     for (const s of active) {
       const started = new Date(s.started_at || s.created_date).getTime();
       if (!Number.isFinite(started) || started > cutoff) continue;
-      await base44.entities.Session.update(s.id, { status: 'abandoned', ended_at: now }).catch(() => {});
+      await svc.entities.Session.update(s.id, { status: 'abandoned', ended_at: now }).catch(() => {});
       await svc.entities.UserJourneyEvent.create({
         user_id: user.id,
         user_email: String(user.email || '').toLowerCase(),
