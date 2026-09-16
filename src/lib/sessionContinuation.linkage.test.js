@@ -35,9 +35,9 @@ describe("complete bilingual continuation linkage", () => {
           expect(term.name && term.definition && term.application).toBeTruthy();
         }
       }
-      expect(prompt).toContain(language==="es"?"La figura del borde protege algo importante":"Краевая фигура защищает что-то важное");
-      expect(prompt).not.toContain("sin suponer que protege");
-      expect(prompt).not.toContain("No atribuyas protección");
+      expect(prompt).toContain(language==="es"?"HIPÓTESIS METODOLÓGICA INTERNA":"ВНУТРЕННЯЯ МЕТОДОЛОГИЧЕСКАЯ ГИПОТЕЗА");
+      expect(prompt).toContain(language==="es"?"qué hace de hecho en su vida":"что она фактически делает в жизни человека");
+      expect(prompt).not.toContain(language==="es"?"La figura del borde protege algo importante":"Краевая фигура защищает что-то важное");
       expect(prompt).not.toContain("Не приписывай защиту");
       if(language==="es") expect(prompt).not.toMatch(/[А-Яа-яЁё]/u);
     });
