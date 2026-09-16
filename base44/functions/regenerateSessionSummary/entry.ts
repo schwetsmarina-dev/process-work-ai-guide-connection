@@ -49,7 +49,8 @@ Deno.serve(async (req) => {
       const owners = await base44.asServiceRole.entities.AppUser.filter({
         created_by_id: session.user_id,
       });
-      if (owners[0]?.language === 'es') language = 'es';
+      if (owners[0]?.language === 'ru') language = 'ru';
+      else if (owners[0]?.language === 'es') language = 'es';
     } catch (e) {
       console.warn('[regenerateSessionSummary] could not resolve owner language, defaulting to es:', e?.message);
     }
@@ -65,11 +66,13 @@ Deno.serve(async (req) => {
   "summary": "связный абзац 3-5 предложений — что происходило, какой процесс разворачивался, к чему пришли",
   "themes": ["тема 1", "тема 2", "тема 3"],
   "signals": ["телесный или эмоциональный сигнал 1", "сигнал 2"],
-  "edge_signals": ["короткое описание момента с внутренним критиком/стыдом/зацикливанием/отрицанием идентичности, если такой момент был (иначе пустой массив)"],
+  "edge_signals": ["короткое описание самого края/момента остановки, страха, стыда, внутреннего запрета или зацикливания, если он был"],
+  "edge_figures": ["отдельное описание краевой фигуры, голоса или части в словах человека, если она явно появилась"],
   "primary_process": ["короткая заметка о том, что было привычным/знакомым для человека"],
   "secondary_process": ["короткая заметка о том, что было новым/неожиданным, впервые проявившимся"]
 }
-ВНУТРЕННЕЕ ПОЛЕ edge_signals (для аналитики терапевта, не показывается клиенту): заполняй только если в транскрипте был момент с признаками: резкое падение энергии, нервный смех, стыд/смущение, зацикливание без развития, отрицание идентичности, цитирование внутреннего запрета. Короткие фразы, без слова «край»/«граница»/«limite»/«borde». Если таких моментов не было — пустой массив [].
+ВНУТРЕННЕЕ ПОЛЕ edge_signals: описывает сам момент края/остановки/запрета, а НЕ фигуру. Если таких моментов не было — [].
+ВНУТРЕННЕЕ ПОЛЕ edge_figures: сохраняй отдельно явно появившиеся фигуры, голоса или части, которые критикуют, запрещают, требуют, останавливают или охраняют переход. Используй слова человека и не придумывай фигуру по одной лишь трудности. Если фигуры не было — [].
 ВНУТРЕННИЕ ПОЛЯ primary_process / secondary_process (для карты процесса терапевта, не показываются клиенту, сами термины «первичный/вторичный процесс» в значения не пиши): primary_process — что было знакомым/привычным для человека, secondary_process — что было новым/неожиданным. Короткие фразы своими словами, без терминов Process Work. Если не выделялось — пустой массив [] для каждого.
 
 Пиши на том же языке, на котором шла сессия. ${languageRule}
@@ -85,6 +88,7 @@ ${conversation}`,
           themes: { type: 'array', items: { type: 'string' } },
           signals: { type: 'array', items: { type: 'string' } },
           edge_signals: { type: 'array', items: { type: 'string' } },
+          edge_figures: { type: 'array', items: { type: 'string' } },
           primary_process: { type: 'array', items: { type: 'string' } },
           secondary_process: { type: 'array', items: { type: 'string' } },
           next_step_suggestion: { type: 'string' },
@@ -93,6 +97,7 @@ ${conversation}`,
     });
 
     const edgeSignals = Array.isArray(result.edge_signals) ? result.edge_signals.filter(Boolean) : [];
+    const edgeFigures = Array.isArray(result.edge_figures) ? result.edge_figures.filter(Boolean) : [];
     const primaryProcess = Array.isArray(result.primary_process) ? result.primary_process.filter(Boolean) : [];
     const secondaryProcess = Array.isArray(result.secondary_process) ? result.secondary_process.filter(Boolean) : [];
     await base44.asServiceRole.entities.Session.update(sessionId, {
@@ -100,6 +105,7 @@ ${conversation}`,
       themes: result.themes || [],
       signals: result.signals || [],
       edge_signals: edgeSignals,
+      edge_figures: edgeFigures,
       edge_signal_count: edgeSignals.length,
       primary_process: primaryProcess,
       secondary_process: secondaryProcess,
