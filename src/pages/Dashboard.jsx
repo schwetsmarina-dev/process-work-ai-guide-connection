@@ -290,6 +290,7 @@ export default function Dashboard() {
     const route = routes[kind];
     const mode = findMode(route.mode);
     if (!mode) return;
+    logJourneyEvent(JOURNEY_EVENTS.MODE_OPENED, { mode_id: mode.mode_id, language: lang });
     await createSession(mode, { carryOverContext: route.context });
   };
 
@@ -324,6 +325,7 @@ export default function Dashboard() {
       : `Пользователь начал со свободного описания ситуации: «${routingSuggestion.text}». Используй этот текст как исходный материал. Маршрут предложен Talvira, но не представляй его как диагноз или окончательную классификацию.`;
     setRoutingSuggestion(null);
     setFreeText("");
+    logJourneyEvent(JOURNEY_EVENTS.MODE_OPENED, { mode_id: mode.mode_id, language: lang });
     await createSession(mode, { carryOverContext: context });
   };
 
