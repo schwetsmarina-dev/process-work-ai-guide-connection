@@ -3,8 +3,9 @@
 AI-guided self-reflection assistant based on Arnold Mindell's **Process-Oriented
 Psychology**. Users move through structured sessions in four modes — **body
 signal, dream, inner conflict, journaling** — with an AI facilitator that follows
-their process, keeps memory between sessions, generates summaries, and screens
-every message with a real-time safety module.
+their process, keeps memory between sessions, generates summaries and personal
+practices, offers an adaptive 28-day self-exploration programme, and screens
+every user entry with a real-time safety module.
 
 > **Not a medical device and not a substitute for professional psychological
 > help.** A wellbeing / self-exploration tool. See `SECURITY.md`.
@@ -14,6 +15,20 @@ every message with a real-time safety module.
 - **Status:** MVP in beta testing
 - **Architecture:** see [`ARCHITECTURE.md`](./ARCHITECTURE.md)
 - **Security & data handling:** see [`SECURITY.md`](./SECURITY.md)
+- **Personal practices and 28-day programme:** see [`docs/PERSONAL_PRACTICES_AND_28_DAY_PROGRAM.md`](./docs/PERSONAL_PRACTICES_AND_28_DAY_PROGRAM.md)
+
+## Product capabilities
+
+- Four structured session modes: body signal, dream, inner conflict and journaling.
+- Cross-session memory, summaries, insights, reports and process mapping.
+- Personal practices generated from the user's own completed-session context and
+  the safety-filtered ProcessExercise library; users do not choose a generic
+  exercise from a list.
+- A progressive 28-day programme that connects discoveries between days, supports
+  pause/rest/resource days and resumes without treating the calendar as a
+  compliance target.
+- Real-time crisis screening and clear non-clinical boundaries throughout guided
+  sessions and longer programmes.
 
 ## Tech stack
 

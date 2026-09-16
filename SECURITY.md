@@ -12,7 +12,10 @@ problem.
 
 - **Account data:** email, name, language, plan, consent flag.
 - **Session content:** user messages, AI facilitator replies, session summaries,
-  durable memory notes, saved insights, feedback.
+  durable memory notes, saved insights, feedback and personalised practices.
+- **28-day programme data:** pre-start screening answers, programme status,
+  generated daily practices, reflections, distress checks, user-reviewed AI
+  observations, personal resources, pause/resume history and progression decisions.
 - **Safety signals (`RiskEvent`):** flagged messages indicating possible crisis,
   retained for human review.
 - **Optional:** imported physiological data, when the user provides it.
@@ -45,13 +48,21 @@ signal the session pauses, the user is shown support resources, and a
 `RiskEvent` is logged for review. Safety signals are **not** deleted by the
 in-chat "step back" feature.
 
+The 28-day programme adds a separate non-clinical pre-start screening, blocks
+entry when an unresolved high/critical risk exists, and checks distress,
+overwhelm and dissociation during progression. The user can choose a softer
+version, repeat, rest, use a resource-only day, pause or stop. Calendar time
+never advances the programme automatically, and AI observations or proposed
+resource updates are not treated as user facts until the user confirms, corrects
+or rejects them.
+
 ## Your data rights (GDPR)
 
 Users can export their data and delete Talvira user-generated data directly in Settings → Privacy. They can also disable cross-session memory or erase memory without deleting the account. Requests requiring correction, account-identity deletion, processor/back-up handling or billing-record review are handled through the contact below.
 
 ## Data retention
 
-Session data is retained while the account is active and needed for the service. The in-product deletion flow removes sessions, messages, summaries, insights, memory, practices, physiological data, risk events, therapist links, assignments, feedback and the custom AppUser profile. Base44 authentication identity and Paddle/billing records may remain where platform or statutory obligations require them. Application logs are content-minimised and must never include transcript text, memory values, email addresses or raw user identifiers.
+Session data is retained while the account is active and needed for the service. The in-product deletion flow removes sessions, messages, summaries, insights, memory, practices, 28-day programme records, daily reflections, screenings, milestones, physiological data, risk events, therapist links, assignments, feedback and the custom AppUser profile. Base44 authentication identity and Paddle/billing records may remain where platform or statutory obligations require them. Application logs are content-minimised and must never include transcript text, memory values, email addresses or raw user identifiers.
 
 ## Reporting a vulnerability
 
