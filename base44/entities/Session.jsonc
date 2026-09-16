@@ -173,6 +173,7 @@
   "required": [
     "mode"
   ],
+  "type": "object",
   "rls": {
     "create": {
       "user_condition": {
@@ -215,6 +216,5 @@
         }
       ]
     }
-  },
-  "type": "object"
+  }
 }
