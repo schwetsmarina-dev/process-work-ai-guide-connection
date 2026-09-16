@@ -1797,6 +1797,7 @@ const FALLBACK_SUMMARY_BY_LANG = {
     themes: [],
     signals: [],
     edge_signals: [],
+    edge_figures: [],
     primary_process: [],
     secondary_process: [],
     next_step_suggestion: "",
@@ -1808,6 +1809,7 @@ const FALLBACK_SUMMARY_BY_LANG = {
     themes: [],
     signals: [],
     edge_signals: [],
+    edge_figures: [],
     primary_process: [],
     secondary_process: [],
     next_step_suggestion: "",
@@ -1840,7 +1842,8 @@ export async function generateSessionSummary(session, messages, language = "es")
   "summary": "párrafo descriptivo de 3–5 frases sobre lo que apareció y se exploró en la sesión",
   "themes": ["tema 1", "tema 2", "tema 3"],
   "signals": ["señal corporal o emocional 1", "señal 2"],
-  "edge_signals": ["descripción breve de un momento de freno, vergüenza, repetición o prohibición interna, si realmente apareció; si no, []"],
+  "edge_signals": ["descripción breve del momento de borde: freno, miedo, vergüenza, prohibición interna, evitación o repetición, si realmente apareció; si no, []"],
+  "edge_figures": ["descripción separada de una figura, voz o parte que critica, prohíbe, exige, frena o protege el paso, solo si apareció explícitamente; si no, []"],
   "primary_process": ["descripción breve de lo que resultaba habitual o familiar para la persona"],
   "secondary_process": ["descripción breve de lo que apareció como nuevo, poco habitual o emergente"],
   "next_step_suggestion": "una posible línea para una próxima sesión",
@@ -1848,7 +1851,8 @@ export async function generateSessionSummary(session, messages, language = "es")
 }
 
 REGLAS:
-- edge_signals es un campo interno. Rellénalo solo cuando el diálogo contenga evidencia clara de una interrupción del proceso: caída marcada de energía, risa nerviosa, vergüenza, repetición sin desarrollo, rechazo de una identidad o una prohibición interna explícita. Describe lo ocurrido sin usar «borde» ni «límite». Si no ocurrió, devuelve [].
+- edge_signals es un campo interno y describe el MOMENTO de borde/interrupción, no la figura. Rellénalo solo cuando haya evidencia clara: freno, miedo, vergüenza, evitación, repetición sin desarrollo o prohibición interna explícita. Si no ocurrió, devuelve [].
+- edge_figures es un campo interno distinto. Guarda por separado una figura, voz o parte explícita que critique, prohíba, exija, frene o proteja el paso. Usa las palabras de la persona; no inventes una figura a partir de una dificultad. Si no apareció, devuelve [].
 - primary_process y secondary_process son campos internos. En sus valores NO escribas jerga de Process Work: describe simplemente el contenido con palabras cotidianas.
 - No inventes resultados. No afirmes que la persona comprendió, integró, logró o transformó algo salvo que lo haya dicho explícitamente.
 - Prefiere formulaciones descriptivas: «En la sesión aparecieron…», «La persona exploró…», «Al final dijo…».
@@ -1865,14 +1869,16 @@ ${conversation}`;
   "summary": "описательный абзац 3-5 предложений — что звучало и что исследовалось в сессии",
   "themes": ["тема 1", "тема 2", "тема 3"],
   "signals": ["телесный или эмоциональный сигнал 1", "сигнал 2"],
-  "edge_signals": ["короткое описание момента, где проявился внутренний критик/стыд/зацикливание/отрицание идентичности, если такой момент был в сессии (иначе пустой массив)"],
+  "edge_signals": ["короткое описание самого момента края: остановки, страха, стыда, запрета, избегания или зацикливания, если такой момент был"],
+  "edge_figures": ["отдельное описание явно появившейся краевой фигуры, голоса или части, которая критикует, запрещает, требует, останавливает или защищает переход"],
   "primary_process": ["короткая заметка о том, что было привычным/знакомым для человека в этой сессии"],
   "secondary_process": ["короткая заметка о том, что было новым/непривычным, впервые проявившимся"],
   "next_step_suggestion": "одна возможная тема для следующей сессии",
   "confidence_note": "${confidenceNote}"
 }
 
-ПОЛЕ edge_signals (внутреннее, для аналитики терапевта, НИКОГДА не показывается клиенту напрямую): заполняй, только если в транскрипте действительно был момент с признаками: резкое падение энергии, нервный смех, стыд/смущение, зацикливание без развития, отрицание идентичности («я не такая»), цитирование внутреннего запрета. Каждый элемент — одна короткая фраза на языке сессии, без слова «край»/«граница»/«limite»/«borde» (например: «стыд при описании близости с фигурой сна», «зацикливание на теме отношений с отцом»). Если таких моментов не было — верни пустой массив [].
+ПОЛЕ edge_signals (внутреннее) описывает САМ МОМЕНТ края/остановки/запрета, а не фигуру. Если таких моментов не было — [].
+ПОЛЕ edge_figures (внутреннее, отдельное): сохраняй явно появившуюся фигуру, голос или часть, которая критикует, запрещает, требует, останавливает или охраняет переход. Используй слова человека и не придумывай фигуру по одной лишь трудности. Если фигуры не было — [].
 
 ПОЛЯ primary_process / secondary_process (внутренние, для карты процесса терапевта; на экране клиента не показываются, но сами слова «первичный/вторичный процесс» в сами значения не пиши, это название полей, а не текст, который ты пишешь): primary_process — что было знакомым/привычным для человека в сессии (обычная позиция/реакция), secondary_process — что было новым, неожиданным, впервые проявившимся. Каждый элемент — короткая фраза без терминов Process Work, просто описание содержания своими словами (например: «привычно винит себя за усталость», «впервые допустила мысль о собственной силе»). Если в сессии это не выделялось явно — пустой массив [] для каждого.
 
@@ -1913,6 +1919,7 @@ ${conversation}`;
         themes: { type: "array", items: { type: "string" } },
         signals: { type: "array", items: { type: "string" } },
         edge_signals: { type: "array", items: { type: "string" } },
+        edge_figures: { type: "array", items: { type: "string" } },
         primary_process: { type: "array", items: { type: "string" } },
         secondary_process: { type: "array", items: { type: "string" } },
         next_step_suggestion: { type: "string" },
