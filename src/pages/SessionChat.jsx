@@ -926,17 +926,30 @@ export default function SessionChat() {
                 </div>
               ))}
 
-              {/* Session complete — clear closing + explicit end button */}
+              {/* Session checkpoint — after continuation, always give the person an obvious exit. */}
               {sessionComplete && !isAiLoading && (
                 <div className="flex flex-col items-center gap-3 p-5 rounded-2xl border border-primary/20 bg-primary/5 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    {language === "es"
-                      ? "Puedes finalizar aquí o seguir explorando lo que para ti quedó pendiente."
-                      : "Можно завершить здесь или продолжить исследовать то, что для тебя осталось важным."}
+                  <p className="text-sm font-medium">
+                    {(continuationRequested || session?.continuation_requested)
+                      ? (language === "es"
+                          ? "Puedes finalizar la sesión aquí. Si todavía queda algo importante, también puedes seguir explorándolo."
+                          : "На этом сессию можно завершить. Если осталось что-то важное, можно продолжить исследование.")
+                      : (language === "es"
+                          ? "Puedes finalizar aquí o seguir explorando lo que para ti quedó pendiente."
+                          : "Можно завершить здесь или продолжить исследовать то, что для тебя осталось важным.")}
                   </p>
+                  {(continuationRequested || session?.continuation_requested) && (
+                    <p className="text-xs text-muted-foreground max-w-md">
+                      {language === "es"
+                        ? "No es necesario seguir hasta que aparezca una respuesta perfecta. Puedes cerrar cuando sientas que este punto es suficiente por ahora."
+                        : "Не обязательно продолжать до «идеального ответа». Можно закончить, когда чувствуешь, что на сегодня этого достаточно."}
+                    </p>
+                  )}
                   <div className="flex gap-2 flex-wrap justify-center">
                     <Button size="lg" variant="outline" onClick={handleContinueChat} disabled={isAiLoading}>
-                      {language === "es" ? "Continuar la sesión" : "Продолжить сессию"}
+                      {(continuationRequested || session?.continuation_requested)
+                        ? (language === "es" ? "Seguir explorando" : "Продолжить исследование")
+                        : (language === "es" ? "Continuar la sesión" : "Продолжить сессию")}
                     </Button>
                     <Button size="lg" onClick={handleEndSession}>
                       {language === "es" ? "Finalizar sesión" : "Завершить сессию"}
