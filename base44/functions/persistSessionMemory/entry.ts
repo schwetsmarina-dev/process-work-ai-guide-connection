@@ -31,7 +31,8 @@ async function extractMemories(base44, messages) {
 - patterns: повторяющиеся паттерны реакций или поведения
 - themes: темы, которые поднимал пользователь (всегда заполняй, если есть содержание)
 - body_signals: телесные сигналы, если упоминались
-- edge: описание края/сопротивления ИЛИ краевой фигуры. Внутренний критик, внутренний запрещающий/контролирующий голос или часть, которая «не разрешает», «мешает», «останавливает», «критикует», — это значимый edge и должен быть сохранён здесь.
+- edge: описание самого края/сопротивления — где становится трудно, страшно, стыдно, возникает остановка, избегание или зацикливание. НЕ смешивай сюда саму фигуру.
+- edge_figure: отдельное описание краевой фигуры/голоса/части в словах человека. Внутренний критик, запрещающий/контролирующий голос или часть, которая «не разрешает», «мешает», «останавливает», «критикует», — сохраняется здесь отдельно от edge.
 - primary_process: знакомые, идентично-согласованные способы/качества, если проявились
 - secondary_process: новые, непривычные или возникающие качества/движения, если проявились
 - resources: ресурсы, поддерживающие образы, фигуры, качества или действия, если проявились
@@ -47,6 +48,7 @@ ${conversation}`,
           themes: { type: 'array', items: { type: 'string' } },
           body_signals: { type: 'array', items: { type: 'string' } },
           edge: { type: 'string' },
+          edge_figure: { type: 'string' },
           primary_process: { type: 'array', items: { type: 'string' } },
           secondary_process: { type: 'array', items: { type: 'string' } },
           resources: { type: 'array', items: { type: 'string' } },
@@ -70,6 +72,7 @@ ${conversation}`,
     themes: (result.themes || []).length,
     body_signals: (result.body_signals || []).length,
     edge: !!result.edge,
+    edge_figure: !!result.edge_figure,
     primary_process: (result.primary_process || []).length,
     secondary_process: (result.secondary_process || []).length,
     resources: (result.resources || []).length,
@@ -97,6 +100,7 @@ ${conversation}`,
   if (themes) items.push({ memory_type: 'theme', memory_key: 'themes', memory_value: themes });
   if (bodySignals) items.push({ memory_type: 'body_signal', memory_key: 'body_signals', memory_value: bodySignals });
   if (result.edge && result.edge !== 'null') items.push({ memory_type: 'edge', memory_key: 'edge', memory_value: stripSubject(result.edge) });
+  if (result.edge_figure && result.edge_figure !== 'null') items.push({ memory_type: 'edge_figure', memory_key: 'edge_figure', memory_value: stripSubject(result.edge_figure) });
   if (primaryProcess) items.push({ memory_type: 'primary_process', memory_key: 'primary_process', memory_value: primaryProcess });
   if (secondaryProcess) items.push({ memory_type: 'secondary_process', memory_key: 'secondary_process', memory_value: secondaryProcess });
   if (resources) items.push({ memory_type: 'resource', memory_key: 'resources', memory_value: resources });
@@ -193,7 +197,7 @@ Deno.serve(async (req) => {
           memory_value: item.memory_value,
           source_session_id: sessionId,
           source_mode_id: session.mode_id || session.mode || null,
-          importance: item.memory_key === 'edge' ? 'high' : 'medium',
+          importance: (item.memory_key === 'edge' || item.memory_key === 'edge_figure') ? 'high' : 'medium',
           evidence_session_ids: [sessionId],
           evidence_count: 1,
           confidence: 0.65,
