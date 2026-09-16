@@ -567,10 +567,16 @@ export default function SessionChat() {
           ["session", sessionId, currentUser?.email],
           (prev) => (prev ? { ...(/** @type {any} */ (prev)), current_step: nextStep } : prev),
         );
+      } else if (continuationForTurn) {
+        // Continuation is an open-ended process, but it must never become a
+        // one-way corridor. After every completed continuation turn, return
+        // control to the person: they may continue with the newly emerged
+        // material or finish the session and reach summary/feedback.
+        setSessionComplete(true);
       } else {
         // No next step — final closing message shown; reveal the "end session" button instead of auto-redirect
         const intent = getTurnIntent(text);
-        setSessionComplete(intent.explicitClose || (!continuationForTurn && !intent.continueRequested && !intent.edge));
+        setSessionComplete(intent.explicitClose || (!intent.continueRequested && !intent.edge));
       }
 
       queryClient.invalidateQueries({ queryKey: ["session", sessionId, currentUser?.email] });
