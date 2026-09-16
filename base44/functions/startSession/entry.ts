@@ -128,7 +128,7 @@ function buildContinuationContext(previous, legacyContext = '', language = 'es')
 
   if (edgeFigure) {
     blocks.push(isEs
-      ? `EDGE_FIGURE_DETECTED (etiqueta interna, NO decirla al usuario): «${edgeFigure.slice(0, 500)}». Es una figura/función de borde ya identificada, no un tema nuevo. Continúa explorando su voz, rol, prohibición, qué protege o no permite y qué ocurre en la transición. No vuelvas al relato del sueño, al mapeo desde cero, a las preguntas primaria/secundaria ni a elegir un foco nuevo salvo que el usuario cambie explícitamente de tema.`
+      ? `EDGE_FIGURE_DETECTED (etiqueta interna, NO decirla al usuario): «${edgeFigure.slice(0, 500)}». Es una figura/función de borde ya identificada, no un tema nuevo. Su posible función protectora o limitante es una hipótesis metodológica interna: no se anuncia al usuario ni se pregunta de forma dirigida. Continúa explorando fenomenológicamente qué dice, qué prohíbe, qué teme, qué evita o qué no permite y qué ocurre en la transición. No atribuyas esa función a un síntoma corporal. No vuelvas al relato del sueño, al mapeo desde cero, a las preguntas primaria/secundaria ni a elegir un foco nuevo salvo que el usuario cambie explícitamente de tema.`
       : `EDGE_FIGURE_DETECTED (внутренняя метка, НЕ произносить пользователю): «${edgeFigure.slice(0, 500)}». Это уже выявленная краевая фигура/функция, а не новая тема. Продолжай протокол работы с краевой фигурой: исследуй её голос/роль/запрет, что именно она охраняет или не допускает, и что происходит у перехода. Не возвращайся к рассказу сна, картированию с нуля, первичному/вторичному вопросу или выбору нового фокуса, если пользователь сам явно не меняет тему.`);
   }
 
