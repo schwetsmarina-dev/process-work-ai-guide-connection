@@ -122,22 +122,17 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
   if (!validationContext) validationContext = { completionDetected };
   const lower = responseText.toLowerCase();
 
-  // Body-mode hard guard: a bodily symptom/sensation must never be assigned a
-  // protective function by default. Protective/limiting function belongs only
-  // to an explicitly emerged edge figure/voice/part and remains an internal
-  // methodological hypothesis, not a client-facing assertion.
-  if (currentMode === "body") {
-    const protectionLanguage = /(?:qué (?:intenta|trata de) proteger|qué te protege|para protegerte|te está protegiendo|protege algo|что (?:пытается )?защитить|что тебя защищает|защищает тебя|чтобы защитить)/iu.test(responseText);
-    const userHistory = (conversationHistory || []).filter((m) => m.role === "user").map((m) => String(m.content || "")).join("\n");
-    const explicitEdgeFigure = /(?:voz|figura|parte|hombre|mujer|голос|фигура|часть|мужчина|женщина|мужик)/iu.test(userHistory) &&
-      /(?:critica|juzga|prohíbe|exige|no me deja|no me permite|frena|impide|критикует|ругает|запрещает|требует|не разрешает|не позволяет|останавливает|мешает)/iu.test(userHistory);
-    if (protectionLanguage && !explicitEdgeFigure) {
-      return {
-        isValid: false,
-        reason: "body_symptom_protection_attribution",
-        correctedInstruction: "HARD REJECT — do not attribute a protective function to a bodily symptom or sensation. Stay with the person's phenomenology and exact words. If there is no separately explicit edge figure/voice/part, do not ask what the symptom protects. If an edge figure exists, its possible protective/limiting function is internal methodology only; explore what it says/prohibits/fears/does not allow without announcing protection as fact.",
-      };
-    }
+  // Hard guard for CLIENT-FACING language in every mode. A possible protective
+  // or limiting function of an edge figure is internal Process Work methodology,
+  // never something Talvira should announce or ask as a leading question.
+  // Bodily symptoms/sensations must additionally never inherit that function.
+  const directProtectionLanguage = /(?:qué (?:intenta|trata de) proteger(?:te)?|qué te protege|para protegerte|te está protegiendo|esta (?:figura|voz|parte|sensación|presión|molestia|síntoma) (?:te )?protege|protege algo importante|что (?:она|он|это|эта фигура|этот голос|эта часть|симптом|ощущение)? ?(?:пытается )?защитить(?: тебя)?|что тебя защищает|защищает тебя|эта (?:фигура|часть) защищает|этот голос защищает|симптом защищает|ощущение защищает)/iu.test(responseText);
+  if (directProtectionLanguage) {
+    return {
+      isValid: false,
+      reason: currentMode === "body" ? "body_symptom_protection_attribution" : "client_facing_edge_protection_attribution",
+      correctedInstruction: "HARD REJECT — protective/limiting function is INTERNAL methodology only. Do not tell the person that a symptom, sensation, edge figure, voice or part protects them, and do not ask a leading question about what it protects. If there is an explicit edge figure, explore phenomenologically what it says, prohibits, fears, avoids or does not allow, using the person's words. In body mode, never transfer an edge-figure function to the bodily symptom itself.",
+    };
   }
 
   // 0lock. STAGE MEMORY LOCKS + ANTI-REGRESSION (all modes) — runs first.
