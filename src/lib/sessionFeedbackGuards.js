@@ -52,7 +52,27 @@ export function feedbackFallback(language, userText, messages = []) {
   if (intent.hypothetical) return es ? "Lo planteas como una posibilidad. ¿Notas algún cambio ahora o todavía es algo que te gustaría experimentar?" : "Ты говоришь об этом как о возможности. Сейчас уже что-то изменилось или это пока то, что хотелось бы почувствовать?";
   if (intent.confusion) return es ? "Veo que mi pregunta no te está ayudando. La formularé de otra manera y más concretamente: ¿qué parte de lo que estamos explorando te resulta ahora menos clara?" : "Вижу, что мой вопрос не помогает. Скажу иначе и конкретнее: какая часть того, что мы сейчас исследуем, остаётся для тебя самой непонятной?";
   if (answeredIntegration(messages) && !intent.continueRequested && !intent.edge) return es ? "Ya has nombrado lo que te llevas. ¿Prefieres dejarlo aquí por hoy o explorar algo que quedó pendiente?" : "Ты уже назвала, что берёшь с собой. Хочешь на сегодня остановиться или исследовать что-то оставшееся?";
-  return es ? "Podemos seguir a tu ritmo. ¿En qué te gustaría detenerte ahora?" : "Можем продолжать в твоём темпе. На чём тебе хочется сейчас остановиться подробнее?";
+  const exact = String(userText || '').trim().replace(/\s+/g, ' ').slice(0, 220);
+  const previousAssistantText = (messages || []).filter((m) => m.role === 'assistant').map((m) => String(m.content || '')).join('\n').toLowerCase();
+  const usedGenericFallback = previousAssistantText.includes('podemos seguir a tu ritmo') || previousAssistantText.includes('можем продолжать в твоём темпе');
+  if (es) {
+    if (usedGenericFallback) {
+      return exact
+        ? `Tienes razón en señalarlo. Me quedo exactamente con lo que acabas de decir: «${exact}». No voy a repetir la pregunta anterior ni a añadir una interpretación. ¿Qué notas ahora en esa experiencia, tal como la has descrito?`
+        : "No voy a repetir la pregunta anterior. Sigamos desde lo último que dijiste, sin añadir interpretaciones: ¿qué notas ahora en esa experiencia?";
+    }
+    return exact
+      ? `Te escucho: «${exact}». Me quedo con eso, sin cambiar de tema ni añadir una interpretación. ¿Qué notas ahora en esa experiencia?`
+      : "Sigamos desde lo último que dijiste, sin cambiar de tema ni añadir interpretaciones: ¿qué notas ahora en esa experiencia?";
+  }
+  if (usedGenericFallback) {
+    return exact
+      ? `Ты права, что указала на это. Я остаюсь ровно с тем, что ты только что сказала: «${exact}». Не буду повторять прежний вопрос и добавлять интерпретацию. Что ты сейчас замечаешь в этом переживании таким, как ты его описала?`
+      : "Не буду повторять прежний вопрос. Продолжим от твоих последних слов, без новых интерпретаций: что ты сейчас замечаешь в этом переживании?";
+  }
+  return exact
+    ? `Я тебя слышу: «${exact}». Остаюсь с этим, не меняя тему и не добавляя интерпретацию. Что ты сейчас замечаешь в этом переживании?`
+    : "Продолжим от твоих последних слов, не меняя тему и не добавляя интерпретацию: что ты сейчас замечаешь в этом переживании?";
 }
 export function feedbackInstructions(language, continued = false) {
   return language === "es" ? 
