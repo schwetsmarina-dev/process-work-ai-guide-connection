@@ -60,5 +60,5 @@ function ClientProcessMap({ clientEmail, enabled }) {
   if (isLoading) return <div className="flex items-center gap-2 text-sm text-muted-foreground py-6"><Loader2 className="w-4 h-4 animate-spin" /> Construyendo el mapa de proceso…</div>;
   if (isError) return <p className="text-sm text-muted-foreground">No se pudo cargar el mapa de proceso.</p>;
   const nodes = data?.nodes || []; const edges = data?.edges || [];
-  return <section><h4 className="text-sm font-semibold flex items-center gap-2 mb-2"><Network className="w-4 h-4 text-primary" />Mapa de proceso</h4>{nodes.length === 0 ? <p className="text-sm text-muted-foreground">Aún no hay suficientes datos.</p> : <ProcessGraph nodes={nodes} edges={edges} />}</section>;
+  return <section><h4 className="text-sm font-semibold flex items-center gap-2 mb-2"><Network className="w-4 h-4 text-primary" />Mapa de proceso</h4>{nodes.length === 0 ? <p className="text-sm text-muted-foreground">Aún no hay suficientes datos.</p> : <ProcessGraph nodes={nodes} edges={edges} lang="es" />}</section>;
 }
