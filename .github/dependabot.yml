@@ -9,7 +9,12 @@ updates:
       timezone: "Atlantic/Canary"
     open-pull-requests-limit: 5
     groups:
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
       npm-minor-patch:
+        applies-to: version-updates
         update-types:
           - minor
           - patch
