@@ -760,8 +760,8 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
 
   // Reusing the person's words in a reflection is required, not a loop.
   // Compare the question portion, not shared nouns across the whole response.
-  const questionsOnly = text => (String(text).match(/(?:^|[.!]\\s+)([^.!?]*[?？])/g) || []).join(" ");
-  const responseWords = new Set(questionsOnly(lower).split(/\\s+/).filter((w) => w.length > 5));
+  const questionsOnly = text => (String(text).match(/(?:^|[.!]\s+)([^.!?]*[?？])/g) || []).join(" ");
+  const responseWords = new Set(questionsOnly(lower).split(/\s+/).filter((w) => w.length > 5));
   for (const prev of lastAssistant) {
     const prevWords = new Set(questionsOnly(prev).split(/\s+/).filter((w) => w.length > 5));
     const overlap = [...responseWords].filter((w) => prevWords.has(w));
