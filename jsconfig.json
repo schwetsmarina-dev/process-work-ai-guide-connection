@@ -21,7 +21,8 @@
     "src/pages/**/*.jsx",
     "src/Layout.jsx",
     "src/lib/**/*.js",
-    "src/lib/**/*.jsx"
+    "src/lib/**/*.jsx",
+    "src/lib/**/*.d.ts"
   ],
   "exclude": [
     "node_modules",
