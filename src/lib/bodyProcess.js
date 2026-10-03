@@ -203,15 +203,15 @@ export function detectBodyProcessStage(messages) {
   return { stage: "complete", ...base };
 }
 
-function nextPrimaryQuestion(dimensions, language) {
+export function nextPrimaryQuestion(dimensions, language) {
   const has = new Set(dimensions || []);
   const es = language === "es";
   if (!has.has("localization")) return es
     ? "¿Dónde exactamente notas esta señal en el cuerpo?"
     : "Где именно в теле ты замечаешь этот сигнал?";
   if (!has.has("quality")) return es
-    ? "¿Cómo se siente exactamente desde dentro? ¿Qué cualidad tiene?"
-    : "Как именно это ощущается изнутри? Какое у этого качество?";
+    ? "¿Cómo se siente exactamente desde dentro?"
+    : "Как именно это ощущается изнутри?";
   if (!has.has("impact")) return es
     ? "Cuando aparece, ¿cómo lo vives normalmente? ¿Qué te apetece hacer o evitar y qué cambia en tu percepción o actividad?"
     : "Когда это появляется, как ты обычно это проживаешь? Что хочется делать или не делать и что меняется в восприятии или активности?";
