@@ -758,11 +758,14 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
     .slice(-3)
     .map((m) => m.content.toLowerCase());
 
-  const responseWords = new Set(lower.split(/\s+/).filter((w) => w.length > 5));
+  // Reusing the person's words in a reflection is required, not a loop.
+  // Compare the question portion, not shared nouns across the whole response.
+  const questionsOnly = text => (String(text).match(/(?:^|[.!]\\s+)([^.!?]*[?？])/g) || []).join(" ");
+  const responseWords = new Set(questionsOnly(lower).split(/\\s+/).filter((w) => w.length > 5));
   for (const prev of lastAssistant) {
-    const prevWords = new Set(prev.split(/\s+/).filter((w) => w.length > 5));
+    const prevWords = new Set(questionsOnly(prev).split(/\s+/).filter((w) => w.length > 5));
     const overlap = [...responseWords].filter((w) => prevWords.has(w));
-    if (overlap.length >= 5) {
+    if (overlap.length >= 5 && overlap.length / Math.max(responseWords.size, prevWords.size) >= 0.75) {
       return {
         isValid: false,
         reason: "Response too similar to a previous assistant message (loop detected)",
