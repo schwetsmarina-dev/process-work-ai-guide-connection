@@ -30,7 +30,7 @@ export default function TimelineEvent({ event, side, onClick }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
           onClick={onClick}
-          className="w-full text-left rounded-xl border border-border bg-card hover:bg-accent/50 hover:border-primary/30 transition-all p-4 shadow-sm"
+          className="w-full text-left rounded-xl border border-border bg-card hover:bg-accent/50 hover:border-primary/30 transition-all p-4 shadow-xs"
         >
           <div className="flex items-center gap-2 mb-1.5">
             <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
