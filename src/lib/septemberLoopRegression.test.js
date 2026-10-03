@@ -54,3 +54,15 @@ describe("physical-symptom boundary",()=>{
  it("does not trigger when a measure worked",()=>expect(bodyMedicalPause([u("Запор"),u("Слабительное помогло")],"Слабительное помогло","ru")).toBeNull());
  it("does not mistake a friend's symptoms for today's sleep focus",()=>expect(bodyMedicalPause([u("Прерывистый сон")],"Нет, не помогло","ru")).toBeNull());
 });
+
+describe("concrete process rather than lexical false positives",()=>{
+ it("does not turn literal shoulder movement into an X figure",()=>{
+ const s=detectBodyProcessStage([u("Прерывистый сон"),u("В плечах есть скованность, плечи будто разворачиваются вовнутрь")]);
+ expect(s.x_image_emerged).toBe(false);
+ });
+ it("allows repeated reflections with a different next question",()=>{
+ const reflection="Плечи разворачиваются вовнутрь, появляется ощущение скованности и замирания.";
+ const result=validateAssistantResponse({...params(),conversationHistory:[u("Скованность"),a(reflection+" Какое у этого ощущение?")],responseText:reflection+" Что сейчас хочется делать?"});
+ expect(result.isValid).toBe(true);
+ });
+});
