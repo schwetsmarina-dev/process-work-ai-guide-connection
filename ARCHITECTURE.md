@@ -2,7 +2,8 @@
 
 > AI-guided self-reflection assistant based on Arnold Mindell's Process-Oriented
 > Psychology. Runs structured sessions across four modes, keeps memory between
-> sessions, auto-generates summaries, and includes a real-time safety module.
+> sessions, generates personalised practices, supports an adaptive 28-day
+> programme, and includes a real-time safety module.
 >
 > **This is a wellbeing / self-exploration tool, not a medical device and not a
 > replacement for professional care.** See `SECURITY.md` for data-handling rules.
@@ -48,7 +49,15 @@ exploration; `mode`, `current_step`, `status`, AI `summary`), **Message**
 
 Memory & output: **UserMemory** (durable cross-session notes, written at session
 close), **Insight** (user-saved takeaways), **SessionFeedback** (rating + free
-text), **Term** (Process Work glossary).
+text), **Term** (Process Work glossary), **ProcessExercise** (safety-classified
+exercise library) and **ProcessPractice** (a seven-step personalised practice
+built from recurring material across completed sessions).
+
+Longitudinal programme: **EdgeProgram** (owner, source practice/sessions, status,
+current day/week, pause/resume state and personal resource library),
+**EdgeProgramDay** (generated practice, reflection, distress checks, reviewed AI
+observations/resources and progression decision), **EdgeProgramScreening**
+(pre-start suitability gate) and **EdgeProgramMilestone** (weekly synthesis).
 
 Safety & data: **RiskEvent** (logged safety signal — type/severity/status),
 **PhysiologicalData** (optional imported body signals).
@@ -76,7 +85,29 @@ Safety & data: **RiskEvent** (logged safety signal — type/severity/status),
    Completed sessions persist `system_prompt_version` and `ai_gateway_version`
    so incidents and evaluation results can be tied to a specific orchestration release.
 
-## 5. Safety module
+## 5. Personal practices and the 28-day programme
+
+A personal practice is offered only when `checkProcessPracticeReadiness` finds
+enough recurring material. `generateProcessPractice` combines the user's
+completed-session context, process map and safe `ProcessExercise` candidates
+into a structured seven-step `ProcessPractice`; `generatePracticeAudio` may
+create an optional audio version.
+
+The 28-day programme is downstream of that practice. `checkEdgeProgramReadiness`
+requires full access, at least five completed sessions and a qualifying personal
+practice, and blocks invitations when a high/critical unresolved `RiskEvent`
+exists. `submitEdgeProgramScreening` creates the programme only after a
+non-clinical safety screening. `generateEdgeProgramDay` produces one adaptive
+day at a time. `completeEdgeProgramDay` stores the user's reflection, requires
+review of AI observations and proposed resource updates, and atomically applies
+the progression guard: advance, repeat, resource day, pause or stop.
+
+Calendar time never auto-advances the programme. A pause preserves the current
+day. Rest days contain no required introspection; resource-only days do not
+reopen difficult material. See
+[`docs/PERSONAL_PRACTICES_AND_28_DAY_PROGRAM.md`](./docs/PERSONAL_PRACTICES_AND_28_DAY_PROGRAM.md).
+
+## 6. Safety module
 
 Every user message is screened (`checkCrisis`, `checkLowRisk` in `sessionAI.js`).
 On a crisis signal the session pauses, a support message is shown, and a
@@ -84,12 +115,16 @@ On a crisis signal the session pauses, a support message is shown, and a
 (`TEAM_NOTIFICATION_EMAIL`). RiskEvents are **never** deleted by the step-back
 flow — safety signals stay logged for human review.
 
-## 6. Backend functions (catalog)
+## 7. Backend functions (catalog)
 
 **Runtime:** `invokeAI`, `createSessionMessage`, `listSessionMessages`,
 `revertLastExchange`, `persistSessionMemory`, `regenerateSessionSummary`,
 `detectUserPatterns`, `buildLifeProcessMap`, `notifyRiskEvent`, `listTermIds`,
-`importPhysiologicalData`, `therapistDashboard`, `exportResearchData`.
+`importPhysiologicalData`, `therapistDashboard`, `exportResearchData`,
+`checkProcessPracticeReadiness`, `generateProcessPractice`,
+`generatePracticeAudio`, `getExerciseCoverageMap`,
+`checkEdgeProgramReadiness`, `submitEdgeProgramScreening`,
+`generateEdgeProgramDay`, `completeEdgeProgramDay`.
 
 **Scheduled / maintenance:** `abandonStaleSessions`, `dedupeActiveSessions`.
 
@@ -99,7 +134,7 @@ flow — safety signals stay logged for human review.
 
 **Dev/test only (must not ship to production users):** `createTestData`.
 
-## 7. Roadmap (see also README §Roadmap)
+## 8. Roadmap (see also README §Roadmap)
 
 - **Payments:** Paddle is the primary launch provider and Merchant of Record.
   Checkout, customer portal, signed webhook processing and server-side
