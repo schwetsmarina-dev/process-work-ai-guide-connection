@@ -25,6 +25,7 @@ import StepErrorDebug from "@/components/session/StepErrorDebug";
 import { normalizeLang, t } from "@/lib/i18n";
 import { getSummaryUnavailableText } from "@/lib/summaryFallback";
 import { reportOperationalError, track, EVENTS } from "@/lib/telemetry";
+import { bodyMedicalPause } from "@/lib/bodyProcess";
 import { AI_GATEWAY_VERSION, SYSTEM_PROMPT_VERSION } from "@/lib/aiVersion";
 import { fetchEntitlement } from "@/hooks/useEntitlement";
 import { JOURNEY_EVENTS, logJourneyEvent } from "@/lib/journeyEvents";
@@ -494,6 +495,15 @@ export default function SessionChat() {
       // Refresh messages for AI context
       console.log("[CHAT_FLOW] 3. AI generation started");
       const updatedMessages = await listMessages(sessionId);
+      const medicalPause = modeId === "body" ? bodyMedicalPause(updatedMessages, text, language) : null;
+      if (medicalPause) {
+        await createMessage({ session_id: sessionId, mode_id: modeId, step_number: currentStep, role: "assistant", content: medicalPause });
+        pendingSavedUserRef.current = null;
+        setSessionComplete(true);
+        setIsAiLoading(false);
+        queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
+        return;
+      }
 
       // Load user memory and format it for the prompt
       const memories = appUser?.memory_enabled === false

@@ -280,3 +280,15 @@ export function buildBodyStageInstruction(stage, language = "es") {
   }
   return "";
 }
+
+export function bodyMedicalPause(messages, userText, language = "es") {
+  const history = messages.filter(m => m.role === "user").map(m => String(m.content || "")).join(" ").toLowerCase();
+  const current = String(userText || "").toLowerCase();
+  const constipation = /запор|кишеч|estreñ|intestin/u.test(history);
+  const unsuccessfulSelfCare = /(?:слабительн|laxante).{0,100}(?:не помог|ничего не|без результат|не выш|no (?:funcion|ayud)|sin resultado)/u.test(current) ||
+    /(?:не помог|без результат|no (?:funcion|ayud)).{0,70}(?:слабительн|laxante)/u.test(current);
+  if (!constipation || !unsuccessfulSelfCare) return null;
+  return language === "es"
+    ? "Si el estreñimiento persiste pese a las medidas que has probado, conviene consultarlo con un profesional sanitario. Talvira no puede determinar la causa física; podemos dejar la exploración aquí por ahora."
+    : "Если запор сохраняется несмотря на принятые меры, стоит обратиться к врачу. Тальвира не может определить физическую причину; исследование можно пока оставить здесь.";
+}
