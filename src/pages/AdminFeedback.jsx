@@ -21,10 +21,11 @@ export default function AdminFeedback() {
         base44.entities.SessionFeedback.list("-created_date", 500),
         base44.entities.ExperienceFeedback.list("-created_date", 500),
       ]);
-      return [
+      const combined = /** @type {any[]} */ ([
         ...(sessions || []).map((x) => ({ ...x, _feedback_kind: "session" })),
         ...(experiences || []).map((x) => ({ ...x, _feedback_kind: "experience" })),
-      ].sort((a, b) => new Date(b.created_at || b.created_date || 0) - new Date(a.created_at || a.created_date || 0));
+      ]);
+      return combined.sort((a, b) => new Date(b.created_at || b.created_date || 0).getTime() - new Date(a.created_at || a.created_date || 0).getTime());
     },
   });
 

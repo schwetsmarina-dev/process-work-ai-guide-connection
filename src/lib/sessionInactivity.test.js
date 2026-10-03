@@ -1,9 +1,11 @@
 import {describe,it,expect,vi} from "vitest";
 import {readFileSync} from "node:fs";
 function handler(path,client){
+ /** @type {((request: Request) => Promise<Response>) | undefined} */
  let serve;
  const code=readFileSync(path,"utf8").replace(/^import .*;\n/,"").replace(/: Record<string, unknown>/g,"");
  new Function("createClientFromRequest","Deno",code)(()=>client,{serve:f=>{serve=f;}});
+ if (typeof serve !== "function") throw new Error("Function did not register a Deno.serve handler");
  return serve;
 }
 const now=new Date().toISOString();

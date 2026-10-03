@@ -23,22 +23,22 @@ import {getAIResponse} from "./sessionAI";
 import {feedbackFallback,normalize} from "./sessionFeedbackGuards";
 describe("full turn recovery",()=>{
  it("accepts Body's next question in one model call",async()=>{
-  base44.functions.invoke.mockReset();
-  base44.functions.invoke.mockResolvedValue({data:{response:"Где именно в теле ты замечаешь этот сигнал?"}});
+  vi.mocked(base44.functions.invoke).mockReset();
+  vi.mocked(base44.functions.invoke).mockResolvedValue({data:{response:"Где именно в теле ты замечаешь этот сигнал?"}});
   const result=await getAIResponse({mode_id:"body",current_step:1,id:"test"}, {step_number:1,goal:"Интегрировать вторичный процесс",question:"Как перенести найденное качество в жизнь?"},[a("Что в теле хочешь исследовать?"),u("Прерывистый сон")],"Прерывистый сон","ru");
   expect(result).toContain("Где именно");
   expect(base44.functions.invoke).toHaveBeenCalledTimes(1);
  });
  it("uses a missing dimension after rejected responses",async()=>{
-  base44.functions.invoke.mockReset();
-  base44.functions.invoke.mockResolvedValue({data:{response:"Симптом защищает тебя."}});
+  vi.mocked(base44.functions.invoke).mockReset();
+  vi.mocked(base44.functions.invoke).mockResolvedValue({data:{response:"Симптом защищает тебя."}});
   const result=await getAIResponse({mode_id:"body",current_step:1,id:"test"},null,[u("Прерывистый сон")],"Прерывистый сон","ru");
   expect(result).toContain("Где именно");
   expect(base44.functions.invoke).toHaveBeenCalledTimes(2);
  });
  it("surfaces Retry instead of repeating a recovery question",async()=>{
-  base44.functions.invoke.mockReset();
-  base44.functions.invoke.mockResolvedValue({data:{response:"Симптом защищает тебя."}});
+  vi.mocked(base44.functions.invoke).mockReset();
+  vi.mocked(base44.functions.invoke).mockResolvedValue({data:{response:"Симптом защищает тебя."}});
   await expect(getAIResponse({mode_id:"body",current_step:1,id:"test"},null,[u("Прерывистый сон"),a("Где именно в теле ты замечаешь этот сигнал?"),u("Пока не знаю")],"Пока не знаю","ru")).rejects.toThrow("новый вопрос");
  });
  it("does not bypass repeat validation in continuation recovery",()=>{

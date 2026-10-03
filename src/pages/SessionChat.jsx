@@ -525,7 +525,7 @@ export default function SessionChat() {
         continuationStartedAt = savedUserMsg?.created_date || optimisticUserMsg.created_at;
         const patch = { continuation_requested: true, continuation_started_at: continuationStartedAt };
         await base44.entities.Session.update(sessionId, patch);
-        queryClient.setQueryData(["session", sessionId, currentUser?.email], prev => prev ? { ...prev, ...patch } : prev);
+        queryClient.setQueryData(["session", sessionId, currentUser?.email], prev => prev ? { ...(/** @type {any} */ (prev)), ...patch } : prev);
         setContinuationRequested(true);
       }
       // Get AI response
@@ -666,7 +666,7 @@ export default function SessionChat() {
     try {
       const patch = { continuation_requested: true, continuation_started_at: new Date().toISOString() };
       await base44.entities.Session.update(sessionId, patch);
-      queryClient.setQueryData(["session", sessionId, currentUser?.email], prev => prev ? { ...prev, ...patch } : prev);
+      queryClient.setQueryData(["session", sessionId, currentUser?.email], prev => prev ? { ...(/** @type {any} */ (prev)), ...patch } : prev);
       setContinuationRequested(true);
       setSessionComplete(false);
     } catch {
