@@ -471,7 +471,8 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
   }
 
   // 0b. Somatic gate
-  if (dreamMappingComplete === false) {
+  // This gate belongs to Dream mapping. Body must explore sensations before big U.
+  if (String(currentMode || "").toLowerCase().includes("dream") && dreamMappingComplete === false) {
     const somaticPhrases = ["где ты ощущаешь", "ощущаешь в теле", "что ты чувствуешь телесно",
       "телесный отклик", "в теле", "в груди", "в животе", "в горле", "в плечах",
       "dónde lo notas", "dónde lo sientes", "en el cuerpo", "respuesta corporal", "en el pecho", "en el abdomen", "en la garganta", "en los hombros"];
@@ -548,7 +549,7 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
     const repetitionHits = lastThreeAssistant.filter((msg) =>
       REPETITIVE_IMMERSION_PHRASES.some((p) => msg.includes(p))
     );
-    if (repetitionHits.length >= 2) {
+    if (repetitionHits.length >= 2 && REPETITIVE_IMMERSION_PHRASES.some(p => lower.includes(p))) {
       const triggeredPhrase = REPETITIVE_IMMERSION_PHRASES.find((p) =>
         repetitionHits[repetitionHits.length - 1].includes(p)
       );
@@ -783,7 +784,10 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
     "awaiting_journaling_topic", "awaiting_primary", "awaiting_secondary",
   ];
   const gateActive = GATE_STAGES.includes(mappingStageValue) || integrationLock || completionDetected || (resistanceCount || 0) >= 3;
-  if (hasValidStep && !gateActive) {
+  // A legacy numbered step is advisory when the Body state machine or a
+  // locked exploration focus owns the next intervention.
+  const stepIsAdvisory = String(currentMode || "").toLowerCase().includes("body") || (sessionState?.current_stage_rank || 0) >= 5;
+  if (hasValidStep && !gateActive && !stepIsAdvisory) {
     const stripWords = (s) => (s || "")
       .toLowerCase()
       .replace(/[«»"".,!?;:()\-—]/g, " ")
