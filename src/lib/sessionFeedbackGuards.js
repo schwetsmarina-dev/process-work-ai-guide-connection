@@ -1,5 +1,5 @@
 // Quality guards shared by generation, validation and the chat UI.
-export const normalize = (s = "") => String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ё/g, "е");
+export const normalize = (s = "") => String(s).toLowerCase().normalize("NFD").replace(/(\p{Script=Latin})[\u0300-\u036f]+/gu, "$1").normalize("NFC").replace(/ё/g, "е");
 export function getTurnIntent(text = "") {
   const t = normalize(text);
   const continueRequested = /(?:хочу|давай|можно|будем).{0,25}(?:продолж|исслед|разобрат)|продолжаем|не хочу (?:заканч|заверш)|(?:quiero|quisiera|podemos|vamos a).{0,25}(?:seguir|continuar|explorar|profundizar)|no quiero (?:terminar|cerrar)/u.test(t);
