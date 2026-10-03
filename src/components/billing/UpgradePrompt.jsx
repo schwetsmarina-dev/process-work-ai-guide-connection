@@ -65,7 +65,7 @@ export default function UpgradePrompt({ lang, variant = "feature", onDismiss = n
       {err && (
         <div className="flex items-start gap-2 mt-3 text-sm text-destructive">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-          <span className="break-words">{err}</span>
+          <span className="wrap-break-word">{err}</span>
         </div>
       )}
 

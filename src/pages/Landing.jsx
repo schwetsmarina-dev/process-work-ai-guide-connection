@@ -99,7 +99,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background relative">
       {/* Language switcher — visible to everyone */}
-      <div className="absolute top-4 right-4 z-20 flex items-center rounded-full border border-border bg-card/80 backdrop-blur-sm overflow-hidden text-xs font-medium">
+      <div className="absolute top-4 right-4 z-20 flex items-center rounded-full border border-border bg-card/80 backdrop-blur-xs overflow-hidden text-xs font-medium">
         <button
           onClick={() => handleLangSwitch("ru")}
           className={`px-3 py-1.5 transition-colors ${lang === "ru" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
@@ -117,7 +117,7 @@ export default function Landing() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         {/* layered gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-50 via-background to-background pointer-events-none" />
+        <div className="absolute inset-0 bg-linear-to-b from-slate-50 via-background to-background pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_20%,hsl(var(--primary)/0.08),transparent)] pointer-events-none" />
 
         <div className="relative max-w-5xl mx-auto px-4 pt-12 pb-10 md:pt-20 md:pb-16 flex flex-col items-center">
@@ -168,7 +168,7 @@ export default function Landing() {
         </div>
 
         {/* smooth fade into modes section */}
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-b from-transparent to-background pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-linear-to-b from-transparent to-background pointer-events-none" />
       </section>
 
       {/* Modes */}

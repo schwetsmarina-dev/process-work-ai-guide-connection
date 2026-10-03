@@ -71,7 +71,7 @@ export default function KeyObservations({ memories = [], lang = "es", error = fa
                     <Badge variant="secondary" className="text-xs">{label}</Badge>
                     {status && <span className="text-xs text-muted-foreground">{status}</span>}
                   </div>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{observationText(memory)}</p>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-word">{observationText(memory)}</p>
                 </li>
               );
             })}

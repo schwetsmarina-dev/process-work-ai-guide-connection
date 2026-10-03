@@ -424,7 +424,7 @@ export default function EdgeProgram() {
           <button
             type="button"
             onClick={() => document.getElementById("edge-program-feedback")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            className="w-full rounded-xl bg-primary px-4 py-3.5 flex items-center justify-center gap-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition"
+            className="w-full rounded-xl bg-primary px-4 py-3.5 flex items-center justify-center gap-2 text-sm font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition"
           >
             <MessageSquareText className="w-4 h-4" />
             {lang === "es" ? "Cuéntanos cómo fue el programa completo" : "Расскажи, как прошла вся программа"}
@@ -451,7 +451,7 @@ export default function EdgeProgram() {
           <button
             type="button"
             onClick={() => document.getElementById("edge-day-feedback-form")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            className="w-full rounded-xl bg-primary px-4 py-3.5 flex items-center justify-center gap-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition"
+            className="w-full rounded-xl bg-primary px-4 py-3.5 flex items-center justify-center gap-2 text-sm font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition"
           >
             <MessageSquareText className="w-4 h-4" />
             {lang === "es"

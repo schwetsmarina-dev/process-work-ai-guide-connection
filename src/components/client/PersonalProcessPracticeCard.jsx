@@ -204,7 +204,7 @@ export default function PersonalProcessPracticeCard({ userId, user = null, lang 
                 setFeedbackOpen(next);
                 if (next) setTimeout(() => document.getElementById(`practice-feedback-${visiblePractice.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
               }}
-              className="mt-5 w-full rounded-xl bg-primary px-4 py-3.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition flex items-center justify-center gap-2"
+              className="mt-5 w-full rounded-xl bg-primary px-4 py-3.5 text-sm font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition flex items-center justify-center gap-2"
             >
               <MessageSquareText className="w-4 h-4" />
               {feedbackOpen ? c.hideFeedback : c.feedback}

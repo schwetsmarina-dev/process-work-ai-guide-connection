@@ -64,7 +64,7 @@ export default function InsightAgent() {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/80 backdrop-blur-xs sticky top-0 z-10">
         <Link to="/insights">
           <Button variant="ghost" size="icon" className="shrink-0">
             <ArrowLeft className="w-4 h-4" />
@@ -129,7 +129,7 @@ export default function InsightAgent() {
       </div>
 
       {/* Input */}
-      <div className="px-4 py-4 border-t border-border bg-card/50 backdrop-blur-sm">
+      <div className="px-4 py-4 border-t border-border bg-card/50 backdrop-blur-xs">
         <div className="max-w-2xl mx-auto flex gap-2">
           <textarea
             value={input}
@@ -137,7 +137,7 @@ export default function InsightAgent() {
             onKeyDown={handleKeyDown}
             placeholder={t("agent_placeholder", lang)}
             rows={1}
-            className="flex-1 resize-none rounded-xl border border-input bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring min-h-[42px] max-h-32"
+            className="flex-1 resize-none rounded-xl border border-input bg-background px-4 py-2.5 text-sm focus:outline-hidden focus:ring-1 focus:ring-ring min-h-[42px] max-h-32"
             style={{ height: "auto" }}
             onInput={(e) => {
               e.currentTarget.style.height = "auto";

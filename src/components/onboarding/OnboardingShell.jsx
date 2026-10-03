@@ -17,7 +17,7 @@ export default function OnboardingShell({
   const canGoBack = step > 0 && step < TOTAL - 1;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background flex flex-col">
+    <div className="fixed inset-0 z-100 bg-background flex flex-col">
       {/* Back button */}
       <div className="h-14 flex items-center px-4 shrink-0">
         {canGoBack && onBack && (
