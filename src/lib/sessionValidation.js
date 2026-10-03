@@ -116,7 +116,7 @@ function fallbacksFor(language) {
   return SAFE_FALLBACKS_BY_LANG[language] || SAFE_FALLBACKS_BY_LANG.ru;
 }
 
-export function validateAssistantResponse({ responseText, currentMode, forcedNextLayer = null, integrationLock = false, conversationHistory = [], lastUserMessage = "", dreamMappingComplete = false, mappingStageValue = null, userSelectedFocus = null, completionDetected = false, coveredLayers = [], resistanceCount = 0, step = null, hasValidStep = false, sessionId = null, userAlreadyAnswered = false, nonResonanceDetected = false, mappingStageObj = null, sessionState = null, userChangedFocus = false }, validationContext) {
+export function validateAssistantResponse({ responseText, currentMode, forcedNextLayer = null, integrationLock = false, conversationHistory = [], lastUserMessage = "", dreamMappingComplete = false, mappingStageValue = null, userSelectedFocus = null, completionDetected = false, coveredLayers = new Set(), resistanceCount = 0, step = null, hasValidStep = false, sessionId = null, userAlreadyAnswered = false, nonResonanceDetected = false, mappingStageObj = null, sessionState = null, userChangedFocus = false }, validationContext) {
   const quality = validateFeedbackQuality(responseText, conversationHistory, lastUserMessage);
   if (!quality.isValid) return quality;
   if (!validationContext) validationContext = { completionDetected };
