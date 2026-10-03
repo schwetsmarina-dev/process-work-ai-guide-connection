@@ -509,11 +509,11 @@ export default function Dashboard() {
       {modes.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
           {[
-            ["anxiety", HeartPulse, lang === "es" ? "Siento ansiedad" : "Мне тревожно"],
-            ["situation", Sparkles, lang === "es" ? "Quiero entender una situación" : "Хочу разобрать ситуацию"],
-            ["decision", Scale, lang === "es" ? "No puedo tomar una decisión" : "Не могу принять решение"],
-            ["talk", MessageCircle, lang === "es" ? "Quiero simplemente hablar" : "Хочу просто поговорить"],
-          ].map(([kind, Icon, label]) => (
+            { kind: "anxiety", Icon: HeartPulse, label: lang === "es" ? "Siento ansiedad" : "Мне тревожно" },
+            { kind: "situation", Icon: Sparkles, label: lang === "es" ? "Quiero entender una situación" : "Хочу разобрать ситуацию" },
+            { kind: "decision", Icon: Scale, label: lang === "es" ? "No puedo tomar una decisión" : "Не могу принять решение" },
+            { kind: "talk", Icon: MessageCircle, label: lang === "es" ? "Quiero simplemente hablar" : "Хочу просто поговорить" },
+          ].map(({ kind, Icon, label }) => (
             <Button key={kind} variant="outline" className="h-auto min-h-14 justify-start gap-3 rounded-2xl px-4 py-3 text-left whitespace-normal" onClick={() => handleQuickStart(kind)}>
               <Icon className="w-5 h-5 shrink-0 text-primary" />
               <span>{label}</span>
