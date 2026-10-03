@@ -312,12 +312,13 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
     .map((m) => m.content.toLowerCase());
 
   const normalizeQ = (s) => s.replace(/\s+/g, " ").replace(/[«»"".,!?]/g, "").trim();
-  const candidateNorm = normalizeQ(lower);
+  const questionText = text => (String(text).match(/(?:^|[.!]\s+)([^.!?]*[?？])/g) || []).join(" ");
+  const candidateNorm = normalizeQ(questionText(lower));
   for (const prevQ of previousAssistantQuestions) {
-    const prevNorm = normalizeQ(prevQ);
-    const exactRepeat = prevNorm.length > 15 && candidateNorm.includes(prevNorm.slice(0, Math.min(60, prevNorm.length)));
+    const prevNorm = normalizeQ(questionText(prevQ));
+    const exactRepeat = prevNorm.length > 15 && candidateNorm === prevNorm;
     const sharedStem = REPEATED_STEMS.find((stem) => candidateNorm.includes(stem) && prevNorm.includes(stem));
-    if (exactRepeat || sharedStem) {
+    if (exactRepeat) {
       console.warn("[MODESTEP_REPEAT_BLOCKED]", {
         session_id: sessionId,
         step_number: step?.step_number ?? "?",
