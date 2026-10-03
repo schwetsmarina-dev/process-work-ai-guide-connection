@@ -40,7 +40,7 @@ export function cycleMessages(messages, startedAt) {
   });
 }
 
-export function buildContinuationPrompt({ rows, terms, messages, language, systemPrompt, memoriesBlock = "", startedAt, processContext = {} }) {
+export function buildContinuationPrompt({ rows, terms, messages, language, systemPrompt, memoriesBlock = "", startedAt, processContext = { edgeFigures: [], edgeSignals: [] } }) {
   const es = language === "es";
   const field = (row, name) => row[es ? name + "_es" : name] || "";
   const table = rows.map(row => ({
@@ -91,7 +91,7 @@ export function parseContinuationResponse(raw, rows, messages, userText) {
   return {isValid:true, response:text, stepKey:parsed.step_key};
 }
 
-export async function generateContinuationResponse({ client, session, messages, userText, language, systemPrompt, memoriesBlock, resistanceCount }) {
+export async function generateContinuationResponse({ client, session, messages, userText, language, systemPrompt, memoriesBlock = "", resistanceCount }) {
   const pause = language === "es"
     ? "No hace falta seguir explorando ahora. Podemos hacer una pausa; si te ayuda, mira a tu alrededor y nota dónde estás."
     : "Сейчас не нужно продолжать исследование. Можем сделать паузу; если помогает, оглянись вокруг и отметь, где ты находишься.";
