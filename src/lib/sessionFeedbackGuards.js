@@ -51,7 +51,7 @@ export function validateFeedbackQuality(response, messages = [], userText = "") 
   }
   return { isValid: true };
 }
-export function feedbackFallback(language, userText, messages = []) {
+function fallbackCandidate(language, userText, messages = []) {
   const es = language === "es";
   const intent = getTurnIntent(userText);
   if (intent.explicitClose) return es ? "Podemos dejarlo aquí. Cuando quieras, pulsa «Finalizar sesión»." : "Можем на этом остановиться. Когда захочешь, нажми «Завершить сессию».";
@@ -64,7 +64,7 @@ export function feedbackFallback(language, userText, messages = []) {
   if (es) {
     if (usedGenericFallback) {
       return exact
-        ? `Tienes razón en señalarlo. Me quedo exactamente con lo que acabas de decir: «${exact}». No voy a repetir la pregunta anterior ni a añadir una interpretación. ¿Qué notas ahora en esa experiencia, tal como la has descrito?`
+        ? `Me quedo con lo que acabas de decir: «${exact}». No voy a repetir la pregunta anterior ni a añadir una interpretación. ¿Qué notas ahora en esa experiencia, tal como la has descrito?`
         : "No voy a repetir la pregunta anterior. Sigamos desde lo último que dijiste, sin añadir interpretaciones: ¿qué notas ahora en esa experiencia?";
     }
     return exact
@@ -73,12 +73,22 @@ export function feedbackFallback(language, userText, messages = []) {
   }
   if (usedGenericFallback) {
     return exact
-      ? `Ты права, что указала на это. Я остаюсь ровно с тем, что ты только что сказала: «${exact}». Не буду повторять прежний вопрос и добавлять интерпретацию. Что ты сейчас замечаешь в этом переживании таким, как ты его описала?`
+      ? `Я остаюсь с тем, что ты только что сказала: «${exact}». Не буду повторять прежний вопрос и добавлять интерпретацию. Что ты сейчас замечаешь в этом переживании таким, как ты его описала?`
       : "Не буду повторять прежний вопрос. Продолжим от твоих последних слов, без новых интерпретаций: что ты сейчас замечаешь в этом переживании?";
   }
   return exact
     ? `Я тебя слышу: «${exact}». Остаюсь с этим, не меняя тему и не добавляя интерпретацию. Что ты сейчас замечаешь в этом переживании?`
     : "Продолжим от твоих последних слов, не меняя тему и не добавляя интерпретацию: что ты сейчас замечаешь в этом переживании?";
+}
+export function feedbackFallback(language, userText, messages = []) {
+  const text = fallbackCandidate(language, userText, messages);
+  if (!getTurnIntent(userText).explicitClose) {
+    const quality = validateFeedbackQuality(text, messages, userText);
+    if (!quality.isValid && quality.reason === "repeated_response") {
+      throw new Error(language === "es" ? "No se pudo generar una pregunta nueva." : "Не удалось сформировать новый вопрос.");
+    }
+  }
+  return text;
 }
 export function feedbackInstructions(language, continued = false) {
   return language === "es" ? 
