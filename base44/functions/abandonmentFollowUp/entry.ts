@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
 
     if (action === 'pending') {
       const abandoned = (await svc.entities.Session.filter(
-        { user_id: user.id, status: 'abandoned' },
+        { user_id: user.id, status: { $in: ['abandoned', 'active'] } },
         '-created_date',
         100,
       )) || [];
@@ -41,6 +41,12 @@ Deno.serve(async (req) => {
       let pending = null;
       for (const session of abandoned) {
         if (session.abandonment_reason || session.abandonment_feedback_at) continue;
+        if (session.status === 'active') {
+          const messages = await svc.entities.Message.filter({ session_id: session.id }, '-created_date', 1);
+          const last = messages?.[0];
+          const activity = Date.parse(last?.created_at || last?.created_date || session.started_at || session.created_date);
+          if (!Number.isFinite(activity) || activity > Date.now() - 24 * 60 * 60 * 1000) continue;
+        }
         if (await hasUserContent(svc, session)) {
           pending = session;
           break;
@@ -94,6 +100,10 @@ Deno.serve(async (req) => {
       if (reason === 'continue_same_place') {
         patch.status = 'active';
         patch.ended_at = null;
+      } else if (session.status === 'active') {
+        // Only the person's explicit account ends an inactive session.
+        patch.status = 'abandoned';
+        patch.ended_at = now;
       }
       await svc.entities.Session.update(session.id, patch);
       await svc.entities.UserJourneyEvent.create({
