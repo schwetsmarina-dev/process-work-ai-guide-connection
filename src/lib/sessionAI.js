@@ -1,9 +1,10 @@
 import { base44 } from "@/api/base44Client";
+import { reportOperationalError } from "@/lib/telemetry";
 import { mainSteps, generateContinuationResponse } from "./sessionContinuation";
 import { feedbackInstructions, feedbackFallback, answeredIntegration } from "@/lib/sessionFeedbackGuards";
 import { detectCompletionState } from "@/lib/sessionSignals";
 import { SYSTEM_PROMPT, SYSTEM_PROMPT_ES } from "@/lib/systemPrompt";
-import { detectBodyProcessStage, buildBodyStageInstruction } from "@/lib/bodyProcess";
+import { detectBodyProcessStage, buildBodyStageInstruction, nextPrimaryQuestion } from "@/lib/bodyProcess";
 import {
   extractStageAnswersFromUserMessages,
   detectUserAlreadyAnswered,
@@ -1667,9 +1668,19 @@ ${userMessage}
 4. Задай максимум один вопрос; при просьбе завершить — ни одного.
 Строго 2–3 предложения. Никаких повторов. Никаких шаблонов. Движение вперёд.`;
 
-  const runtimeFallback = () => resistanceCount >= 3
-    ? (isEsRuntime ? "No hace falta forzar este punto. Podemos hacer una pausa y atender a lo que te ayuda a sentirte a salvo." : "Не нужно преодолевать это через силу. Можно сделать паузу и обратиться к тому, что помогает чувствовать себя в безопасности.")
-    : feedbackFallback(language, userMessage, messages);
+  const runtimeFallback = () => {
+    reportOperationalError("ai_validation_recovery", { mode: modeKey, language, stage: mappingStage.stage });
+    const text = resistanceCount >= 3
+      ? (isEsRuntime ? "No hace falta forzar este punto. Podemos hacer una pausa y atender a lo que te ayuda a sentirte a salvo." : "Не нужно преодолевать это через силу. Можно сделать паузу и обратиться к тому, что помогает чувствовать себя в безопасности.")
+      : modeKey === "body" && mappingStage.stage === "body_small_u"
+      ? nextPrimaryQuestion(mappingStage.body_primary_dimensions, language)
+      : feedbackFallback(language, userMessage, messages);
+    // A recovery answer must not bypass the anti-loop guard.
+    if (messages.filter(m => m.role === "assistant").slice(-5).some(m => String(m.content).trim() === text.trim())) {
+      throw new Error(isEsRuntime ? "No se pudo generar una pregunta nueva. Puedes reintentar sin perder tu respuesta." : "Не удалось сформировать новый вопрос. Можно повторить попытку, сохранив твой ответ.");
+    }
+    return text;
+  };
   const fullPrompt = buildPrompt();
   const estimatedTokens = Math.ceil(fullPrompt.length / 4);
 
