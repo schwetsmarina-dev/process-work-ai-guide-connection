@@ -128,6 +128,7 @@ export default function SessionChat() {
   const messagesEndRef = useRef(null);
   const initDone = useRef(false);
   const lastFailedMessageRef = useRef(null);
+  const pendingSavedUserRef = useRef(null);
 
   // ── Reset all init state when sessionId changes ───────────────────────────
   useEffect(() => {
@@ -407,7 +408,11 @@ export default function SessionChat() {
 
     try {
       // Save user message to backend
-      const savedUserMsg = await createMessage({ session_id: sessionId, mode_id: modeId, step_number: currentStep, role: "user", content: text });
+      const pending = pendingSavedUserRef.current;
+      const savedUserMsg = pending?.sessionId === sessionId && pending?.text === text
+        ? pending.message
+        : await createMessage({ session_id: sessionId, mode_id: modeId, step_number: currentStep, role: "user", content: text });
+      pendingSavedUserRef.current = { sessionId, text, message: savedUserMsg };
       console.log("[CHAT_FLOW] 2. user message saved");
 
       // Clear optimistic after save
@@ -521,8 +526,14 @@ export default function SessionChat() {
       } catch (aiErr) {
         if (import.meta.env.DEV) console.error("[CHAT_FLOW] AI generation failed:", aiErr);
         reportOperationalError("ai_generation_failed", { mode: modeId, language });
-        rawResponse = t("ai_error_fallback", language);
-        setSendErrorMessage(`${t("err_ai_generic", language)}: ${aiErr?.message || String(aiErr)}`);
+        // An AI failure is not a successful turn: retain the user's saved answer,
+        // expose Retry, and do not save a canned assistant reply or advance a step.
+        setSendErrorMessage(t("ai_error_fallback", language));
+        setSendError(true);
+        lastFailedMessageRef.current = text;
+        setIsAiLoading(false);
+        queryClient.invalidateQueries({ queryKey: ["messages", sessionId, currentUser?.email] });
+        return;
       }
 
       const { cleanText, suggestedMode } = parseShiftSuggestion(rawResponse);
@@ -541,6 +552,7 @@ export default function SessionChat() {
         return;
       }
 
+      pendingSavedUserRef.current = null;
       console.log("[CHAT_FLOW] 7. assistant message rendered");
 
       // Advance step using next_step_on_answer
