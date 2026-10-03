@@ -20,29 +20,20 @@ Deno.serve(async (req) => {
       200,
     );
 
+    // Inactivity is a pause, not evidence that the person abandoned the process.
+    // Keep sessions resumable. Follow-up asks the person what happened.
     const cutoff = Date.now() - STALE_HOURS * 60 * 60 * 1000;
-    const now = new Date().toISOString();
-    const svc = base44.asServiceRole;
-    let abandoned = 0;
-
+    let paused = 0;
     for (const s of active) {
-      const started = new Date(s.started_at || s.created_date).getTime();
-      if (!Number.isFinite(started) || started > cutoff) continue;
-      await svc.entities.Session.update(s.id, { status: 'abandoned', ended_at: now }).catch(() => {});
-      await svc.entities.UserJourneyEvent.create({
-        user_id: user.id,
-        user_email: String(user.email || '').toLowerCase(),
-        event_type: 'session_abandoned',
-        session_id: s.id,
-        mode_id: s.mode_id || s.mode || '',
-        step_number: Number(s.current_step || 0),
-        occurred_at: now,
-      }).catch((error) => console.warn('[abandonStaleSessions] journey event failed:', error?.message));
-      abandoned++;
+      const lastMessages = await base44.asServiceRole.entities.Message.filter(
+        { session_id: s.id }, '-created_date', 1,
+      );
+      const last = lastMessages?.[0];
+      const lastActivity = Date.parse(last?.created_at || last?.created_date || s.started_at || s.created_date);
+      if (Number.isFinite(lastActivity) && lastActivity <= cutoff) paused++;
     }
-
-    console.log('[abandonStaleSessions] completed', { checked: active.length, abandoned });
-    return Response.json({ checked: active.length, abandoned });
+    console.log('[abandonStaleSessions] checked pauses', { checked: active.length, paused });
+    return Response.json({ checked: active.length, abandoned: 0, paused });
   } catch (error) {
     console.error('[abandonStaleSessions] error:', error?.message);
     return Response.json({ error: error.message }, { status: 500 });
