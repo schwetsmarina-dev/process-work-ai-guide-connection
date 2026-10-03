@@ -135,6 +135,11 @@ export function validateAssistantResponse({ responseText, currentMode, forcedNex
     };
   }
 
+  const symptomIntention = /(?:симптом|ощущение|удержание).{0,90}(?:собственной энергией или намерением|хочет проявиться|пытается сказать|нес[её]т послание)|(?:síntoma|sensación|retención).{0,90}(?:intención propia|quiere manifestarse|intenta decir|lleva un mensaje)/iu.test(responseText);
+  if (String(currentMode || "").toLowerCase().includes("body") && symptomIntention) {
+    return { isValid: false, reason: "suggested_symptom_intention", correctedInstruction: "Do not assign purpose, intention or a message to a physical symptom. Explore its concrete felt quality. Follow only images and meanings introduced by the person, without suggesting a cause." };
+  }
+
   // 0lock. STAGE MEMORY LOCKS + ANTI-REGRESSION (all modes) — runs first.
   // Once primary/secondary/focus is locked, reject re-asking earlier stages.
   if (sessionState) {
