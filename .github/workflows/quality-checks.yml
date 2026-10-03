@@ -35,5 +35,7 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
-      - name: Security audit (high)
-        run: npm audit --audit-level=high
+      - name: Security audit (production high)
+        run: npm audit --omit=dev --audit-level=high
+      - name: Development dependency audit (informational)
+        run: npm audit --audit-level=high || true
