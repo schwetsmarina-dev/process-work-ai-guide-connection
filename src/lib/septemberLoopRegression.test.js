@@ -47,3 +47,10 @@ describe("full turn recovery",()=>{
  });
  it("preserves Cyrillic й while normalizing Spanish accents",()=>expect(normalize("Твой sueño")).toBe("твой sueno"));
 });
+
+import {bodyMedicalPause} from "./bodyProcess";
+describe("physical-symptom boundary",()=>{
+ it.each(["Попробовала слабительное и всё равно ничего не вышло","El laxante no funciona"])("suggests medical assessment after unsuccessful self-care",text=>expect(bodyMedicalPause([u("Запор несколько дней"),u(text)],text,"ru")).toContain("врачу"));
+ it("does not trigger when a measure worked",()=>expect(bodyMedicalPause([u("Запор"),u("Слабительное помогло")],"Слабительное помогло","ru")).toBeNull());
+ it("does not mistake a friend's symptoms for today's sleep focus",()=>expect(bodyMedicalPause([u("Прерывистый сон")],"Нет, не помогло","ru")).toBeNull());
+});
