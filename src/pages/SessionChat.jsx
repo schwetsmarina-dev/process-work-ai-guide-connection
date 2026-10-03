@@ -670,7 +670,7 @@ export default function SessionChat() {
   // That was replaced by an explicit "end session" button once the final step
   // is reached (see setSessionComplete below), which is the safer behaviour in
   // a reflective context — the user decides when the session is over.
-  // Sessions left open are closed by the `abandonStaleSessions` backend job.
+  // Inactive sessions remain resumable; follow-up asks the person before ending them.
 
   const finalizeSession = async (passedMessages) => {
     // Structural counters only — never message content. See telemetry.js.
