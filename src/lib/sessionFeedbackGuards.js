@@ -6,7 +6,9 @@ export function getTurnIntent(text = "") {
   const explicitClose = /(?:^|[.!?]\s*|,\s*)(?:я )?(?:хочу завершить|хочу закончить|готова? завершить|на сегодня достаточно|мне достаточно|этого достаточно|не хочу больше копать|quiero terminar|quiero cerrar aqui|por hoy es suficiente|con esto me basta|no quiero seguir escarbando)(?:[.!?,]|$|\s)/u.test(t);
   const hypothetical = /(?:может быть|возможно|хотелось бы|если бы|стало бы|tal vez|quizas|ojala|me gustaria|seria|podria|iria|si pudiera)/u.test(t);
   const edge = /(?:но.{0,25}(?:боюсь|не могу|трудно)|мешает|стыд|снова должен|sigo bloquead|pero.{0,25}(?:miedo|no puedo|cuesta)|me impide|verguenza)/u.test(t);
-  const confusion = /(?:не понимаю|не могу понять|непонятно|что ты имеешь в виду|no entiendo|no consigo entender|no me queda claro|que quieres decir)/u.test(t);
+  // Confusion about Talvira is different from describing not understanding someone in life.
+  const confusion = /(?:не понимаю|не могу понять|непонятно).{0,45}(?:твой вопрос|твою|ты спрашиваешь|что ты|про что этот сон)|(?:что ты имеешь в виду|спроси по-другому|переформулируй|no entiendo tu pregunta|no entiendo la pregunta|que quieres decir|reformula|preguntamelo de otra manera)/u.test(t) ||
+    /^(?:я )?(?:не понимаю|непонятно|no entiendo|no me queda claro)[.!?]*$/u.test(t);
   const negated = /(?:не чувствую|не стало|не понимаю|не могу понять|no me siento|no siento|no entiendo|no consigo entender|no ha cambiado)/u.test(t);
   const shift = !hypothetical && !negated && /(?:облегчение|стало легче|напряжение ушло|отпустило|мне спокойно|alivio|no hay rigidez|tranquilidad|naturalidad|me siento tranquil|se ha soltado)/u.test(t);
   return { continueRequested, explicitClose: explicitClose && !continueRequested, hypothetical, confusion, edge, shift };
@@ -33,6 +35,10 @@ export function validateFeedbackQuality(response, messages = [], userText = "") 
   if (typeof response !== "string" || !response.trim()) return { isValid: false, reason: "empty_response", correctedInstruction: "Return a short, grounded response." };
   const intent = getTurnIntent(userText);
   const r = normalize(response);
+  const recent = messages.filter(m => m.role === "assistant").slice(-5);
+  if (recent.some(m => normalize(m.content).trim() === r.trim())) {
+    return { isValid: false, reason: "repeated_response", correctedInstruction: "Do not repeat an earlier answer. Use the information already supplied and ask a distinct, specific next question." };
+  }
   if (answeredIntegration(messages) && isIntegrationQuestion(response) && !intent.continueRequested) {
     return { isValid: false, reason: "repeated_integration", correctedInstruction: "The life-integration question already has an answer. Reflect it without another variant. Offer the choice to finish or explore a specific remaining edge; do not assume completion." };
   }
