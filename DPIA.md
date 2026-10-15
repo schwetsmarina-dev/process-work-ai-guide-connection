@@ -12,7 +12,7 @@ Talvira is an AI-guided self-reflection service available at https://talvira.app
 
 Talvira is not psychotherapy, a medical device, a diagnostic service or an emergency service. The product is restricted to adults aged 18 or over.
 
-This DPIA covers account creation, age confirmation, guided sessions, AI processing, memory, safety screening, billing entitlements, user-controlled export/deletion and operational monitoring.
+This DPIA covers account creation, age confirmation, guided sessions, AI processing, memory, personalised practices, the adaptive 28-day programme and its pre-start screening, billing entitlements, user-controlled export/deletion and operational monitoring.
 
 ## 2. Why a DPIA is appropriate
 
@@ -26,7 +26,8 @@ Session content can reveal information about mental or physical wellbeing and ma
 - account: name, email, language, plan and consent records;
 - age gate: birth year and confirmation timestamp (no full birth date);
 - session: user messages, AI replies, mode, progress and summaries;
-- derived: memories, themes, insights, reports, process maps and practices;
+- derived: memories, themes, insights, reports, process maps and personalised practices;
+- 28-day programme: eligibility result, pre-start screening, programme status, daily practices and reflections, distress checks, user-reviewed observations, resource library, pause/resume history, progression decisions and weekly milestones;
 - safety: risk classification and the message/event that triggered review;
 - billing: Paddle customer/subscription/product/price references and entitlement status;
 - technical: security, error and service logs;
@@ -63,6 +64,7 @@ Consent must be informed, specific, recorded, easy to withdraw and separate from
 | Disclosure of sensitive session content | High | TLS, RLS, ownership checks, least privilege, secrets server-side | Medium |
 | User mistakes AI for a clinician | High | persistent AI disclosure, non-clinical positioning, no diagnosis/advice | Medium |
 | Harmful response during crisis | High | crisis screening, emergency routes, response constraints, RiskEvent logging, red-team tests | Medium |
+| Overload during longitudinal self-guided work | High | five-session and personal-practice eligibility gate, unresolved-risk block, pre-start screening, daily distress/dissociation checks, softer/repeat/resource/rest options, pause/stop controls, no calendar auto-advance and user review of AI observations | Medium |
 | Minor accesses the service | High | 18+ policy, birth-year gate, account blocking | Medium |
 | Excessive or opaque AI profiling | High | limited purposes, explicit special-category consent, memory on/off/erase controls, user export/deletion, no legal-effect automated decisions | Low/Medium |
 | International transfer without safeguards | High | processor register, SCC/DPA verification and region review | Medium pending contracts |
@@ -76,7 +78,7 @@ Consent must be informed, specific, recorded, easy to withdraw and separate from
 2. Confirm infrastructure, AI-provider, monitoring and backup retention in provider account settings.
 3. Run and retain a production deletion drill covering database records plus provider/account follow-up.
 4. Obtain legal/DPO approval of the versioned explicit-consent wording and this DPIA.
-5. Continue safety red-team expansion and retain test evidence for all four modes and languages.
+5. Continue safety red-team expansion and retain test evidence for all four modes, personalised-practice generation and every 28-day programme progression branch (advance, repeat, resource, pause and stop) in all supported languages.
 6. Assign incident-response owners and approve the breach-notification workflow.
 7. Reassess after new languages, therapist/centre features, new AI providers or material profiling.
 

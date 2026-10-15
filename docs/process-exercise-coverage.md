@@ -2,6 +2,15 @@
 
 Generated from the current `Term.latin_key` glossary and active `ProcessExercise.term_keys` library.
 
+## Product use
+
+The library supports two user-facing capabilities:
+
+- **Personal practices:** the generator selects only exercises classified as safe for AI self-guided use, then adapts them to recurring material from completed sessions.
+- **28-day programme:** daily generation may draw on the same safe library, but must also follow the programme methodology, the user's confirmed resource library and the current progression/safety state. A resource-only day must not reopen difficult material.
+
+The exercise count is not a prescription and is never presented to the user as a generic menu. Selection remains contextual, safety-filtered and subject to the user's confirmation or correction.
+
 Two coverage measures matter:
 
 - **usable by AI** = `ai_self_guided` + `conditional`; `live_specialist` is excluded.
