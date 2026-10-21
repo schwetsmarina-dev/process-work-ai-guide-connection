@@ -14,7 +14,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@base44/sdk": "^0.8.54",
+    "@base44/sdk": "^0.8.56",
     "@base44/vite-plugin": "^1.0.47",
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^4.1.2",
